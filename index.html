@@ -5,18 +5,23 @@
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>Facebook 社團專用 PDF 閱讀</title>
   <script>
-    var referrer = document.referrer;  // 取得上一個訪問的網頁
-    console.log("Referrer:", referrer);  // 測試用，確認來源
+    var urlParams = new URLSearchParams(window.location.search);
+    var fbclid = urlParams.get('fbclid');  // 取得 Facebook 參數
 
-    // **如果不是來自 Facebook 社團 (`facebook.com/groups/667112409185609`)，則強制跳轉回 Facebook 社團**
-    if (!referrer.includes("facebook.com/groups/667112409185609")) {
+    // **如果 fbclid 存在，就儲存狀態**
+    if (fbclid) {
+      sessionStorage.setItem("fromFacebookGroup", "true");
+    }
+
+    // **如果沒有記錄 Facebook 來源，則跳轉回社團**
+    if (!sessionStorage.getItem("fromFacebookGroup")) {
       window.location.href = "https://www.facebook.com/groups/667112409185609";  // 你的 Facebook 社團網址
     }
 
-    // **禁止右鍵（防止下載）**
+    // 禁止右鍵（防止下載）
     document.addEventListener('contextmenu', event => event.preventDefault());
 
-    // **禁止使用鍵盤快捷鍵（Ctrl+S、Ctrl+P）**
+    // 禁止使用鍵盤快捷鍵（Ctrl+S、Ctrl+P）
     document.addEventListener('keydown', function(event) {
       if ((event.ctrlKey && event.key === 's') || (event.ctrlKey && event.key === 'p')) {
         event.preventDefault();
