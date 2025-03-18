@@ -4,12 +4,6 @@
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>Redirecting...</title>
-  <style>
-    /* 隱藏 "Redirecting, please wait..." 訊息 */
-    body {
-      display: none;
-    }
-  </style>
   <script>
     // 獲取 URL 中的 fbclid 參數，判斷是否來自 Facebook
     var urlParams = new URLSearchParams(window.location.search);
@@ -20,14 +14,17 @@
       // 縮短的 Google Drive 資料夾連結
       var shortDriveLink = "https://reurl.cc/EV7a5R";  
       
-      // 使用 window.location.replace 保持 GitHub URL，並跳轉到縮短連結
-      window.location.replace(shortDriveLink);  // 重定向到縮短網址，但地址欄仍然顯示 GitHub 的 URL
+      // 以 iframe 顯示縮短的 Google Drive 連結，地址欄保持為 GitHub 的 URL
+      document.getElementById('drive-iframe').src = shortDriveLink;
+      document.getElementById('loading').style.display = 'none';  // 隱藏重定向訊息
     } else {
       document.body.innerHTML = "<p>Access Denied: Invalid Referrer</p>";  // 如果沒有 fbclid 顯示拒絕訪問
     }
   </script>
 </head>
 <body>
-  <p>Redirecting, please wait...</p>  <!-- This message will be hidden immediately -->
+  <p id="loading">Redirecting, please wait...</p>  
+  <!-- 使用 iframe 來顯示縮短的 Google Drive 連結 -->
+  <iframe id="drive-iframe" width="100%" height="600px" style="border: none;"></iframe>
 </body>
 </html>
