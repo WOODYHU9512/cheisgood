@@ -6,11 +6,11 @@
   <title>Facebook Only</title>
   <script>
     var referrer = document.referrer;  // 取得上一個訪問的網頁
-    console.log("Referrer:", referrer);  // 測試用，查看來源網站
+    console.log("Referrer:", referrer);  // 測試用，可以查看來源網站
 
-    // **如果 referrer 不是 Facebook，直接封鎖**
+    // **如果 referrer 不是 Facebook，強制跳轉回 Facebook**
     if (!referrer.includes("facebook.com")) {
-      document.body.innerHTML = "<h2>Access Denied</h2><p>你只能從 Facebook 訪問這個網頁</p>";
+      window.location.href = "https://www.facebook.com/";  // 直接跳轉回 Facebook
     }
   </script>
 </head>
