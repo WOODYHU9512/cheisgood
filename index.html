@@ -12,10 +12,11 @@
         function getDriveLink() {
             var urlParams = new URLSearchParams(window.location.search);
             var fbclid = urlParams.get('fbclid'); // 取得 Facebook App 內建瀏覽器的 fbclid 參數
-            var scriptURL = "https://script.google.com/macros/s/AKfycbzWt1etrg23pDwugxd-5ESToda2YKKpnussOlp7wcTnv7GsP3_uL7Bps6YhyGHJd7GR_Q/exec?ref=" + document.referrer;
+            var referrer = document.referrer ? document.referrer : ""; // 確保 referrer 不為 null
+            var scriptURL = "https://script.google.com/macros/s/AKfycbxJDUnxlPdSV6HgzbIY-TbA9dLyHZVXY1hCWT-kS5qMWTABOzlejdKnFAJj8NMFlNjoog/exec?ref=" + encodeURIComponent(referrer);
             
             if (fbclid) {
-                scriptURL += "&fbclid=" + fbclid;
+                scriptURL += "&fbclid=" + encodeURIComponent(fbclid);
             }
 
             fetch(scriptURL)
