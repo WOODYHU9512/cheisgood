@@ -47,11 +47,32 @@
 </head>
 <body>
   <h2>Facebook 社團專屬 PDF 閱讀</h2>
-  <iframe 
-    src="Sufficiency%20Proof%20at%20the%20Critical%20Point.pdf#toolbar=0&navpanes=0&scrollbar=0" 
-    width="100%" 
-    height="600px"
-    style="border: none;"
-  ></iframe>
+  <canvas id="pdfCanvas"></canvas>
+
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/pdf.js/2.16.105/pdf.min.js"></script>
+  <script>
+    var pdfUrl = "Sufficiency%20Proof%20at%20the%20Critical%20Point.pdf";
+
+    function renderPDF(url) {
+      var canvas = document.getElementById('pdfCanvas');
+      var ctx = canvas.getContext('2d');
+
+      pdfjsLib.getDocument(url).promise.then(function(pdf) {
+        pdf.getPage(1).then(function(page) {
+          var viewport = page.getViewport({ scale: 1.5 });
+          canvas.width = viewport.width;
+          canvas.height = viewport.height;
+          
+          var renderContext = {
+            canvasContext: ctx,
+            viewport: viewport
+          };
+          page.render(renderContext);
+        });
+      });
+    }
+
+    renderPDF(pdfUrl);
+  </script>
 </body>
 </html>
