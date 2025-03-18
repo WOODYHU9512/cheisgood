@@ -15,7 +15,7 @@
     console.log("fbclid:", fbclid);
 
     // **Step 1：強制阻擋 Messenger 或 Facebook 以外的來源**
-    if (userAgent.includes("FBAN") || userAgent.includes("FBAV") || userAgent.includes("Messenger")) {
+    if (userAgent.includes("FBAN") || userAgent.includes("FBAV") || userAgent.includes("Messenger") || referrer.includes("m.facebook.com")) {
       window.location.href = "https://www.facebook.com/groups/667112409185609";  // Facebook 社團網址
     }
 
@@ -61,9 +61,9 @@
           pdf.getPage(pageNum).then(function(page) {
             var canvas = document.createElement('canvas');
             container.appendChild(canvas);
-            var ctx = canvas.getContext('2d');
+            var ctx = canvas.getContext('2d', { willReadFrequently: true });
 
-            var viewport = page.getViewport({ scale: 1.5 });
+            var viewport = page.getViewport({ scale: 3.0 }); // 提高解析度
             canvas.width = viewport.width;
             canvas.height = viewport.height;
             
