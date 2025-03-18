@@ -3,43 +3,18 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>PDF 限制訪問</title>
+  <title>Facebook Only</title>
   <script>
-    var urlParams = new URLSearchParams(window.location.search);
-    var fbclid = urlParams.get('fbclid');  
     var referrer = document.referrer;  // 取得上一個訪問的網頁
+    console.log("Referrer:", referrer);  // 測試用，查看來源網站
 
-    console.log("Referrer:", referrer);  // 測試用，可以查看來自哪裡
-
-    // **如果是從 Facebook 來的，儲存狀態**
-    if (fbclid || referrer.includes("facebook.com")) {
-      sessionStorage.setItem("fromFacebook", "true");
+    // **如果 referrer 不是 Facebook，直接封鎖**
+    if (!referrer.includes("facebook.com")) {
+      document.body.innerHTML = "<h2>Access Denied</h2><p>你只能從 Facebook 訪問這個網頁</p>";
     }
-
-    // **如果 sessionStorage 沒有 Facebook 來源，則強制跳轉回 Facebook**
-    if (!sessionStorage.getItem("fromFacebook")) {
-      window.location.href = "https://www.facebook.com/"; // 強制返回 Facebook
-    }
-
-    // 禁止右鍵（防止下載）
-    document.addEventListener('contextmenu', event => event.preventDefault());
-
-    // 禁止使用鍵盤快捷鍵（Ctrl+S、Ctrl+P）
-    document.addEventListener('keydown', function(event) {
-      if ((event.ctrlKey && event.key === 's') || (event.ctrlKey && event.key === 'p')) {
-        event.preventDefault();
-        alert("禁止下載或列印此 PDF");
-      }
-    });
   </script>
 </head>
 <body>
-  <h2>PDF 閱讀區</h2>
-  <iframe 
-    src="Sufficiency%20Proof%20at%20the%20Critical%20Point.pdf#toolbar=0&navpanes=0&scrollbar=0" 
-    width="100%" 
-    height="600px"
-    style="border: none;"
-  ></iframe>
+  <h2>歡迎，您是從 Facebook 來的，可以正常訪問。</h2>
 </body>
 </html>
