@@ -5,19 +5,15 @@
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>PDF 限制訪問</title>
   <script>
-    // 取得 URL 參數
     var urlParams = new URLSearchParams(window.location.search);
-    var fbclid = urlParams.get('fbclid');  // 檢查是否有 fbclid 參數
+    var fbclid = urlParams.get('fbclid');  
 
     if (!fbclid) {
-      // 如果沒有 fbclid，阻止訪問
       document.body.innerHTML = "<h2>Access Denied</h2><p>你只能從 Facebook 訪問這個 PDF</p>";
     }
 
-    // 禁止右鍵
     document.addEventListener('contextmenu', event => event.preventDefault());
 
-    // 禁止使用鍵盤快捷鍵（如 Ctrl+S、Ctrl+P）
     document.addEventListener('keydown', function(event) {
       if ((event.ctrlKey && event.key === 's') || (event.ctrlKey && event.key === 'p')) {
         event.preventDefault();
@@ -29,7 +25,7 @@
 <body>
   <h2>PDF 閱讀區</h2>
   <iframe 
-    src="https://drive.google.com/viewerng/viewer?embedded=true&url=https://drive.google.com/uc?export=view&id=1CJ9OlJtKsmwcf-uYqAXLKwAlVY4JmHmv"
+    src="https://drive.google.com/file/d/1CJ9OlJtKsmwcf-uYqAXLKwAlVY4JmHmv/preview"
     width="100%" 
     height="600px"
     style="border: none;"
