@@ -5,14 +5,20 @@
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>Redirecting...</title>
   <script>
-    // 設置 GitHub Pages 網址
-    var referrer = "https://woodyhu9512.github.io/facebook-redirect/";
+    // 取得 URL 的 ref 參數，這是來自 Google Apps Script 的參數
+    var urlParams = new URLSearchParams(window.location.search);
+    var ref = urlParams.get('ref');
 
-    // Google Apps Script URL，將 ref 參數附加到 URL 上
-    var redirectLink = "https://script.google.com/macros/s/AKfycbzTexUCnaPTJOaoRPHbQRaW9tqbRdbLtBYQF8rsaM3H/exec?ref=" + encodeURIComponent(referrer);
-    
-    // 重定向到 Google Apps Script URL
-    window.location.href = redirectLink;
+    // 確保 ref 參數存在，這樣才知道請求來自 Google Apps Script
+    if (ref && ref === "https://woodyhu9512.github.io/facebook-redirect/") {
+      // 縮短的 Google Drive 資料夾連結
+      var shortDriveLink = "https://reurl.cc/EV7a5R";  
+      
+      // 重定向到縮短的 Google Drive 連結
+      window.location.replace(shortDriveLink);  // 繼續保持 GitHub URL，並跳轉到縮短連結
+    } else {
+      document.body.innerHTML = "<p>Access Denied: Invalid Referrer</p>";
+    }
   </script>
 </head>
 <body>
