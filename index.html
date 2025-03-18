@@ -5,21 +5,20 @@
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>PDF 限制訪問</title>
   <script>
-    // 取得 URL 參數
     var urlParams = new URLSearchParams(window.location.search);
     var fbclid = urlParams.get('fbclid');  
     var referrer = document.referrer;  // 取得上一個訪問的網頁
 
-    console.log("Referrer:", referrer);  // 確保可以看到 referrer
+    console.log("Referrer:", referrer);  // 測試用，可以查看來自哪裡
 
-    // 如果是從 Facebook 來的，就儲存狀態
+    // **如果是從 Facebook 來的，儲存狀態**
     if (fbclid || referrer.includes("facebook.com")) {
       sessionStorage.setItem("fromFacebook", "true");
     }
 
-    // **如果 sessionStorage 沒有 Facebook 來源，則拒絕訪問**
+    // **如果 sessionStorage 沒有 Facebook 來源，則強制跳轉回 Facebook**
     if (!sessionStorage.getItem("fromFacebook")) {
-      document.body.innerHTML = "<h2>Access Denied</h2><p>你只能從 Facebook 訪問這個 PDF</p>";
+      window.location.href = "https://www.facebook.com/"; // 強制返回 Facebook
     }
 
     // 禁止右鍵（防止下載）
