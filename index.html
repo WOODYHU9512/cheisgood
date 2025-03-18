@@ -7,33 +7,29 @@
   <script>
     var urlParams = new URLSearchParams(window.location.search);
     var fbclid = urlParams.get('fbclid');  // 取得 Facebook 參數
-    var referrer = document.referrer;  // 取得上一個訪問的網頁
+    var referrer = document.referrer || "";  // 取得上一個訪問的網頁
     var userAgent = navigator.userAgent || navigator.vendor || window.opera; // 取得裝置資訊
 
     console.log("Referrer:", referrer);
     console.log("User Agent:", userAgent);
+    console.log("fbclid:", fbclid);
 
     // **Step 1：強制阻擋 Messenger 或 Facebook 以外的來源**
     if (userAgent.includes("FBAN") || userAgent.includes("FBAV") || userAgent.includes("Messenger")) {
       window.location.href = "https://www.facebook.com/groups/667112409185609";  // Facebook 社團網址
     }
 
-    // **Step 2：允許 Facebook 社團來源，阻擋所有其他來源**
-    if (!referrer.includes("facebook.com/groups/667112409185609")) {
-      window.location.href = "https://www.facebook.com/groups/667112409185609";  // Facebook 社團網址
+    // **Step 2：允許 Facebook 社團來源，或有 `fbclid` 就放行**
+    if (referrer.includes("facebook.com/groups/667112409185609") || fbclid) {
+      sessionStorage.setItem("fromFacebookGroup", "true");  // 記錄來自 Facebook 社團
     }
 
-    // **Step 3：如果是 Facebook 社團進來的，用 `sessionStorage` 記錄狀態**
-    if (fbclid || referrer.includes("facebook.com/groups/667112409185609")) {
-      sessionStorage.setItem("fromFacebookGroup", "true");
-    }
-
-    // **Step 4：如果 `sessionStorage` 沒有 Facebook 來源，則跳轉回社團**
+    // **Step 3：如果 `sessionStorage` 沒有 Facebook 來源，則跳轉回社團**
     if (!sessionStorage.getItem("fromFacebookGroup")) {
       window.location.href = "https://www.facebook.com/groups/667112409185609";  // Facebook 社團網址
     }
 
-    // **Step 5：禁止右鍵、禁止開發者工具**
+    // **Step 4：禁止右鍵、禁止開發者工具**
     document.addEventListener('contextmenu', event => event.preventDefault());
 
     document.addEventListener('keydown', function(event) {
@@ -51,32 +47,11 @@
 </head>
 <body>
   <h2>Facebook 社團專屬 PDF 閱讀</h2>
-  <canvas id="pdfCanvas"></canvas>
-
-  <script src="https://cdnjs.cloudflare.com/ajax/libs/pdf.js/2.16.105/pdf.min.js"></script>
-  <script>
-    var pdfUrl = "Sufficiency%20Proof%20at%20the%20Critical%20Point.pdf";
-
-    function renderPDF(url) {
-      var canvas = document.getElementById('pdfCanvas');
-      var ctx = canvas.getContext('2d');
-
-      pdfjsLib.getDocument(url).promise.then(function(pdf) {
-        pdf.getPage(1).then(function(page) {
-          var viewport = page.getViewport({ scale: 1.5 });
-          canvas.width = viewport.width;
-          canvas.height = viewport.height;
-          
-          var renderContext = {
-            canvasContext: ctx,
-            viewport: viewport
-          };
-          page.render(renderContext);
-        });
-      });
-    }
-
-    renderPDF(pdfUrl);
-  </script>
+  <iframe 
+    src="Sufficiency%20Proof%20at%20the%20Critical%20Point.pdf#toolbar=0&navpanes=0&scrollbar=0" 
+    width="100%" 
+    height="600px"
+    style="border: none;"
+  ></iframe>
 </body>
 </html>
