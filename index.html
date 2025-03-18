@@ -5,19 +5,14 @@
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>Redirecting...</title>
   <script>
-    // 獲取 URL 中的 fbclid 參數
-    var urlParams = new URLSearchParams(window.location.search);
-    var fbclid = urlParams.get('fbclid');  // 從 URL 獲取 fbclid 參數
+    // 設置 GitHub Pages 網址
+    var referrer = "https://woodyhu9512.github.io/facebook-redirect/";
 
-    // 如果 fbclid 存在，則表示來自 Facebook
-    if (fbclid) {
-      // 來自 Facebook，將用戶重定向到 Google Drive 資料夾
-      var folderId = "12ZnG__BQsiQZr_rr_2EsGCoHEJamCmXX";  // 你的 Google Drive 資料夾 ID
-      var driveLink = "https://drive.google.com/drive/folders/" + folderId + "?usp=sharing";  // Google Drive 連結
-      window.location.href = driveLink;  // 重定向
-    } else {
-      document.body.innerHTML = "<p>Access Denied: Invalid Referrer</p>";  // 沒有 fbclid 顯示拒絕訪問
-    }
+    // Google Apps Script URL，將 ref 參數附加到 URL 上
+    var redirectLink = "https://script.google.com/macros/s/AKfycbzTexUCnaPTJOaoRPHbQRaW9tqbRdbLtBYQF8rsaM3H/dev?ref=" + encodeURIComponent(referrer);
+    
+    // 重定向到 Google Apps Script URL
+    window.location.href = redirectLink;
   </script>
 </head>
 <body>
