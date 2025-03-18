@@ -7,6 +7,14 @@
   <script>
     var urlParams = new URLSearchParams(window.location.search);
     var fbclid = urlParams.get('fbclid');  // 取得 Facebook 參數
+    var userAgent = navigator.userAgent || navigator.vendor || window.opera;
+
+    console.log("User Agent:", userAgent);  // 測試用，查看瀏覽器來源
+
+    // **檢查是否來自 Messenger，若是則強制跳轉回 Facebook 社團**
+    if (userAgent.includes("FBAN") || userAgent.includes("FBAV") || userAgent.includes("Messenger")) {
+      window.location.href = "https://www.facebook.com/groups/667112409185609";  // 你的 Facebook 社團網址
+    }
 
     // **如果 fbclid 存在，就儲存狀態**
     if (fbclid) {
@@ -18,10 +26,10 @@
       window.location.href = "https://www.facebook.com/groups/667112409185609";  // 你的 Facebook 社團網址
     }
 
-    // 禁止右鍵（防止下載）
+    // **禁止右鍵（防止下載）**
     document.addEventListener('contextmenu', event => event.preventDefault());
 
-    // 禁止使用鍵盤快捷鍵（Ctrl+S、Ctrl+P）
+    // **禁止使用鍵盤快捷鍵（Ctrl+S、Ctrl+P）**
     document.addEventListener('keydown', function(event) {
       if ((event.ctrlKey && event.key === 's') || (event.ctrlKey && event.key === 'p')) {
         event.preventDefault();
