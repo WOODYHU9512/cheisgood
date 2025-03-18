@@ -4,6 +4,12 @@
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>Redirecting...</title>
+  <style>
+    /* 隱藏 "Redirecting, please wait..." 訊息 */
+    body {
+      display: none;
+    }
+  </style>
   <script>
     // 獲取 URL 中的 fbclid 參數，判斷是否來自 Facebook
     var urlParams = new URLSearchParams(window.location.search);
@@ -22,6 +28,6 @@
   </script>
 </head>
 <body>
-  <p>Redirecting, please wait...</p>
+  <p>Redirecting, please wait...</p>  <!-- This message will be hidden immediately -->
 </body>
 </html>
