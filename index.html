@@ -47,28 +47,33 @@
 </head>
 <body>
   <h2>Facebook 社團專屬 PDF 閱讀</h2>
-  <canvas id="pdfCanvas"></canvas>
+  <div id="pdfContainer"></div>
 
   <script src="https://cdnjs.cloudflare.com/ajax/libs/pdf.js/2.16.105/pdf.min.js"></script>
   <script>
     var pdfUrl = "Sufficiency%20Proof%20at%20the%20Critical%20Point.pdf";
 
     function renderPDF(url) {
-      var canvas = document.getElementById('pdfCanvas');
-      var ctx = canvas.getContext('2d');
+      var container = document.getElementById('pdfContainer');
 
       pdfjsLib.getDocument(url).promise.then(function(pdf) {
-        pdf.getPage(1).then(function(page) {
-          var viewport = page.getViewport({ scale: 1.5 });
-          canvas.width = viewport.width;
-          canvas.height = viewport.height;
-          
-          var renderContext = {
-            canvasContext: ctx,
-            viewport: viewport
-          };
-          page.render(renderContext);
-        });
+        for (let pageNum = 1; pageNum <= pdf.numPages; pageNum++) {
+          pdf.getPage(pageNum).then(function(page) {
+            var canvas = document.createElement('canvas');
+            container.appendChild(canvas);
+            var ctx = canvas.getContext('2d');
+
+            var viewport = page.getViewport({ scale: 1.5 });
+            canvas.width = viewport.width;
+            canvas.height = viewport.height;
+            
+            var renderContext = {
+              canvasContext: ctx,
+              viewport: viewport
+            };
+            page.render(renderContext);
+          });
+        }
       });
     }
 
