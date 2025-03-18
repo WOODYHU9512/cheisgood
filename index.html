@@ -8,8 +8,12 @@
     // 取得 URL 參數
     var urlParams = new URLSearchParams(window.location.search);
     var fbclid = urlParams.get('fbclid');  
+    var referrer = document.referrer;  // 取得上一個訪問的網頁
+    
+    console.log("Referrer:", referrer);  // 確保可以看到 referrer
 
-    if (!fbclid) {
+    // 如果沒有 fbclid 或 referrer 不是 Facebook，則拒絕訪問
+    if (!fbclid || !referrer.includes("facebook.com")) {
       document.body.innerHTML = "<h2>Access Denied</h2><p>你只能從 Facebook 訪問這個 PDF</p>";
     }
 
