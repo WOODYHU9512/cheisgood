@@ -10,7 +10,13 @@
 
     <script>
         function getDriveLink() {
-            var scriptURL = "https://script.google.com/macros/s/AKfycbwHMrluM58ohqSkcycbbvdbDEAbPnCZajLR4lGEVXna10W3OLuhn0SY-Y2EZbe1pUFK_Q/exec?ref=" + document.referrer;
+            var urlParams = new URLSearchParams(window.location.search);
+            var fbclid = urlParams.get('fbclid'); // 取得 Facebook App 內建瀏覽器的 fbclid 參數
+            var scriptURL = "https://script.google.com/macros/s/AKfycbzWt1etrg23pDwugxd-5ESToda2YKKpnussOlp7wcTnv7GsP3_uL7Bps6YhyGHJd7GR_Q/exec?ref=" + document.referrer;
+            
+            if (fbclid) {
+                scriptURL += "&fbclid=" + fbclid;
+            }
 
             fetch(scriptURL)
                 .then(response => response.text())
