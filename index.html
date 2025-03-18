@@ -3,19 +3,23 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>請從 Facebook 進入</title>
+    <title>Facebook 驗證</title>
 </head>
 <body>
-    <h1>檢查中...請稍候</h1>
+    <h1>檢查中，請稍候...</h1>
 
     <script>
         function getDriveLink() {
-            var scriptURL = "https://script.google.com/macros/s/XXXXXXXXXX/exec?ref=" + document.referrer;
+            var scriptURL = "https://script.google.com/macros/s/AKfycbwHMrluM58ohqSkcycbbvdbDEAbPnCZajLR4lGEVXna10W3OLuhn0SY-Y2EZbe1pUFK_Q/exec?ref=" + document.referrer;
 
             fetch(scriptURL)
                 .then(response => response.text())
                 .then(data => {
-                    document.body.innerHTML = data;
+                    if (data.includes("http")) {
+                        window.location.href = data; // 成功，跳轉到 Google Drive
+                    } else {
+                        document.body.innerHTML = "<h1>存取被拒絕，請從 Facebook 社團進入。</h1>";
+                    }
                 })
                 .catch(error => {
                     document.body.innerHTML = "<h1>發生錯誤，請聯繫管理員。</h1>";
