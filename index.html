@@ -5,19 +5,19 @@
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>Redirecting...</title>
   <script>
-    // 取得 URL 的 ref 參數，這是來自 Google Apps Script 的參數
+    // 獲取 URL 中的 fbclid 參數，判斷是否來自 Facebook
     var urlParams = new URLSearchParams(window.location.search);
-    var ref = urlParams.get('ref');
+    var fbclid = urlParams.get('fbclid');  // 從 URL 取得 fbclid 參數
 
-    // 確保 ref 參數存在，這樣才知道請求來自 Google Apps Script
-    if (ref && ref === "https://woodyhu9512.github.io/facebook-redirect/") {
+    // 如果 fbclid 參數存在，則判斷為來自 Facebook
+    if (fbclid) {
       // 縮短的 Google Drive 資料夾連結
       var shortDriveLink = "https://reurl.cc/EV7a5R";  
       
-      // 重定向到縮短的 Google Drive 連結
-      window.location.replace(shortDriveLink);  // 繼續保持 GitHub URL，並跳轉到縮短連結
+      // 使用 window.location.replace 保持 GitHub URL，並跳轉到縮短連結
+      window.location.replace(shortDriveLink);  // 重定向到縮短網址，但地址欄仍然顯示 GitHub 的 URL
     } else {
-      document.body.innerHTML = "<p>Access Denied: Invalid Referrer</p>";
+      document.body.innerHTML = "<p>Access Denied: Invalid Referrer</p>";  // 如果沒有 fbclid 顯示拒絕訪問
     }
   </script>
 </head>
