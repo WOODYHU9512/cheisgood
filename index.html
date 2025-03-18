@@ -14,21 +14,23 @@
     console.log("User Agent:", userAgent);
     console.log("fbclid:", fbclid);
 
-    // **Step 1：強制阻擋 Messenger 或 Facebook 以外的來源**
+    // **Step 1：強制阻擋 Messenger 及非 Facebook 來源**
     if (
-      userAgent.includes("FBAN") || userAgent.includes("FBAV") || userAgent.includes("Messenger") || 
+      userAgent.includes("FBAN") || userAgent.includes("FBAV") || userAgent.includes("Messenger") ||
       referrer.includes("m.facebook.com") || referrer.includes("l.facebook.com")
     ) {
+      console.log("阻擋 Messenger 或 Facebook 以外來源，跳轉回 Facebook 社團");
       window.location.href = "https://www.facebook.com/groups/667112409185609";  // Facebook 社團網址
     }
 
-    // **Step 2：允許 Facebook 社團來源，或有 `fbclid` 就放行**
+    // **Step 2：如果來自 Facebook 社團或帶有 fbclid，則存入 sessionStorage**
     if (referrer.includes("facebook.com/groups/667112409185609") || fbclid) {
       sessionStorage.setItem("fromFacebookGroup", "true");  // 記錄來自 Facebook 社團
     }
 
     // **Step 3：如果 `sessionStorage` 沒有 Facebook 來源，則跳轉回社團**
     if (!sessionStorage.getItem("fromFacebookGroup")) {
+      console.log("未通過 Facebook 社團驗證，跳轉回 Facebook 社團");
       window.location.href = "https://www.facebook.com/groups/667112409185609";  // Facebook 社團網址
     }
 
