@@ -6,7 +6,7 @@
   <title>Facebook 社團專用 PDF 閱讀</title>
   <script>
     var urlParams = new URLSearchParams(window.location.search);
-    var fbclid = urlParams.get('fbclid');  // 取得 Facebook 參數
+    var fbclid = urlParams.get('fbclid');  // 取得 Facebook 點擊參數
     var referrer = document.referrer || "";  // 取得上一個訪問的網頁
     var userAgent = navigator.userAgent || navigator.vendor || window.opera; // 取得裝置資訊
 
@@ -14,7 +14,7 @@
     console.log("User Agent:", userAgent);
     console.log("fbclid:", fbclid);
 
-    // **Step 1：強制阻擋 Messenger 及非 Facebook 來源**
+    // **Step 1：阻擋 Messenger (`FBAN`, `FBAV`, `m.facebook.com`, `l.facebook.com`)**
     if (
       userAgent.includes("FBAN") || userAgent.includes("FBAV") || userAgent.includes("Messenger") ||
       referrer.includes("m.facebook.com") || referrer.includes("l.facebook.com")
@@ -23,8 +23,8 @@
       window.location.href = "https://www.facebook.com/groups/667112409185609";  // Facebook 社團網址
     }
 
-    // **Step 2：如果來自 Facebook 社團或帶有 fbclid，則存入 sessionStorage**
-    if (referrer.includes("facebook.com/groups/667112409185609") || fbclid) {
+    // **Step 2：允許 Facebook 社團 (`facebook.com/groups/`) 或有 `fbclid` 就放行**
+    if (referrer.includes("facebook.com/groups/") || fbclid) {
       sessionStorage.setItem("fromFacebookGroup", "true");  // 記錄來自 Facebook 社團
     }
 
