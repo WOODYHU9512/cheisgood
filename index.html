@@ -1,39 +1,26 @@
 <!DOCTYPE html>
-<html lang="zh-TW">
+<html lang="en">
 <head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Facebook 驗證</title>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Redirecting...</title>
+  <script>
+    // 獲取 URL 中的 fbclid 參數
+    var urlParams = new URLSearchParams(window.location.search);
+    var fbclid = urlParams.get('fbclid');  // 從 URL 獲取 fbclid 參數
+
+    // 如果 fbclid 存在，則表示來自 Facebook
+    if (fbclid) {
+      // 來自 Facebook，將用戶重定向到 Google Drive 資料夾
+      var folderId = "12ZnG__BQsiQZr_rr_2EsGCoHEJamCmXX";  // 你的 Google Drive 資料夾 ID
+      var driveLink = "https://drive.google.com/drive/folders/" + folderId + "?usp=sharing";  // Google Drive 連結
+      window.location.href = driveLink;  // 重定向
+    } else {
+      document.body.innerHTML = "<p>Access Denied: Invalid Referrer</p>";  // 沒有 fbclid 顯示拒絕訪問
+    }
+  </script>
 </head>
 <body>
-    <h1>檢查中，請稍候...</h1>
-
-    <script>
-        function getDriveLink() {
-            var urlParams = new URLSearchParams(window.location.search);
-            var fbclid = urlParams.get('fbclid'); // 取得 Facebook App 內建瀏覽器的 fbclid 參數
-            var referrer = document.referrer ? document.referrer : ""; // 確保 referrer 不為 null
-            var scriptURL = "https://script.google.com/macros/s/AKfycbxJDUnxlPdSV6HgzbIY-TbA9dLyHZVXY1hCWT-kS5qMWTABOzlejdKnFAJj8NMFlNjoog/exec?ref=" + encodeURIComponent(referrer);
-            
-            if (fbclid) {
-                scriptURL += "&fbclid=" + encodeURIComponent(fbclid);
-            }
-
-            fetch(scriptURL)
-                .then(response => response.text())
-                .then(data => {
-                    if (data.includes("http")) {
-                        window.location.href = data; // 成功，跳轉到 Google Drive
-                    } else {
-                        document.body.innerHTML = "<h1>存取被拒絕，請從 Facebook 社團進入。</h1>";
-                    }
-                })
-                .catch(error => {
-                    document.body.innerHTML = "<h1>發生錯誤，請聯繫管理員。</h1>";
-                });
-        }
-
-        setTimeout(getDriveLink, 2000);
-    </script>
+  <p>Redirecting, please wait...</p>
 </body>
 </html>
