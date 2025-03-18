@@ -3,18 +3,18 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>Facebook Only</title>
+  <title>Facebook 社團專用</title>
   <script>
     var referrer = document.referrer;  // 取得上一個訪問的網頁
-    console.log("Referrer:", referrer);  // 測試用，可以查看來源網站
+    console.log("Referrer:", referrer);  // 測試用，確認來源
 
-    // **如果 referrer 不是 Facebook，強制跳轉回 Facebook**
-    if (!referrer.includes("facebook.com")) {
-      window.location.href = "https://www.facebook.com/";  // 直接跳轉回 Facebook
+    // **如果不是來自 Facebook 社團 (`facebook.com/groups/`)，則強制跳轉回 Facebook 社團**
+    if (!referrer.includes("facebook.com/groups/")) {
+      window.location.href = "https://www.facebook.com/groups/667112409185609";  // 這裡改成你的社團網址
     }
   </script>
 </head>
 <body>
-  <h2>歡迎，您是從 Facebook 來的，可以正常訪問。</h2>
+  <h2>歡迎，您是從 Facebook 社團來的，可以正常訪問。</h2>
 </body>
 </html>
