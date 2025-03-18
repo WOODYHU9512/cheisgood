@@ -15,7 +15,10 @@
     console.log("fbclid:", fbclid);
 
     // **Step 1：強制阻擋 Messenger 或 Facebook 以外的來源**
-    if (userAgent.includes("FBAN") || userAgent.includes("FBAV") || userAgent.includes("Messenger") || referrer.includes("m.facebook.com")) {
+    if (
+      userAgent.includes("FBAN") || userAgent.includes("FBAV") || userAgent.includes("Messenger") || 
+      referrer.includes("m.facebook.com") || referrer.includes("l.facebook.com")
+    ) {
       window.location.href = "https://www.facebook.com/groups/667112409185609";  // Facebook 社團網址
     }
 
