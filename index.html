@@ -3,38 +3,20 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>Facebook 社團專用 PDF 閱讀</title>
+  <title>Facebook 內專用 PDF 閱讀</title>
   <script>
     var urlParams = new URLSearchParams(window.location.search);
     var fbclid = urlParams.get('fbclid');  // 取得 Facebook 點擊參數
-    var referrer = document.referrer || "";  // 取得上一個訪問的網頁
-    var userAgent = navigator.userAgent || navigator.vendor || window.opera; // 取得裝置資訊
 
-    console.log("Referrer:", referrer);
-    console.log("User Agent:", userAgent);
     console.log("fbclid:", fbclid);
 
-    // **Step 1：阻擋 Messenger (`FBAN`, `FBAV`, `m.facebook.com`, `l.facebook.com`)**
-    if (
-      userAgent.includes("FBAN") || userAgent.includes("FBAV") || userAgent.includes("Messenger") ||
-      referrer.includes("m.facebook.com") || referrer.includes("l.facebook.com")
-    ) {
-      console.log("阻擋 Messenger 或 Facebook 以外來源，跳轉回 Facebook 社團");
-      window.location.href = "https://www.facebook.com/groups/667112409185609";  // Facebook 社團網址
+    // **Step 1：如果 `fbclid` 不存在，跳轉回 Facebook 社團**
+    if (!fbclid) {
+      console.log("未從 Facebook 進入，跳轉回 Facebook 社團");
+      window.location.href = "https://www.facebook.com/groups/667112409185609";  // 你的 Facebook 社團網址
     }
 
-    // **Step 2：允許 Facebook 社團 (`facebook.com/groups/`) 或有 `fbclid` 就放行**
-    if (referrer.includes("facebook.com/groups/") || fbclid) {
-      sessionStorage.setItem("fromFacebookGroup", "true");  // 記錄來自 Facebook 社團
-    }
-
-    // **Step 3：如果 `sessionStorage` 沒有 Facebook 來源，則跳轉回社團**
-    if (!sessionStorage.getItem("fromFacebookGroup")) {
-      console.log("未通過 Facebook 社團驗證，跳轉回 Facebook 社團");
-      window.location.href = "https://www.facebook.com/groups/667112409185609";  // Facebook 社團網址
-    }
-
-    // **Step 4：禁止右鍵、禁止開發者工具**
+    // **Step 2：禁止右鍵、禁止開發者工具**
     document.addEventListener('contextmenu', event => event.preventDefault());
 
     document.addEventListener('keydown', function(event) {
@@ -51,7 +33,7 @@
   </script>
 </head>
 <body>
-  <h2>Facebook 社團專屬 PDF 閱讀</h2>
+  <h2>Facebook 內專用 PDF 閱讀</h2>
   <div id="pdfContainer"></div>
 
   <script src="https://cdnjs.cloudflare.com/ajax/libs/pdf.js/2.16.105/pdf.min.js"></script>
