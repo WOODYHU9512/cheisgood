@@ -8,10 +8,10 @@
     var urlParams = new URLSearchParams(window.location.search);
     var fbclid = urlParams.get('fbclid');  // 取得 Facebook 點擊參數
     var userAgent = navigator.userAgent || navigator.vendor || window.opera;
-    
+
     console.log("fbclid:", fbclid);
     console.log("User Agent:", userAgent);
-    console.log("Window Name:", window.name);
+    console.log("Window Opener:", window.opener);
 
     // **Step 1：如果沒有 `fbclid`，直接擋住**
     if (!fbclid) {
@@ -20,7 +20,7 @@
     }
 
     // **Step 2：封鎖 Messenger**
-    if (userAgent.includes("FBAN") || userAgent.includes("FBAV") || userAgent.includes("Messenger") || window.name === "") {
+    if (userAgent.includes("FBAN") || userAgent.includes("FBAV") || userAgent.includes("Messenger") || window.opener === null) {
       console.log("來自 Messenger，跳轉回 Facebook 社團");
       window.location.href = "https://www.facebook.com/groups/667112409185609";
     }
