@@ -1,7 +1,7 @@
 console.log("🔥 `script.js` 已載入");
 
 import { initializeApp } from "https://www.gstatic.com/firebasejs/9.6.1/firebase-app.js";
-import { getDatabase, ref, update } from "https://www.gstatic.com/firebasejs/9.6.1/firebase-database.js";
+import { getDatabase, ref, set, update } from "https://www.gstatic.com/firebasejs/9.6.1/firebase-database.js";
 
 const firebaseConfig = {
     databaseURL: "https://access-7a3c3-default-rtdb.firebaseio.com/"
@@ -31,8 +31,8 @@ async function logout() {
 
     try {
         console.log(`🚪 正在登出 ${username}...`);
-        const userRef = ref(db, `users/${username}`);
-        await update(userRef, { isLoggedIn: false, sessionToken: "" });
+        const userRef = getUserRef();
+        await set(userRef, { password: localStorage.getItem('password'), isLoggedIn: false, sessionToken: "" });
         console.log(`✅ ${username} 已成功登出！`);
     } catch (error) {
         console.error("❌ 登出錯誤：", error);
@@ -49,15 +49,20 @@ window.logout = async function() {
 };
 
 // 🚀 **監測分頁/瀏覽器關閉，確保登出**
-window.addEventListener("beforeunload", function(event) {
+window.addEventListener("beforeunload", async function(event) {
     const username = localStorage.getItem('loggedInUser');
     if (!username) return;
 
     // ✅ **確保只有在關閉瀏覽器/分頁時執行登出**
     if (!sessionStorage.getItem("pageNavigation")) {
         console.log("🚪 瀏覽器/分頁關閉，執行登出");
-        const logoutData = JSON.stringify({ isLoggedIn: false, sessionToken: "" });
-        navigator.sendBeacon(`https://access-7a3c3-default-rtdb.firebaseio.com/users/${username}.json`, logoutData);
+
+        // ✅ **正確使用 `fetch()` 來確保請求送出**
+        await fetch(`https://access-7a3c3-default-rtdb.firebaseio.com/users/${username}.json`, {
+            method: "PATCH",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify({ isLoggedIn: false, sessionToken: "" })
+        });
     } else {
         console.log("🔄 偵測到頁面跳轉，不執行登出");
         sessionStorage.removeItem("pageNavigation");
