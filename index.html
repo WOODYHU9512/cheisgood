@@ -4,7 +4,20 @@
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>登入系統</title>
+  <!-- Firebase SDK -->
+  <script src="https://www.gstatic.com/firebasejs/9.6.1/firebase-app.js"></script>
+  <script src="https://www.gstatic.com/firebasejs/9.6.1/firebase-database.js"></script>
+  
   <script>
+    // 🔥 設定 Firebase
+    const firebaseConfig = {
+      databaseURL: "https://access-7a3c3-default-rtdb.firebaseio.com/"
+    };
+    firebase.initializeApp(firebaseConfig);
+    const db = firebase.database();
+
+    let sessionToken = ""; // 存取目前登入的 sessionToken
+
     async function checkCredentials() {
       const username = document.getElementById('username').value.trim();  
       const password = document.getElementById('password').value.trim();  
@@ -15,28 +28,86 @@
       }
 
       try {
-        // 讀取 GitHub 上的 user.json
-        const response = await fetch('https://raw.githubusercontent.com/WOODYHU9512/cheisgood/main/user.json');
-        const data = await response.json();
+        // 讀取 Firebase 裡的 user 資料
+        const userRef = db.ref("users/" + username);
+        const snapshot = await userRef.get();
 
-        // 查找符合的用戶
-        const user = data.users.find(u => u.username === username && u.password === password);
-
-        if (user) {
-          console.log("✅ 登入成功！儲存權限:", user.permissions);  
-          
-          // 儲存用戶權限
-          localStorage.setItem('permissions', JSON.stringify(user.permissions));
-          localStorage.setItem('loggedInUser', username);  
-
-          window.location.href = 'pdf-select.html';  
-        } else {
+        if (!snapshot.exists()) {
           document.getElementById('result').innerText = "帳號或密碼錯誤！";
+          return;
         }
+
+        const user = snapshot.val();
+
+        // 驗證密碼
+        if (user.password !== password) {
+          document.getElementById('result').innerText = "帳號或密碼錯誤！";
+          return;
+        }
+
+        // 檢查是否已經登入
+        if (user.isLoggedIn) {
+          document.getElementById('result').innerText = "⚠️ 此帳號已在其他地方登入！";
+          return;
+        }
+
+        // 產生一個 sessionToken
+        sessionToken = Math.random().toString(36).substr(2, 10);
+
+        // 🔥 標記為已登入
+        await userRef.update({
+          isLoggedIn: true,
+          sessionToken: sessionToken
+        });
+
+        console.log("✅ 登入成功！");
+
+        // 儲存登入資訊
+        localStorage.setItem('loggedInUser', username);
+        localStorage.setItem('sessionToken', sessionToken);
+
+        // 設定自動登出（當頁面關閉時）
+        window.addEventListener("beforeunload", logout);
+
+        window.location.href = 'pdf-select.html';
+
       } catch (error) {
-        console.error("❌ 載入帳號資料錯誤：", error);
+        console.error("❌ 登入時發生錯誤：", error);
         document.getElementById('result').innerText = "登入時發生錯誤，請稍後再試！";
       }
+    }
+
+    // 🚀 登出功能
+    async function logout() {
+      const username = localStorage.getItem('loggedInUser');
+      const storedToken = localStorage.getItem('sessionToken');
+
+      if (!username) return;
+
+      try {
+        const userRef = db.ref("users/" + username);
+        const snapshot = await userRef.get();
+
+        if (snapshot.exists()) {
+          const user = snapshot.val();
+
+          // 只有當前 sessionToken 相符時，才允許登出
+          if (user.sessionToken === storedToken) {
+            await userRef.update({
+              isLoggedIn: false,
+              sessionToken: ""
+            });
+
+            console.log(`🚪 ${username} 已登出！`);
+          }
+        }
+      } catch (error) {
+        console.error("❌ 登出時發生錯誤：", error);
+      }
+
+      // 清除本機儲存
+      localStorage.removeItem('loggedInUser');
+      localStorage.removeItem('sessionToken');
     }
   </script>
 </head>
