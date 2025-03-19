@@ -105,11 +105,11 @@ if (window.location.pathname.includes("pdf-select") || window.location.pathname.
         startIdleTimer();
     }
 
+    // 🚀 設定跳轉標誌
+    window.sessionStorage.setItem('navigated', true);
+
     // 🚀 更新 `localStorage` 記錄最後的活動時間
     window.addEventListener("beforeunload", () => {
         localStorage.setItem("lastActivity", Date.now());
     });
-
-    // 🚀 設定跳轉標誌
-    window.sessionStorage.setItem('navigated', true);
 }
