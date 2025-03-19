@@ -33,77 +33,22 @@
       color: white;
       margin-top: 20px;
     }
-    /* 禁止選取、右鍵 */
-    body, canvas {
-      user-select: none;
-      -webkit-user-select: none;
-      -moz-user-select: none;
-      -ms-user-select: none;
-    }
-    /* 防止截圖 */
-    .noScreenshot {
-      position: fixed;
-      top: 0;
-      left: 0;
-      width: 100vw;
-      height: 100vh;
-      background: rgba(255, 255, 255, 0);
-      z-index: 9999;
-      pointer-events: none;
-    }
   </style>
 
   <script>
-    let pdfDoc = null;
-    let pageNum = 1;
-    let isRendering = false;
-
-    function renderPage(num) {
-      if (isRendering) return;
-      isRendering = true;
-
-      pdfDoc.getPage(num).then(function(page) {
-        let canvas = document.createElement('canvas');
-        let ctx = canvas.getContext('2d', { willReadFrequently: true });
-
-        let viewport = page.getViewport({ scale: 1.8 });
-        canvas.width = viewport.width;
-        canvas.height = viewport.height;
-
-        let renderContext = {
-          canvasContext: ctx,
-          viewport: viewport
-        };
-
-        page.render(renderContext).promise.then(() => {
-          document.getElementById('pdfContainer').appendChild(canvas);
-          isRendering = false;
-          pageNum++;
-
-          if (pageNum <= pdfDoc.numPages) {
-            setTimeout(() => renderPage(pageNum), 500); // 延遲載入下一頁，減少當機風險
-          } else {
-            document.getElementById('loading').innerText = "✅ PDF 讀取完成！";
-          }
-        });
-      });
-    }
-
     function loadPDF() {
-      const permissions = JSON.parse(localStorage.getItem('permissions'));
       const currentPDF = localStorage.getItem('currentPDF');
 
       console.log("📄 嘗試開啟 PDF:", currentPDF);
-      console.log("🔍 當前權限:", permissions);
 
-      if (!permissions || !currentPDF) {
+      if (!currentPDF) {
         alert("🚫 您無權訪問此解答！");
-        console.log("❌ 權限拒絕訪問！", currentPDF, permissions);
+        console.error("❌ 錯誤：currentPDF 為 null 或未設定");
         window.location.href = 'index.html';
         return;
       }
 
-      // **修正 GitHub Raw 連結**
+      // **確保 currentPDF 與 pdfLinks 鍵名一致**
       const pdfLinks = {
         "106~114 台大單操輸送": "https://raw.githubusercontent.com/WOODYHU9512/cheisgood/main/106~114%20台大單操輸送.pdf",
         "106~114 台大化熱化反": "https://raw.githubusercontent.com/WOODYHU9512/cheisgood/main/106~114%20台大化熱化反.pdf",
@@ -122,16 +67,22 @@
       if (!pdfLinks[currentPDF]) {
         alert("❌ 找不到該 PDF 連結！");
         console.error("❌ 錯誤：", currentPDF, "不在 pdfLinks 內");
+        console.log("📌 確認 `currentPDF`:", currentPDF);
+        console.log("📌 `pdfLinks` 鍵名:", Object.keys(pdfLinks));
         window.location.href = 'index.html';
         return;
       }
 
       const pdfUrl = pdfLinks[currentPDF];
+
       document.getElementById('loading').innerText = "🔄 載入中... 請稍候";
 
       pdfjsLib.getDocument(pdfUrl).promise.then(function(pdf) {
-        pdfDoc = pdf;
-        renderPage(pageNum);
+        console.log("✅ PDF 成功載入:", pdfUrl);
+        document.getElementById('loading').innerText = "✅ PDF 讀取完成！";
+      }).catch(function(error) {
+        console.error("❌ PDF 加載錯誤：", error);
+        document.getElementById('loading').innerText = "❌ 無法載入 PDF";
       });
     }
 
