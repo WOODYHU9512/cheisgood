@@ -4,33 +4,24 @@
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>PDF 觀看</title>
-  <script src="https://cdnjs.cloudflare.com/ajax/libs/pdf.js/2.16.105/pdf.min.js"></script>
 
   <style>
     body {
       margin: 0;
       overflow: hidden;
+      background-color: black;
     }
-    #pdfContainer {
+    .pdf-container {
       width: 100vw;
       height: 100vh;
-      display: flex;
-      align-items: center;
-      justify-content: center;
-      background: black;
+      position: relative;
     }
-    canvas {
-      max-width: 100%;
-      max-height: 100%;
+    iframe {
+      width: 100%;
+      height: 100%;
+      border: none;
     }
-    /* 禁止選取、右鍵 */
-    body, canvas {
-      user-select: none;
-      -webkit-user-select: none;
-      -moz-user-select: none;
-      -ms-user-select: none;
-    }
-    /* 防止截圖 */
+    /* 防止截圖（透明遮罩） */
     .noScreenshot {
       position: fixed;
       top: 0;
@@ -44,11 +35,11 @@
   </style>
 
   <script>
-    function renderPDF() {
+    function loadPDF() {
       const permissions = JSON.parse(localStorage.getItem('permissions'));
-      const currentPDF = localStorage.getItem('currentPDF');  
+      const currentPDF = localStorage.getItem('currentPDF');
       const subjectName = currentPDF ? currentPDF.replace('全部.pdf', '') : null;
-
+      
       console.log("📄 嘗試開啟 PDF:", currentPDF);
       console.log("🔍 當前權限:", permissions);
       console.log("📌 解析出的科目名稱:", subjectName);
@@ -60,29 +51,24 @@
         return;
       }
 
-      // PDF 來源 URL
-      const pdfUrl = `https://raw.githubusercontent.com/WOODYHU9512/cheisgood/main/${currentPDF}`;
-      var container = document.getElementById('pdfContainer');
+      // Google Drive PDF 連結對應
+      const pdfLinks = {
+        "中央": "https://drive.google.com/file/d/10LVz6EyEv7ayH1eONNWtCEIMYJqkiT7H/preview",
+        "中興": "https://drive.google.com/file/d/16TdDSc_urotuDj0gy4tnK4tNoUi9IFTr/preview",
+        "台大": "https://drive.google.com/file/d/14wfm0n7kU9MARvQHtkpdhiBW0EdDf92E/preview",
+        "台科大": "https://drive.google.com/file/d/1lzZzdIDP68dtp2K1_eY3El4_ssnf7Tfc/preview",
+        "成大": "https://drive.google.com/file/d/10-3_XiDfqtdCd2zyHYbIpfV0sOz2rNWk/preview",
+        "清大": "https://drive.google.com/file/d/1zkKxiPTMYDcFQMIsEU0YyfhtWTQh_ML0/preview"
+      };
 
-      pdfjsLib.getDocument(pdfUrl).promise.then(function(pdf) {
-        for (let pageNum = 1; pageNum <= pdf.numPages; pageNum++) {
-          pdf.getPage(pageNum).then(function(page) {
-            var canvas = document.createElement('canvas');
-            container.appendChild(canvas);
-            var ctx = canvas.getContext('2d', { willReadFrequently: true });
+      if (!pdfLinks[subjectName]) {
+        alert("❌ 找不到該科目的 PDF 連結！");
+        window.location.href = 'index.html';
+        return;
+      }
 
-            var viewport = page.getViewport({ scale: 2.0 });
-            canvas.width = viewport.width;
-            canvas.height = viewport.height;
-
-            var renderContext = {
-              canvasContext: ctx,
-              viewport: viewport
-            };
-            page.render(renderContext);
-          });
-        }
-      });
+      // 設定 iframe 來源
+      document.getElementById('pdfFrame').src = pdfLinks[subjectName];
     }
 
     // 禁止右鍵
@@ -104,7 +90,7 @@
       }
     });
 
-    // 禁止截圖（顯示透明遮罩）
+    // 禁止截圖（透明遮罩）
     function preventScreenshot() {
       const overlay = document.createElement('div');
       overlay.classList.add('noScreenshot');
@@ -113,12 +99,14 @@
 
     window.onload = function() {
       preventScreenshot();
-      renderPDF();
+      loadPDF();
     };
   </script>
 </head>
 <body>
   <h2 style="text-align:center; color:white;">PDF 觀看</h2>
-  <div id="pdfContainer"></div>
+  <div class="pdf-container">
+    <iframe id="pdfFrame"></iframe>
+  </div>
 </body>
 </html>
