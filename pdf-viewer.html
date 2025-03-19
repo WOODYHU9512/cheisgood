@@ -4,45 +4,23 @@
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>PDF 觀看</title>
-  <script src="https://cdnjs.cloudflare.com/ajax/libs/pdf.js/2.16.105/pdf.min.js"></script>
   <script>
     function renderPDF() {
       const permissions = JSON.parse(localStorage.getItem('permissions'));
       const currentPDF = localStorage.getItem('currentPDF');  
       const subjectName = currentPDF ? currentPDF.replace('全部.pdf', '') : null; 
 
-      console.log("目前正在嘗試開啟:", currentPDF);
-      console.log("當前權限:", permissions);
+      console.log("📄 嘗試開啟 PDF:", currentPDF);
+      console.log("🔍 當前權限:", permissions);
 
       if (!permissions || !subjectName || !permissions[subjectName]) {
-        alert("您無權訪問此解答！");
+        alert("🚫 您無權訪問此解答！");
         window.location.href = 'index.html';
         return;
       }
 
-      // 正確載入 PDF
       const pdfUrl = `https://raw.githubusercontent.com/WOODYHU9512/cheisgood/main/${currentPDF}`;
-      var container = document.getElementById('pdfContainer');
-
-      pdfjsLib.getDocument(pdfUrl).promise.then(function(pdf) {
-        for (let pageNum = 1; pageNum <= pdf.numPages; pageNum++) {
-          pdf.getPage(pageNum).then(function(page) {
-            var canvas = document.createElement('canvas');
-            container.appendChild(canvas);
-            var ctx = canvas.getContext('2d', { willReadFrequently: true });
-
-            var viewport = page.getViewport({ scale: 3.0 });
-            canvas.width = viewport.width;
-            canvas.height = viewport.height;
-
-            var renderContext = {
-              canvasContext: ctx,
-              viewport: viewport
-            };
-            page.render(renderContext);
-          });
-        }
-      });
+      window.location.href = pdfUrl;
     }
 
     window.onload = renderPDF;
@@ -50,6 +28,5 @@
 </head>
 <body>
   <h2>PDF 觀看</h2>
-  <div id="pdfContainer"></div>
 </body>
 </html>
