@@ -33,20 +33,29 @@
       color: white;
       margin-top: 20px;
     }
+    #errorContainer {
+      color: red;
+      font-size: 18px;
+      margin-top: 20px;
+      display: none;
+    }
   </style>
 
   <script>
     function loadPDF() {
-      const currentPDF = localStorage.getItem('currentPDF');
+      let currentPDF = localStorage.getItem('currentPDF');
 
       console.log("📄 嘗試開啟 PDF:", currentPDF);
 
       if (!currentPDF) {
-        alert("🚫 您無權訪問此解答！");
+        document.getElementById('loading').innerText = "🚫 您無權訪問此解答！";
         console.error("❌ 錯誤：currentPDF 為 null 或未設定");
-        window.location.href = 'index.html';
+        document.getElementById('errorContainer').innerText = "❌ 找不到 currentPDF，請確認登入流程是否正確！";
+        document.getElementById('errorContainer').style.display = "block";
         return;
       }
+
+      currentPDF = currentPDF.trim(); // 去除多餘空格
 
       // **確保 currentPDF 與 pdfLinks 鍵名一致**
       const pdfLinks = {
@@ -64,17 +73,23 @@
         "106-114 中興化熱化反": "https://raw.githubusercontent.com/WOODYHU9512/cheisgood/main/106-114%20中興化熱化反.pdf"
       };
 
-      if (!pdfLinks[currentPDF]) {
-        alert("❌ 找不到該 PDF 連結！");
-        console.error("❌ 錯誤：", currentPDF, "不在 pdfLinks 內");
-        console.log("📌 確認 `currentPDF`:", currentPDF);
+      // **檢查 currentPDF 是否在 pdfLinks 內**
+      const foundKey = Object.keys(pdfLinks).find(key => key.trim() === currentPDF);
+
+      if (!foundKey) {
+        document.getElementById('loading').innerText = "❌ 找不到該 PDF 連結！";
+        document.getElementById('errorContainer').innerHTML = `
+          ❌ currentPDF：<b>${currentPDF}</b> 不在 PDF 列表內！<br>
+          📌 可用的 PDF 鍵名：<br>
+          <pre>${JSON.stringify(Object.keys(pdfLinks), null, 2)}</pre>
+        `;
+        document.getElementById('errorContainer').style.display = "block";
+        console.error("❌ 錯誤：currentPDF", currentPDF, "不在 pdfLinks 內");
         console.log("📌 `pdfLinks` 鍵名:", Object.keys(pdfLinks));
-        window.location.href = 'index.html';
         return;
       }
 
-      const pdfUrl = pdfLinks[currentPDF];
-
+      const pdfUrl = pdfLinks[foundKey];
       document.getElementById('loading').innerText = "🔄 載入中... 請稍候";
 
       pdfjsLib.getDocument(pdfUrl).promise.then(function(pdf) {
@@ -93,5 +108,6 @@
   <h2>📖 PDF 觀看</h2>
   <div id="loading">🔄 載入中... 請稍候</div>
   <div id="pdfContainer"></div>
+  <div id="errorContainer"></div>
 </body>
 </html>
