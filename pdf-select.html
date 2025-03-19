@@ -3,32 +3,49 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>登入系統</title>
+  <title>選擇考古題觀看</title>
   <script>
-    // 這個函數會被觸發，當用戶點擊"登入"按鈕時
-    function checkCredentials() {
-      const username = document.getElementById('username').value;  // 取得帳號
-      const password = document.getElementById('password').value;  // 取得密碼
+    function loadPDFOptions() {
+      const permissions = JSON.parse(localStorage.getItem('permissions')); // 取得用戶權限
+      const container = document.getElementById('answerContainer');
+      
+      // 檢查權限並顯示對應的考古題按鈕
+      const subjects = [
+        { name: "台大", file: "台大全部.pdf" },
+        { name: "清大", file: "清大全部.pdf" },
+        { name: "成大", file: "成大全部.pdf" },
+        { name: "台科", file: "台科大全部.pdf" },
+        { name: "中央", file: "中央全部.pdf" },
+        { name: "中興", file: "中興全部.pdf" }
+      ];
 
-      // 呼叫 Google Apps Script 的 Web App，並傳遞帳號密碼進行驗證
-      google.script.run.withSuccessHandler(function(permissions) {
-        if (permissions) {
-          // 如果驗證成功，儲存權限並跳轉
-          localStorage.setItem('permissions', JSON.stringify(permissions)); // 儲存權限
-          window.location.href = 'pdf-select.html';  // 跳轉到選擇解答頁面
-        } else {
-          alert('帳號或密碼錯誤');  // 驗證失敗顯示錯誤訊息
+      subjects.forEach(subject => {
+        if (permissions && permissions[subject.name] === true) {
+          let button = document.createElement('button');
+          button.innerText = "觀看 " + subject.name + " 解答";
+          button.onclick = function() { checkAccessAndShowPDF(subject.file); };
+          container.appendChild(button);
         }
-      }).checkCredentials(username, password);  // 呼叫 Google Apps Script 函數進行驗證
+      });
     }
+
+    // 檢查用戶是否有權限，然後顯示對應的 PDF
+    function checkAccessAndShowPDF(pdfFile) {
+      const permissions = JSON.parse(localStorage.getItem('permissions'));
+
+      if (!permissions || !permissions[pdfFile.replace('.pdf', '')]) {
+        alert("您無權訪問此解答！");
+        window.location.href = 'index.html'; // 無權訪問，跳回登入頁
+      } else {
+        window.location.href = `pdf-viewer.html?file=${pdfFile}`; // 具有權限，跳轉到 PDF 頁面
+      }
+    }
+
+    window.onload = loadPDFOptions; // 頁面加載時檢查權限並顯示選項
   </script>
 </head>
 <body>
-  <h2>請輸入帳號和密碼</h2>
-  <form onsubmit="event.preventDefault(); checkCredentials();">
-    <input type="text" id="username" placeholder="帳號" required /><br />
-    <input type="password" id="password" placeholder="密碼" required /><br />
-    <button type="submit">登入</button>
-  </form>
+  <h2>選擇你要查看的考古題</h2>
+  <div id="answerContainer"></div>
 </body>
 </html>
