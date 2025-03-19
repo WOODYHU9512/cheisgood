@@ -103,24 +103,25 @@
         return;
       }
 
-      // **更新後的 PDF 連結對應表**
+      // **修正 GitHub Raw 連結**
       const pdfLinks = {
-        "106~114 台大單操輸送": "https://raw.githubusercontent.com/WOODYHU9512/cheisgood/main/106~114%20%E5%8F%B0%E5%A4%A7%E5%96%AE%E6%93%8D%E8%BC%B8%E9%80%81.pdf",
-        "106~114 台大化熱化反": "https://raw.githubusercontent.com/WOODYHU9512/cheisgood/main/106~114%20%E5%8F%B0%E5%A4%A7%E5%8C%96%E7%86%B1%E5%8C%96%E5%8F%8D.pdf",
-        "106~114 台大工數": "https://raw.githubusercontent.com/WOODYHU9512/cheisgood/main/106~114%20%E5%8F%B0%E5%A4%A7%E5%B7%A5%E6%95%B8.pdf",
-        "106~114 清大單操輸送": "https://raw.githubusercontent.com/WOODYHU9512/cheisgood/main/106~114%20%E6%B8%85%E5%A4%A7%E5%96%AE%E6%93%8D%E8%BC%B8%E9%80%81.pdf",
-        "106~114 清大化熱化反": "https://raw.githubusercontent.com/WOODYHU9512/cheisgood/main/106~114%20%E6%B8%85%E5%A4%A7%E5%8C%96%E7%86%B1%E5%8C%96%E5%8F%8D.pdf",
-        "106-114 成大單操輸送": "https://raw.githubusercontent.com/WOODYHU9512/cheisgood/main/106-114%20%E6%88%90%E5%A4%A7%E5%96%AE%E6%93%8D%E8%BC%B8%E9%80%81.pdf",
-        "106-114 成大化熱": "https://raw.githubusercontent.com/WOODYHU9512/cheisgood/main/106-114%20%E6%88%90%E5%A4%A7%E5%8C%96%E7%86%B1.pdf",
-        "106-114 成大化反": "https://raw.githubusercontent.com/WOODYHU9512/cheisgood/main/106-114%20%E6%88%90%E5%A4%A7%E5%8C%96%E5%8F%8D.pdf",
-        "106-114 台科大工數與單操輸送": "https://raw.githubusercontent.com/WOODYHU9512/cheisgood/main/106-114%20%E5%8F%B0%E7%A7%91%E5%A4%A7%E5%B7%A5%E6%95%B8%E8%88%87%E5%96%AE%E6%93%8D%E8%BC%B8%E9%80%81.pdf",
-        "106~114 台科大化熱化反": "https://raw.githubusercontent.com/WOODYHU9512/cheisgood/main/106~114%20%E5%8F%B0%E7%A7%91%E5%A4%A7%E5%8C%96%E7%86%B1%E5%8C%96%E5%8F%8D.pdf",
-        "106-114 中興工程數學與輸送現象": "https://raw.githubusercontent.com/WOODYHU9512/cheisgood/main/106-114%20%E4%B8%AD%E8%88%88%E5%B7%A5%E7%A8%8B%E6%95%B8%E5%AD%B8%E8%88%87%E8%BC%B8%E9%80%81%E7%8F%BE%E8%B1%A1.pdf",
-        "106-114 中興化熱化反": "https://raw.githubusercontent.com/WOODYHU9512/cheisgood/main/106-114%20%E4%B8%AD%E8%88%88%E5%8C%96%E7%86%B1%E5%8C%96%E5%8F%8D.pdf"
+        "106~114 台大單操輸送": "https://raw.githubusercontent.com/WOODYHU9512/cheisgood/main/106~114%20台大單操輸送.pdf",
+        "106~114 台大化熱化反": "https://raw.githubusercontent.com/WOODYHU9512/cheisgood/main/106~114%20台大化熱化反.pdf",
+        "106~114 台大工數": "https://raw.githubusercontent.com/WOODYHU9512/cheisgood/main/106~114%20台大工數.pdf",
+        "106~114 清大單操輸送": "https://raw.githubusercontent.com/WOODYHU9512/cheisgood/main/106~114%20清大單操輸送.pdf",
+        "106~114 清大化熱化反": "https://raw.githubusercontent.com/WOODYHU9512/cheisgood/main/106~114%20清大化熱化反.pdf",
+        "106-114 成大單操輸送": "https://raw.githubusercontent.com/WOODYHU9512/cheisgood/main/106-114%20成大單操輸送.pdf",
+        "106-114 成大化熱": "https://raw.githubusercontent.com/WOODYHU9512/cheisgood/main/106-114%20成大化熱.pdf",
+        "106-114 成大化反": "https://raw.githubusercontent.com/WOODYHU9512/cheisgood/main/106-114%20成大化反.pdf",
+        "106-114 台科大工數與單操輸送": "https://raw.githubusercontent.com/WOODYHU9512/cheisgood/main/106-114%20台科大工數與單操輸送.pdf",
+        "106~114 台科大化熱化反": "https://raw.githubusercontent.com/WOODYHU9512/cheisgood/main/106~114%20台科大化熱化反.pdf",
+        "106-114 中興工程數學與輸送現象": "https://raw.githubusercontent.com/WOODYHU9512/cheisgood/main/106-114%20中興工程數學與輸送現象.pdf",
+        "106-114 中興化熱化反": "https://raw.githubusercontent.com/WOODYHU9512/cheisgood/main/106-114%20中興化熱化反.pdf"
       };
 
       if (!pdfLinks[currentPDF]) {
         alert("❌ 找不到該 PDF 連結！");
+        console.error("❌ 錯誤：", currentPDF, "不在 pdfLinks 內");
         window.location.href = 'index.html';
         return;
       }
