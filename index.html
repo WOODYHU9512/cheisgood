@@ -6,28 +6,30 @@
   <title>登入系統</title>
   <script>
     async function checkCredentials() {
-      const username = document.getElementById('username').value.trim();  // 取得帳號
-      const password = document.getElementById('password').value.trim();  // 取得密碼
+      const username = document.getElementById('username').value.trim();  
+      const password = document.getElementById('password').value.trim();  
 
-      // 確保用戶有輸入帳號密碼
       if (!username || !password) {
         document.getElementById('result').innerText = "請輸入帳號和密碼！";
         return;
       }
 
       try {
-        // 讀取 GitHub 上的 user.json 文件
+        // 讀取 GitHub 上的 user.json
         const response = await fetch('https://raw.githubusercontent.com/WOODYHU9512/cheisgood/main/user.json');
         const data = await response.json();
 
         // 查找符合的用戶
-        const user = data.users.find(user => user.username === username && user.password === password);
+        const user = data.users.find(u => u.username === username && u.password === password);
 
         if (user) {
-          // 如果帳號密碼匹配，儲存用戶權限並跳轉到 `pdf-select.html`
-          localStorage.setItem('permissions', JSON.stringify(user.permissions));  
-          localStorage.setItem('loggedInUser', username); // 儲存登入的用戶名稱
-          window.location.href = 'pdf-select.html';  // 跳轉
+          console.log("登入成功，儲存權限:", user.permissions);  // 測試是否正確抓到權限
+          
+          // 儲存用戶權限，確保格式正確
+          localStorage.setItem('permissions', JSON.stringify(user.permissions));
+          localStorage.setItem('loggedInUser', username);  
+
+          window.location.href = 'pdf-select.html';  
         } else {
           document.getElementById('result').innerText = "帳號或密碼錯誤！";
         }
