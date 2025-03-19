@@ -1,0 +1,59 @@
+<!DOCTYPE html>
+<html lang="zh-TW">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>PDF 觀看</title>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/pdf.js/2.16.105/pdf.min.js"></script>
+  <script>
+    function renderPDF() {
+      const permissions = JSON.parse(localStorage.getItem('permissions')); // 取得用戶權限
+
+      if (!permissions) {
+        alert("您無權訪問此頁面");
+        window.location.href = 'index.html';  // 如果沒有權限，跳回登入頁
+        return;
+      }
+
+      const urlParams = new URLSearchParams(window.location.search);
+      const pdfFile = urlParams.get('file');  // 取得對應的 PDF 文件名稱
+
+      if (!pdfFile || !permissions[pdfFile.replace('.pdf', '')]) {
+        alert("您無權訪問此解答！");
+        window.location.href = 'index.html';  // 無權訪問，跳回登入頁
+        return;
+      }
+
+      // 使用 PDF.js 來顯示 PDF
+      const pdfUrl = `https://raw.githubusercontent.com/WOODYHU9512/cheisgood/main/${pdfFile}`;
+      var container = document.getElementById('pdfContainer');
+
+      pdfjsLib.getDocument(pdfUrl).promise.then(function(pdf) {
+        for (let pageNum = 1; pageNum <= pdf.numPages; pageNum++) {
+          pdf.getPage(pageNum).then(function(page) {
+            var canvas = document.createElement('canvas');
+            container.appendChild(canvas);
+            var ctx = canvas.getContext('2d', { willReadFrequently: true });
+
+            var viewport = page.getViewport({ scale: 3.0 });
+            canvas.width = viewport.width;
+            canvas.height = viewport.height;
+
+            var renderContext = {
+              canvasContext: ctx,
+              viewport: viewport
+            };
+            page.render(renderContext);
+          });
+        }
+      });
+    }
+
+    window.onload = renderPDF;  // 頁面加載時顯示 PDF
+  </script>
+</head>
+<body>
+  <h2>PDF 觀看</h2>
+  <div id="pdfContainer"></div>
+</body>
+</html>
