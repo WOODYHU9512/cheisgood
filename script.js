@@ -68,20 +68,18 @@ if (window.location.pathname.includes("pdf-select") || window.location.pathname.
     checkLoginStatus();
 
     let idleTimeout;
-    let timeLeft = 30 * 60; // 30 分鐘 = 1800 秒
+    let timeLeft = 10;
     const timerDisplay = document.getElementById("timer");
 
     function updateTimer() {
         if (timerDisplay) {
-            const minutes = Math.floor(timeLeft / 60);
-            const seconds = timeLeft % 60;
-            timerDisplay.innerText = `${minutes}:${seconds < 10 ? "0" : ""}${seconds}`;
+            timerDisplay.innerText = timeLeft;
         }
     }
 
     async function startIdleTimer() {
         clearTimeout(idleTimeout);
-        timeLeft = 30 * 60; // 30 分鐘重設
+        timeLeft = 10;
         updateTimer();
 
         idleTimeout = setInterval(async () => {
