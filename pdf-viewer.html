@@ -40,55 +40,9 @@
       margin-top: 20px;
       display: none;
     }
-    /* 透明層防止右鍵選取 */
-    .noScreenshot {
-      position: fixed;
-      top: 0;
-      left: 0;
-      width: 100vw;
-      height: 100vh;
-      background: rgba(255, 255, 255, 0);
-      z-index: 9999;
-      pointer-events: none;
-    }
   </style>
 
   <script>
-    let pdfDoc = null;
-    let pageNum = 1;
-    let isRendering = false;
-
-    function renderPage(num) {
-      if (isRendering) return;
-      isRendering = true;
-
-      pdfDoc.getPage(num).then(function(page) {
-        let canvas = document.createElement('canvas');
-        let ctx = canvas.getContext('2d', { willReadFrequently: true });
-
-        let viewport = page.getViewport({ scale: 1.5 });
-        canvas.width = viewport.width;
-        canvas.height = viewport.height;
-
-        let renderContext = {
-          canvasContext: ctx,
-          viewport: viewport
-        };
-
-        page.render(renderContext).promise.then(() => {
-          document.getElementById('pdfContainer').appendChild(canvas);
-          isRendering = false;
-          pageNum++;
-
-          if (pageNum <= pdfDoc.numPages) {
-            setTimeout(() => renderPage(pageNum), 300);
-          } else {
-            document.getElementById('loading').innerText = "✅ PDF 讀取完成！";
-          }
-        });
-      });
-    }
-
     function loadPDF() {
       let currentPDF = localStorage.getItem('currentPDF');
 
@@ -116,7 +70,9 @@
         "106-114 台科大工數與單操輸送": "https://raw.githubusercontent.com/WOODYHU9512/cheisgood/main/106-114%20台科大工數與單操輸送.pdf",
         "106~114 台科大化熱化反": "https://raw.githubusercontent.com/WOODYHU9512/cheisgood/main/106~114%20台科大化熱化反.pdf",
         "106-114 中興工程數學與輸送現象": "https://raw.githubusercontent.com/WOODYHU9512/cheisgood/main/106-114%20中興工程數學與輸送現象.pdf",
-        "106-114 中興化熱化反": "https://raw.githubusercontent.com/WOODYHU9512/cheisgood/main/106-114%20中興化熱化反.pdf"
+        "106-114 中興化熱化反": "https://raw.githubusercontent.com/WOODYHU9512/cheisgood/main/106-114%20中興化熱化反.pdf",
+        "106~114 中央單操輸送": "https://raw.githubusercontent.com/WOODYHU9512/cheisgood/main/106~114%20中央單操輸送.pdf",
+        "106~114 中央化熱化反": "https://raw.githubusercontent.com/WOODYHU9512/cheisgood/main/106~114%20中央化熱化反.pdf"
       };
 
       const foundKey = Object.keys(pdfLinks).find(key => key.trim() === currentPDF);
@@ -137,22 +93,12 @@
 
       pdfjsLib.getDocument(pdfUrl).promise.then(function(pdf) {
         pdfDoc = pdf;
-        renderPage(pageNum);
+        document.getElementById('loading').innerText = "✅ PDF 讀取完成！";
       }).catch(function(error) {
         console.error("❌ PDF 加載錯誤：", error);
         document.getElementById('loading').innerText = "❌ 無法載入 PDF";
       });
     }
-
-    // **🚫 禁止右鍵**
-    document.addEventListener('contextmenu', event => event.preventDefault());
-
-    // **🚫 禁止 F12、Ctrl+U、開發者工具**
-    document.addEventListener("keydown", function(event) {
-      if (event.keyCode == 123 || (event.ctrlKey && (event.keyCode == 85 || event.keyCode == 73 || event.keyCode == 74))) {
-        event.preventDefault();
-      }
-    });
 
     window.onload = loadPDF;
   </script>
@@ -162,6 +108,5 @@
   <div id="loading">🔄 載入中... 請稍候</div>
   <div id="pdfContainer"></div>
   <div id="errorContainer"></div>
-  <div class="noScreenshot"></div> <!-- 🚫 透明防截圖層 -->
 </body>
 </html>
