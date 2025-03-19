@@ -1,21 +1,13 @@
 <!DOCTYPE html>
 <html lang="zh-TW">
 <head>
-  <script type="module" src="https://raw.githubusercontent.com/WOODYHU9512/cheisgood/main/script.js"></script>
+  <script type="module" src="script.js"></script>  <!-- ✅ 只載入 `script.js` -->
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>選擇學校與科目</title>
   <style>
-    body {
-      font-family: Arial, sans-serif;
-      text-align: center;
-      margin: 20px;
-    }
-    select, button {
-      margin: 10px;
-      padding: 10px;
-      font-size: 16px;
-    }
+    body { font-family: Arial, sans-serif; text-align: center; margin: 20px; }
+    select, button { margin: 10px; padding: 10px; font-size: 16px; }
   </style>
 </head>
 <body>
@@ -43,30 +35,13 @@
 
   <!-- 🔥 登出按鈕 -->
   <button onclick="logout()" style="
-  position: fixed; 
-  top: 10px; 
-  right: 10px; 
-  padding: 10px 15px; 
-  background-color: red; 
-  color: white; 
-  border: none; 
-  cursor: pointer;
-  font-size: 16px;
-">
-  🚪 登出
-</button>
+  position: fixed; top: 10px; right: 10px; padding: 10px 15px;
+  background-color: red; color: white; border: none; cursor: pointer;
+  font-size: 16px;">
+    🚪 登出
+  </button>
 
-  <script type="module">
-    import { initializeApp } from "https://www.gstatic.com/firebasejs/9.6.1/firebase-app.js";
-    import { getDatabase, ref, get, update } from "https://www.gstatic.com/firebasejs/9.6.1/firebase-database.js";
-
-    // 🚀 初始化 Firebase
-    const firebaseConfig = {
-      databaseURL: "https://access-7a3c3-default-rtdb.firebaseio.com/"
-    };
-    const app = initializeApp(firebaseConfig);
-    const db = getDatabase(app);
-
+  <script>
     // ✅ 科目資料
     const subjects = {
       "台大": ["106~114 台大單操輸送", "106~114 台大化熱化反", "106~114 台大工數"],
@@ -78,7 +53,7 @@
     };
 
     // ✅ 更新科目選單
-    window.updateSubjects = function() {
+    function updateSubjects() {
       const school = document.getElementById("schoolSelect").value;
       const subjectSelect = document.getElementById("subjectSelect");
 
@@ -92,98 +67,18 @@
           subjectSelect.appendChild(option);
         });
       }
-    };
+    }
 
-    // ✅ 檢查是否有選擇科目
-    window.viewPDF = function() {
+    // ✅ 選擇 PDF
+    function viewPDF() {
       const subject = document.getElementById("subjectSelect").value;
-
       if (!subject) {
         alert("請選擇科目！");
         return;
       }
-
       localStorage.setItem("currentPDF", subject);
       window.location.href = "pdf-viewer.html";
-    };
-
-    // ✅ 登出功能
-    window.logout = async function() {
-      const username = localStorage.getItem('loggedInUser');
-      const storedToken = localStorage.getItem('sessionToken');
-
-      if (!username) return;
-
-      try {
-        const userRef = ref(db, "users/" + username);
-        const snapshot = await get(userRef);
-
-        if (snapshot.exists()) {
-          const user = snapshot.val();
-
-          if (user.sessionToken === storedToken) {
-            await update(userRef, {
-              isLoggedIn: false,
-              sessionToken: ""
-            });
-            console.log(`🚪 ${username} 已登出！`);
-          }
-        }
-      } catch (error) {
-        console.error("❌ 登出時發生錯誤：", error);
-      }
-
-      localStorage.removeItem('loggedInUser');
-      localStorage.removeItem('sessionToken');
-      window.location.href = 'index.html';
-    };
-
-    // ✅ 計時器：10 秒後自動登出（可調整時間）
-    const IDLE_TIME_LIMIT = 10 * 1000; // 10 秒測試版
-    let idleTimeout;
-
-    function startIdleTimer() {
-      console.log("⏳ 閒置計時器重設...");
-      clearTimeout(idleTimeout);
-
-      // ✅ 記錄時間到 localStorage，讓所有頁面同步計時
-      localStorage.setItem("lastActivity", Date.now());
-
-      idleTimeout = setTimeout(() => {
-        console.log("⏰ 閒置超過 10 秒，自動登出！");
-        alert("您已閒置 10 秒，將自動登出！");
-        logout();
-      }, IDLE_TIME_LIMIT);
     }
-
-    // 🔥 監聽使用者活動來重設計時器
-    document.addEventListener("mousemove", startIdleTimer);
-    document.addEventListener("keydown", startIdleTimer);
-    document.addEventListener("touchstart", startIdleTimer);
-
-    // ✅ 監聽 localStorage 變化，確保其他頁面有活動時也會重設計時器
-    window.addEventListener("storage", (event) => {
-      if (event.key === "lastActivity") {
-        console.log("🔄 偵測到其他頁面有活動，重設計時器！");
-        startIdleTimer();
-      }
-    });
-
-    // ✅ 檢查登入狀態
-    function checkLoginStatus() {
-      const username = localStorage.getItem('loggedInUser');
-      const sessionToken = localStorage.getItem('sessionToken');
-
-      if (!username || !sessionToken) {
-        console.log("⛔ 未登入，跳轉至登入頁面");
-        window.location.href = 'index.html';
-      }
-    }
-
-    // ✅ 啟動計時器與登入檢查
-    checkLoginStatus();
-    startIdleTimer();
   </script>
-
 </body>
 </html>
