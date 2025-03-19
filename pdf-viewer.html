@@ -42,6 +42,20 @@
       margin-top: 20px;
       display: none;
     }
+
+    /* ✅ 計時器樣式 */
+    #countdown {
+      position: fixed;
+      top: 10px;
+      left: 50%;
+      transform: translateX(-50%);
+      font-size: 18px;
+      background: rgba(255, 0, 0, 0.8);
+      color: white;
+      padding: 10px 15px;
+      border-radius: 10px;
+      font-weight: bold;
+    }
   </style>
 </head>
 <body>
@@ -49,6 +63,9 @@
   <div id="loading">🔄 載入中... 請稍候</div>
   <div id="pdfContainer"></div>
   <div id="errorContainer"></div>
+
+  <!-- 🔥 顯示計時器 -->
+  <div id="countdown">⏳ 自動登出倒數：<span id="timer">10</span> 秒</div>
 
   <!-- 🔥 登出按鈕 -->
   <button onclick="logout()" style="
@@ -132,17 +149,6 @@
     }
 
     window.onload = loadPDF;
-
-    // **🛑 禁止右鍵、F12、開發者工具**
-    document.addEventListener("contextmenu", event => event.preventDefault());
-    document.addEventListener("keydown", function(event) {
-      if (event.keyCode == 123 || // F12
-          (event.ctrlKey && event.shiftKey && (event.keyCode == 73 || event.keyCode == 74)) || // Ctrl+Shift+I / J
-          (event.ctrlKey && event.keyCode == 85) || // Ctrl+U
-          (event.ctrlKey && event.keyCode == 83)) { // Ctrl+S
-        event.preventDefault();
-      }
-    });
   </script>
 </body>
 </html>
