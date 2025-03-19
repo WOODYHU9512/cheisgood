@@ -44,11 +44,14 @@
     function checkAccessAndShowPDF(pdfFile, subjectName) {
       const permissions = JSON.parse(localStorage.getItem('permissions'));
 
+      console.log("點擊解答時的權限數據:", permissions);
+
       if (!permissions || !permissions[subjectName]) {
         alert("您無權訪問此解答！");
         window.location.href = 'index.html';  
       } else {
-        window.location.href = `pdf-viewer.html?file=${pdfFile}`;  
+        localStorage.setItem('currentPDF', pdfFile); // 紀錄目前選擇的 PDF
+        window.location.href = `pdf-viewer.html`; // 跳轉到 PDF 頁面
       }
     }
 
