@@ -6,13 +6,37 @@
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>選擇學校與科目</title>
   <style>
-    body { font-family: Arial, sans-serif; text-align: center; margin: 20px; }
-    select, button { margin: 10px; padding: 10px; font-size: 16px; }
+    body {
+      font-family: Arial, sans-serif;
+      text-align: center;
+      margin: 20px;
+    }
+    select, button {
+      margin: 10px;
+      padding: 10px;
+      font-size: 16px;
+    }
+
+    /* ✅ 計時器移到左上角 */
+    #countdown {
+      position: fixed;
+      top: 10px;
+      left: 10px;
+      font-size: 18px;
+      background: rgba(255, 0, 0, 0.8);
+      color: white;
+      padding: 10px 15px;
+      border-radius: 10px;
+      font-weight: bold;
+    }
   </style>
 </head>
 <body>
   <h2>請選擇學校與科目</h2>
-  
+
+  <!-- 🔥 顯示計時器（移到左上角） -->
+  <div id="countdown">⏳ 自動登出倒數：<span id="timer">10</span> 秒</div>
+
   <!-- 學校選擇 -->
   <label for="schoolSelect">選擇學校：</label>
   <select id="schoolSelect" onchange="updateSubjects()">
@@ -35,8 +59,14 @@
 
   <!-- 🔥 登出按鈕 -->
   <button onclick="logout()" style="
-  position: fixed; top: 10px; right: 10px; padding: 10px 15px;
-  background-color: red; color: white; border: none; cursor: pointer;
+  position: fixed; 
+  top: 10px; 
+  right: 10px; 
+  padding: 10px 15px; 
+  background-color: red; 
+  color: white; 
+  border: none; 
+  cursor: pointer;
   font-size: 16px;">
     🚪 登出
   </button>
