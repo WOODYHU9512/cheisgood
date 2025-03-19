@@ -13,10 +13,10 @@ const db = getDatabase(app);
 function getUserRef() {
     const username = localStorage.getItem('loggedInUser');
     if (!username) return null;
-    return ref(db, `users/${username}`);  // 🔥 確保只更新當前使用者
+    return ref(db, `users/${username}`);  // 🔥 只更新當前使用者
 }
 
-// ✅ 確保用戶已登入
+// ✅ **確保用戶已登入**
 function checkLoginStatus() {
     if (!localStorage.getItem('loggedInUser') || !localStorage.getItem('sessionToken')) {
         console.log("⛔ 未登入，跳轉至登入頁面");
@@ -26,13 +26,14 @@ function checkLoginStatus() {
 
 // 🚀 **登出功能**
 async function logout() {
-    const userRef = getUserRef();
-    if (!userRef) return;
+    const username = localStorage.getItem('loggedInUser');
+    if (!username) return;
 
     try {
-        console.log(`🚪 正在登出 ${localStorage.getItem('loggedInUser')}...`);
+        console.log(`🚪 正在登出 ${username}...`);
+        const userRef = ref(db, `users/${username}`);
         await update(userRef, { isLoggedIn: false, sessionToken: "" });
-        console.log(`✅ ${localStorage.getItem('loggedInUser')} 已成功登出！`);
+        console.log(`✅ ${username} 已成功登出！`);
     } catch (error) {
         console.error("❌ 登出錯誤：", error);
     }
@@ -41,20 +42,25 @@ async function logout() {
     localStorage.removeItem('sessionToken');
 }
 
-// ✅ 讓 HTML 登出按鈕可以呼叫 logout()
+// ✅ **讓 HTML 登出按鈕可以呼叫 logout**
 window.logout = async function() {
     await logout();
     window.location.href = 'index.html';
 };
 
-// 🚀 **監測分頁關閉，確保登出**
+// 🚀 **監測分頁/瀏覽器關閉，確保登出**
 window.addEventListener("beforeunload", function(event) {
-    if (sessionStorage.getItem("pageNavigation")) {
-        console.log("🔄 偵測到頁面跳轉，不執行登出");
-        sessionStorage.removeItem("pageNavigation");  // ✅ 清除跳轉標記
-    } else {
+    const username = localStorage.getItem('loggedInUser');
+    if (!username) return;
+
+    // ✅ **確保只有在關閉瀏覽器/分頁時執行登出**
+    if (!sessionStorage.getItem("pageNavigation")) {
         console.log("🚪 瀏覽器/分頁關閉，執行登出");
-        logout();
+        const logoutData = JSON.stringify({ isLoggedIn: false, sessionToken: "" });
+        navigator.sendBeacon(`https://access-7a3c3-default-rtdb.firebaseio.com/users/${username}.json`, logoutData);
+    } else {
+        console.log("🔄 偵測到頁面跳轉，不執行登出");
+        sessionStorage.removeItem("pageNavigation");
     }
 });
 
@@ -68,7 +74,7 @@ document.addEventListener("DOMContentLoaded", function () {
     });
 });
 
-// ✅ 只有 `pdf-select.html` 和 `pdf-viewer.html` 需要這些功能
+// ✅ **閒置 30 分鐘自動登出**
 if (window.location.pathname.includes("pdf-select") || window.location.pathname.includes("pdf-viewer")) {
     checkLoginStatus();
 
@@ -105,7 +111,7 @@ if (window.location.pathname.includes("pdf-select") || window.location.pathname.
     document.addEventListener("keydown", startIdleTimer);
     startIdleTimer();
 
-    // 🚀 更新 `localStorage` 記錄最後的活動時間
+    // 🚀 **更新 `localStorage` 記錄最後的活動時間**
     window.addEventListener("beforeunload", () => {
         localStorage.setItem("lastActivity", Date.now());
     });
