@@ -12,7 +12,7 @@ const db = getDatabase(app);
 
 // ⏳ 閒置登出計時器
 let idleTimeout;
-const IDLE_TIME_LIMIT = 10 *  1000;  // 10 分鐘
+const IDLE_TIME_LIMIT = 10 * 60 * 1000;  // 10 分鐘
 
 function startIdleTimer() {
     console.log("⏳ 閒置計時器啟動...");
@@ -65,3 +65,6 @@ async function logout() {
 // ✅ 啟動計時器
 startIdleTimer();
 window.addEventListener("beforeunload", logout);
+
+// ✅ 讓 HTML 登出按鈕可以呼叫 logout()
+window.logout = logout;
