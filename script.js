@@ -55,10 +55,14 @@ window.logout = async function() {
 };
 
 // 🚀 **監測分頁關閉，確保登出**
-window.addEventListener("beforeunload", async function(event) {
-    // 確保只有在真正關閉瀏覽器或分頁時才登出
-    if (!sessionStorage.getItem('navigated')) {
-        await logout();
+window.addEventListener("beforeunload", function(event) {
+    const username = localStorage.getItem('loggedInUser');
+    if (username) {
+        // 使用 sendBeacon 確保關閉分頁時仍然能回傳登出請求
+        const userRef = ref(db, "users/" + username);
+        const logoutData = JSON.stringify({ isLoggedIn: false, sessionToken: "" });
+
+        navigator.sendBeacon(`https://access-7a3c3-default-rtdb.firebaseio.com/users/${username}.json`, logoutData);
     }
 });
 
@@ -95,18 +99,22 @@ if (window.location.pathname.includes("pdf-select") || window.location.pathname.
         }, 1000);
     }
 
-    // ✅ 跳轉到 `pdf-viewer.html` 時避免誤登出
-    if (sessionStorage.getItem('navigated')) {
-        console.log("跳轉後，不執行登出");
-        sessionStorage.removeItem('navigated');
-    } else {
-        document.addEventListener("mousemove", startIdleTimer);
-        document.addEventListener("keydown", startIdleTimer);
-        startIdleTimer();
+    // ✅ 確保 `pdf-viewer.html` 正確顯示計時器為 30:00
+    const lastActivity = localStorage.getItem("lastActivity");
+
+    if (lastActivity) {
+        const currentTime = Date.now();
+        const timeDiff = (currentTime - lastActivity) / 1000; // 秒數差
+
+        if (timeDiff < 30 * 60) {  // 如果時間差小於30分鐘
+            timeLeft = Math.max(0, 30 * 60 - timeDiff);
+            updateTimer();
+        }
     }
 
-    // 🚀 設定跳轉標誌
-    window.sessionStorage.setItem('navigated', true);
+    document.addEventListener("mousemove", startIdleTimer);
+    document.addEventListener("keydown", startIdleTimer);
+    startIdleTimer();
 
     // 🚀 更新 `localStorage` 記錄最後的活動時間
     window.addEventListener("beforeunload", () => {
