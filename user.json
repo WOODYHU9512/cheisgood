@@ -8,7 +8,7 @@
         "清大": true,
         "成大": true,
         "中央": true,
-        "台科": true,
+        "台科大": true,
         "中興": true
       }
     },
@@ -20,7 +20,7 @@
         "清大": false,
         "成大": true,
         "中央": false,
-        "台科": false,
+        "台科大": false,
         "中興": true
       }
     }
