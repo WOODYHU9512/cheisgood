@@ -3,57 +3,59 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>PDF 觀看</title>
-  <script src="https://cdnjs.cloudflare.com/ajax/libs/pdf.js/2.16.105/pdf.min.js"></script>
+  <title>選擇考古題觀看</title>
   <script>
-    function renderPDF() {
-      const permissions = JSON.parse(localStorage.getItem('permissions')); // 取得用戶權限
-
+    function loadPDFOptions() {
+      // 讀取權限資料
+      const permissions = JSON.parse(localStorage.getItem('permissions'));
+      const container = document.getElementById('answerContainer');
+      
+      // 如果用戶沒有權限資料，跳回登入頁
       if (!permissions) {
-        alert("您無權訪問此頁面");
-        window.location.href = 'index.html';  // 如果沒有權限，跳回登入頁
+        alert("您無權訪問此頁面，請先登入！");
+        window.location.href = 'index.html';  // 跳回登入頁
         return;
       }
 
-      const urlParams = new URLSearchParams(window.location.search);
-      const pdfFile = urlParams.get('file');  // 取得對應的 PDF 文件名稱
+      // 定義考古題清單
+      const subjects = [
+        { name: "台大", file: "台大全部.pdf" },
+        { name: "清大", file: "清大全部.pdf" },
+        { name: "成大", file: "成大全部.pdf" },
+        { name: "台科", file: "台科大全部.pdf" },
+        { name: "中央", file: "中央全部.pdf" },
+        { name: "中興", file: "中興全部.pdf" }
+      ];
 
-      if (!pdfFile || !permissions[pdfFile.replace('.pdf', '')]) {
-        alert("您無權訪問此解答！");
-        window.location.href = 'index.html';  // 無權訪問，跳回登入頁
-        return;
-      }
-
-      // 使用 PDF.js 來顯示 PDF
-      const pdfUrl = `https://raw.githubusercontent.com/WOODYHU9512/cheisgood/main/${pdfFile}`;
-      var container = document.getElementById('pdfContainer');
-
-      pdfjsLib.getDocument(pdfUrl).promise.then(function(pdf) {
-        for (let pageNum = 1; pageNum <= pdf.numPages; pageNum++) {
-          pdf.getPage(pageNum).then(function(page) {
-            var canvas = document.createElement('canvas');
-            container.appendChild(canvas);
-            var ctx = canvas.getContext('2d', { willReadFrequently: true });
-
-            var viewport = page.getViewport({ scale: 3.0 });
-            canvas.width = viewport.width;
-            canvas.height = viewport.height;
-
-            var renderContext = {
-              canvasContext: ctx,
-              viewport: viewport
-            };
-            page.render(renderContext);
-          });
+      // 根據權限顯示可訪問的 PDF 按鈕
+      subjects.forEach(subject => {
+        if (permissions[subject.name]) {  // 如果有權限
+          let button = document.createElement('button');
+          button.innerText = "觀看 " + subject.name + " 解答";
+          button.onclick = function() { checkAccessAndShowPDF(subject.file); };
+          container.appendChild(button);
         }
       });
     }
 
-    window.onload = renderPDF;  // 頁面加載時顯示 PDF
+    // 檢查用戶是否有權限，然後顯示對應的 PDF
+    function checkAccessAndShowPDF(pdfFile) {
+      const permissions = JSON.parse(localStorage.getItem('permissions'));
+
+      // 如果用戶沒有該 PDF 的權限，顯示錯誤並跳回登入頁
+      if (!permissions || !permissions[pdfFile.replace('.pdf', '')]) {
+        alert("您無權訪問此解答！");
+        window.location.href = 'index.html';  // 無權訪問，跳回登入頁
+      } else {
+        window.location.href = `pdf-viewer.html?file=${pdfFile}`; // 具有權限，跳轉到 PDF 頁面
+      }
+    }
+
+    window.onload = loadPDFOptions; // 頁面加載時顯示用戶可訪問的解答
   </script>
 </head>
 <body>
-  <h2>PDF 觀看</h2>
-  <div id="pdfContainer"></div>
+  <h2>選擇你要查看的考古題</h2>
+  <div id="answerContainer"></div>
 </body>
 </html>
