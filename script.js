@@ -1,7 +1,7 @@
 console.log("🔥 `script.js` 已載入");
 
 import { initializeApp } from "https://www.gstatic.com/firebasejs/9.6.1/firebase-app.js";
-import { getDatabase, ref, set, update } from "https://www.gstatic.com/firebasejs/9.6.1/firebase-database.js";
+import { getDatabase, ref, get, update } from "https://www.gstatic.com/firebasejs/9.6.1/firebase-database.js";
 
 const firebaseConfig = {
     databaseURL: "https://access-7a3c3-default-rtdb.firebaseio.com/"
@@ -10,10 +10,10 @@ const app = initializeApp(firebaseConfig);
 const db = getDatabase(app);
 
 // ✅ **取得當前登入使用者的 Firebase 參照**
-function getUserRef() {
+async function getUserRef() {
     const username = localStorage.getItem('loggedInUser');
     if (!username) return null;
-    return ref(db, `users/${username}`);  // 🔥 只更新當前使用者
+    return ref(db, `users/${username}`);
 }
 
 // ✅ **確保用戶已登入**
@@ -24,15 +24,19 @@ function checkLoginStatus() {
     }
 }
 
-// 🚀 **登出功能**
+// 🚀 **登出功能（不刪除密碼）**
 async function logout() {
     const username = localStorage.getItem('loggedInUser');
     if (!username) return;
 
     try {
         console.log(`🚪 正在登出 ${username}...`);
-        const userRef = getUserRef();
-        await set(userRef, { password: localStorage.getItem('password'), isLoggedIn: false, sessionToken: "" });
+        const userRef = await getUserRef();
+        const snapshot = await get(userRef);
+        if (snapshot.exists()) {
+            const userData = snapshot.val();
+            await update(userRef, { isLoggedIn: false, sessionToken: "", password: userData.password });
+        }
         console.log(`✅ ${username} 已成功登出！`);
     } catch (error) {
         console.error("❌ 登出錯誤：", error);
@@ -53,16 +57,18 @@ window.addEventListener("beforeunload", async function(event) {
     const username = localStorage.getItem('loggedInUser');
     if (!username) return;
 
-    // ✅ **確保只有在關閉瀏覽器/分頁時執行登出**
     if (!sessionStorage.getItem("pageNavigation")) {
         console.log("🚪 瀏覽器/分頁關閉，執行登出");
-
-        // ✅ **正確使用 `fetch()` 來確保請求送出**
-        await fetch(`https://access-7a3c3-default-rtdb.firebaseio.com/users/${username}.json`, {
-            method: "PATCH",
-            headers: { "Content-Type": "application/json" },
-            body: JSON.stringify({ isLoggedIn: false, sessionToken: "" })
-        });
+        const userRef = await getUserRef();
+        const snapshot = await get(userRef);
+        if (snapshot.exists()) {
+            const userData = snapshot.val();
+            await fetch(`https://access-7a3c3-default-rtdb.firebaseio.com/users/${username}.json`, {
+                method: "PATCH",
+                headers: { "Content-Type": "application/json" },
+                body: JSON.stringify({ isLoggedIn: false, sessionToken: "", password: userData.password })
+            });
+        }
     } else {
         console.log("🔄 偵測到頁面跳轉，不執行登出");
         sessionStorage.removeItem("pageNavigation");
