@@ -3,77 +3,28 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>Facebook 社團專用 PDF 閱讀</title>
+  <title>帳號密碼登入</title>
   <script>
-    var urlParams = new URLSearchParams(window.location.search);
-    var fbclid = urlParams.get('fbclid');  // 取得 Facebook 點擊參數
-    var userAgent = navigator.userAgent || navigator.vendor || window.opera;
+    function checkCredentials() {
+      const username = document.getElementById('username').value;
+      const password = document.getElementById('password').value;
 
-    console.log("fbclid:", fbclid);
-    console.log("User Agent:", userAgent);
-    console.log("Window Opener:", window.opener);
-
-    // **Step 1：如果沒有 `fbclid`，直接擋住**
-    if (!fbclid) {
-      console.log("未從 Facebook 進入，跳轉回 Facebook 社團");
-      window.location.href = "https://www.facebook.com/groups/667112409185609";
+      google.script.run.withSuccessHandler(function(permissions) {
+        if (permissions) {
+          // 存儲權限並跳轉到解答選擇頁面
+          localStorage.setItem('permissions', JSON.stringify(permissions));
+          window.location.href = 'pdf-select.html';  // 跳轉
+        } else {
+          alert('帳號或密碼錯誤');
+        }
+      }).checkCredentials(username, password);
     }
-
-    // **Step 2：封鎖 Messenger**
-    if (userAgent.includes("FBAN") || userAgent.includes("FBAV") || userAgent.includes("Messenger") || window.opener === null) {
-      console.log("來自 Messenger，跳轉回 Facebook 社團");
-      window.location.href = "https://www.facebook.com/groups/667112409185609";
-    }
-
-    // **Step 3：禁止右鍵、禁止開發者工具**
-    document.addEventListener('contextmenu', event => event.preventDefault());
-
-    document.addEventListener('keydown', function(event) {
-      if ((event.ctrlKey && event.key === 's') || (event.ctrlKey && event.key === 'p')) {
-        event.preventDefault();
-        alert("禁止下載或列印此 PDF");
-      }
-      if (event.key === "F12" || (event.ctrlKey && event.shiftKey && event.key === "I")) {
-        event.preventDefault();
-        alert("禁止開發者工具！");
-      }
-    });
-
   </script>
 </head>
 <body>
-  <h2>Facebook 社團專屬 PDF 閱讀</h2>
-  <div id="pdfContainer"></div>
-
-  <script src="https://cdnjs.cloudflare.com/ajax/libs/pdf.js/2.16.105/pdf.min.js"></script>
-  <script>
-    var pdfUrl = "Sufficiency%20Proof%20at%20the%20Critical%20Point.pdf";
-
-    function renderPDF(url) {
-      var container = document.getElementById('pdfContainer');
-
-      pdfjsLib.getDocument(url).promise.then(function(pdf) {
-        for (let pageNum = 1; pageNum <= pdf.numPages; pageNum++) {
-          pdf.getPage(pageNum).then(function(page) {
-            var canvas = document.createElement('canvas');
-            container.appendChild(canvas);
-            var ctx = canvas.getContext('2d', { willReadFrequently: true });
-
-            var viewport = page.getViewport({ scale: 3.0 }); // 提高解析度
-            canvas.width = viewport.width;
-            canvas.height = viewport.height;
-            
-            var renderContext = {
-              canvasContext: ctx,
-              viewport: viewport
-            };
-            page.render(renderContext);
-          });
-        }
-      });
-    }
-
-    renderPDF(pdfUrl);
-  </script>
+  <h2>請輸入帳號密碼查看解答</h2>
+  <input type="text" id="username" placeholder="帳號" required /><br />
+  <input type="password" id="password" placeholder="密碼" required /><br />
+  <button onclick="checkCredentials()">確認</button>
 </body>
 </html>
