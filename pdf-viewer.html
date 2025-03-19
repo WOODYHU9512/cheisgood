@@ -89,8 +89,9 @@
         return;
       }
 
+      // **移除 .pdf，確保名稱匹配**
       currentPDF = currentPDF.replace(/\.pdf$/, "").trim();
-      document.getElementById('pdfTitle').innerText = `📖 ${currentPDF}`; // **顯示 PDF 名稱**
+      document.getElementById('pdfTitle').innerText = `📖 ${currentPDF}`;
 
       const pdfLinks = {
         "106~114 台大單操輸送": "https://raw.githubusercontent.com/WOODYHU9512/cheisgood/main/106~114%20台大單操輸送.pdf",
@@ -104,7 +105,9 @@
         "106-114 台科大工數與單操輸送": "https://raw.githubusercontent.com/WOODYHU9512/cheisgood/main/106-114%20台科大工數與單操輸送.pdf",
         "106~114 台科大化熱化反": "https://raw.githubusercontent.com/WOODYHU9512/cheisgood/main/106~114%20台科大化熱化反.pdf",
         "106-114 中興工程數學與輸送現象": "https://raw.githubusercontent.com/WOODYHU9512/cheisgood/main/106-114%20中興工程數學與輸送現象.pdf",
-        "106-114 中興化熱化反": "https://raw.githubusercontent.com/WOODYHU9512/cheisgood/main/106-114%20中興化熱化反.pdf"
+        "106-114 中興化熱化反": "https://raw.githubusercontent.com/WOODYHU9512/cheisgood/main/106-114%20中興化熱化反.pdf",
+        "106~114 中央單操輸送": "https://raw.githubusercontent.com/WOODYHU9512/cheisgood/main/106~114%20中央單操輸送.pdf",
+        "106~114 中央化熱化反": "https://raw.githubusercontent.com/WOODYHU9512/cheisgood/main/106~114%20中央化熱化反.pdf"
       };
 
       const foundKey = Object.keys(pdfLinks).find(key => key.trim() === currentPDF);
@@ -136,7 +139,7 @@
   </script>
 </head>
 <body>
-  <h2 id="pdfTitle">📖 PDF 觀看</h2>  <!-- **這裡會顯示 PDF 名稱** -->
+  <h2 id="pdfTitle">📖 PDF 觀看</h2>
   <div id="loading">🔄 載入中... 請稍候</div>
   <div id="pdfContainer"></div>
   <div id="errorContainer"></div>
