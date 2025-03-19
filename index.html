@@ -15,45 +15,28 @@
       }
 
       try {
-        // 讀取 GitHub 上的 user.json 和 activeSessions.json
-        const userResponse = await fetch('https://raw.githubusercontent.com/WOODYHU9512/cheisgood/main/user.json');
-        const sessionResponse = await fetch('https://raw.githubusercontent.com/WOODYHU9512/cheisgood/main/activeSessions.json');
-        
-        const userData = await userResponse.json();
-        const sessionData = await sessionResponse.json();
+        // 讀取 GitHub 上的 user.json
+        const response = await fetch('https://raw.githubusercontent.com/WOODYHU9512/cheisgood/main/user.json');
+        const data = await response.json();
 
         // 查找符合的用戶
-        const user = userData.users.find(u => u.username === username && u.password === password);
+        const user = data.users.find(u => u.username === username && u.password === password);
 
-        if (!user) {
+        if (user) {
+          console.log("✅ 登入成功！儲存權限:", user.permissions);  
+          
+          // 儲存用戶權限
+          localStorage.setItem('permissions', JSON.stringify(user.permissions));
+          localStorage.setItem('loggedInUser', username);  
+
+          window.location.href = 'pdf-select.html';  
+        } else {
           document.getElementById('result').innerText = "帳號或密碼錯誤！";
-          return;
         }
-
-        // 檢查該帳號是否已經登入
-        if (sessionData.sessions[username]) {
-          console.log(`⚠️ ${username} 已登入，將踢出前一個使用者！`);
-          alert(`⚠️ ${username} 已登入，請先登出！`);
-          return;
-        }
-
-        // 記錄 session 但不寫入 GitHub（需伺服器處理）
-        localStorage.setItem('loggedInUser', username);
-        localStorage.setItem('permissions', JSON.stringify(user.permissions));
-
-        console.log("✅ 登入成功！儲存權限:", user.permissions);
-        window.location.href = 'pdf-select.html';
-
       } catch (error) {
-        console.error("❌ 登入時發生錯誤：", error);
+        console.error("❌ 載入帳號資料錯誤：", error);
         document.getElementById('result').innerText = "登入時發生錯誤，請稍後再試！";
       }
-    }
-
-    function logout() {
-      localStorage.removeItem('loggedInUser');
-      localStorage.removeItem('permissions');
-      window.location.href = 'index.html';
     }
   </script>
 </head>
