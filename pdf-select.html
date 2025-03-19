@@ -1,1 +1,130 @@
-DD
+<!DOCTYPE html>
+<html lang="zh-TW">
+<head>
+  <script type="module" src="script.js"></script>  <!-- ✅ 只載入 `script.js` -->
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>選擇學校與科目</title>
+  <style>
+    body {
+      font-family: Arial, sans-serif;
+      text-align: center;
+      margin: 20px;
+    }
+    select, button {
+      margin: 10px;
+      padding: 10px;
+      font-size: 16px;
+    }
+
+    /* ✅ 計時器移到左上角 */
+    #countdown {
+      position: fixed;
+      top: 10px;
+      left: 10px;
+      font-size: 18px;
+      background: rgba(255, 0, 0, 0.8);
+      color: white;
+      padding: 10px 15px;
+      border-radius: 10px;
+      font-weight: bold;
+    }
+  </style>
+</head>
+<body>
+  <h2>請選擇學校與科目</h2>
+
+  <!-- 🔥 顯示計時器（移到左上角） -->
+  <div id="countdown">⏳ 自動登出倒數：<span id="timer">10</span> 秒</div>
+
+  <div id="logout-warning" style="
+  position: fixed;
+  top: 0;
+  left: 0;
+  width: 100%;
+  background-color: red;
+  color: white;
+  text-align: center;
+  padding: 10px;
+  font-size: 18px;
+  font-weight: bold;
+  z-index: 1000;">
+  ⚠️ **請務必使用「登出」按鈕登出，否則您的帳戶可能無法正確登出！**
+</div>
+
+
+  <!-- 學校選擇 -->
+  <label for="schoolSelect">選擇學校：</label>
+  <select id="schoolSelect" onchange="updateSubjects()">
+    <option value="">請選擇學校</option>
+    <option value="台大">台大</option>
+    <option value="清大">清大</option>
+    <option value="成大">成大</option>
+    <option value="中央">中央</option>
+    <option value="台科大">台科大</option>
+    <option value="中興">中興</option>
+  </select>
+
+  <!-- 科目選擇 -->
+  <label for="subjectSelect">選擇科目：</label>
+  <select id="subjectSelect">
+    <option value="">請先選擇學校</option>
+  </select>
+
+  <button onclick="viewPDF()">觀看 PDF</button>
+
+  <!-- 🔥 登出按鈕 -->
+  <button onclick="logout()" style="
+  position: fixed; 
+  top: 10px; 
+  right: 10px; 
+  padding: 10px 15px; 
+  background-color: red; 
+  color: white; 
+  border: none; 
+  cursor: pointer;
+  font-size: 16px;">
+    🚪 登出
+  </button>
+
+  <script>
+    // ✅ 科目資料
+    const subjects = {
+      "台大": ["106~114 台大單操輸送", "106~114 台大化熱化反", "106~114 台大工數"],
+      "清大": ["106~114 清大單操輸送", "106~114 清大化熱化反"],
+      "成大": ["106-114 成大單操輸送", "106-114 成大化熱", "106-114 成大化反"],
+      "中央": ["106~114 中央單操輸送", "106~114 中央化熱化反"],
+      "台科大": ["106-114 台科大工數與單操輸送", "106~114 台科大化熱化反"],
+      "中興": ["106-114 中興工程數學與輸送現象", "106-114 中興化熱化反"]
+    };
+
+    // ✅ 更新科目選單
+    function updateSubjects() {
+      const school = document.getElementById("schoolSelect").value;
+      const subjectSelect = document.getElementById("subjectSelect");
+
+      subjectSelect.innerHTML = "<option value=''>請選擇科目</option>";
+
+      if (school && subjects[school]) {
+        subjects[school].forEach(subject => {
+          let option = document.createElement("option");
+          option.value = subject;
+          option.textContent = subject;
+          subjectSelect.appendChild(option);
+        });
+      }
+    }
+
+    // ✅ 選擇 PDF
+    function viewPDF() {
+      const subject = document.getElementById("subjectSelect").value;
+      if (!subject) {
+        alert("請選擇科目！");
+        return;
+      }
+      localStorage.setItem("currentPDF", subject);
+      window.location.href = "pdf-viewer.html";
+    }
+  </script>
+</body>
+</html>
