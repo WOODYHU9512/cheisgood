@@ -1,0 +1,34 @@
+<!DOCTYPE html>
+<html lang="zh-TW">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>選擇解答觀看</title>
+  <script>
+    var permissions = JSON.parse(localStorage.getItem('permissions'));
+
+    function loadPDFOptions() {
+      var container = document.getElementById('answerContainer');
+      for (var i = 1; i <= 6; i++) {
+        if (permissions[i - 1] === 'TRUE') {
+          var button = document.createElement('button');
+          button.innerText = "觀看 解答 " + i;
+          button.onclick = function() { showPDF(i); };
+          container.appendChild(button);
+        }
+      }
+    }
+
+    function showPDF(answerNumber) {
+      var pdfUrl = "answer" + answerNumber + ".html";  // 對應的解答頁面
+      window.location.href = pdfUrl;
+    }
+
+    window.onload = loadPDFOptions;
+  </script>
+</head>
+<body>
+  <h2>選擇你要查看的解答</h2>
+  <div id="answerContainer"></div>
+</body>
+</html>
