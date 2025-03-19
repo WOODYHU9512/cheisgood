@@ -42,6 +42,41 @@
   </style>
 
   <script>
+    let pdfDoc = null;
+    let pageNum = 1;
+    let isRendering = false;
+
+    function renderPage(num) {
+      if (isRendering) return;
+      isRendering = true;
+
+      pdfDoc.getPage(num).then(function(page) {
+        let canvas = document.createElement('canvas');
+        let ctx = canvas.getContext('2d', { willReadFrequently: true });
+
+        let viewport = page.getViewport({ scale: 1.5 });
+        canvas.width = viewport.width;
+        canvas.height = viewport.height;
+
+        let renderContext = {
+          canvasContext: ctx,
+          viewport: viewport
+        };
+
+        page.render(renderContext).promise.then(() => {
+          document.getElementById('pdfContainer').appendChild(canvas);
+          isRendering = false;
+          pageNum++;
+
+          if (pageNum <= pdfDoc.numPages) {
+            setTimeout(() => renderPage(pageNum), 300); // 避免一次載入太多，減少當機風險
+          } else {
+            document.getElementById('loading').innerText = "✅ PDF 讀取完成！";
+          }
+        });
+      });
+    }
+
     function loadPDF() {
       let currentPDF = localStorage.getItem('currentPDF');
 
@@ -54,7 +89,6 @@
         return;
       }
 
-      // **自動移除 .pdf 以確保匹配**
       currentPDF = currentPDF.replace(/\.pdf$/, "").trim();
 
       const pdfLinks = {
@@ -89,8 +123,8 @@
       document.getElementById('loading').innerText = "🔄 載入中... 請稍候";
 
       pdfjsLib.getDocument(pdfUrl).promise.then(function(pdf) {
-        console.log("✅ PDF 成功載入:", pdfUrl);
-        document.getElementById('loading').innerText = "✅ PDF 讀取完成！";
+        pdfDoc = pdf;
+        renderPage(pageNum);
       }).catch(function(error) {
         console.error("❌ PDF 加載錯誤：", error);
         document.getElementById('loading').innerText = "❌ 無法載入 PDF";
