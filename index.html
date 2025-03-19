@@ -6,7 +6,7 @@
   <title>登入系統</title>
   <script type="module" src="https://raw.githubusercontent.com/WOODYHU9512/cheisgood/main/script.js"></script>
 
-  <!-- ✅ 確保 Firebase 9+ 模組載入 -->
+  <!-- ✅ Firebase 9+ 模組載入 -->
   <script type="module">
     import { initializeApp } from "https://www.gstatic.com/firebasejs/9.6.1/firebase-app.js";
     import { getDatabase, ref, get, update } from "https://www.gstatic.com/firebasejs/9.6.1/firebase-database.js";
@@ -20,7 +20,7 @@
     
     let sessionToken = "";
 
-    // ✅ 修正 checkCredentials
+    // ✅ 修正 checkCredentials（負責登入）
     window.checkCredentials = async function() {
       const username = document.getElementById('username').value.trim();
       const password = document.getElementById('password').value.trim();
@@ -63,7 +63,6 @@
 
         localStorage.setItem('loggedInUser', username);
         localStorage.setItem('sessionToken', sessionToken);
-        window.addEventListener("beforeunload", logout);
 
         window.location.href = 'pdf-select.html';
 
@@ -73,7 +72,7 @@
       }
     }
 
-    // 🚀 修正 logout
+    // 🚀 修正 logout（負責登出）
     window.logout = async function() {
       const username = localStorage.getItem('loggedInUser');
       const storedToken = localStorage.getItem('sessionToken');
