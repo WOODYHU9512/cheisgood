@@ -1,7 +1,7 @@
 <!DOCTYPE html>
 <html lang="zh-TW">
 <head>
-  <script type="module" src="https://raw.githubusercontent.com/WOODYHU9512/cheisgood/main/script.js"></script>
+  <script type="module" src="script.js"></script>  <!-- ✅ 只載入 `script.js` -->
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>PDF 觀看</title>
@@ -43,6 +43,26 @@
       display: none;
     }
   </style>
+</head>
+<body>
+  <h2 id="pdfTitle">📖 PDF 觀看</h2>
+  <div id="loading">🔄 載入中... 請稍候</div>
+  <div id="pdfContainer"></div>
+  <div id="errorContainer"></div>
+
+  <!-- 🔥 登出按鈕 -->
+  <button onclick="logout()" style="
+  position: fixed; 
+  top: 10px; 
+  right: 10px; 
+  padding: 10px 15px; 
+  background-color: red; 
+  color: white; 
+  border: none; 
+  cursor: pointer;
+  font-size: 16px;">
+    🚪 登出
+  </button>
 
   <script>
     let pdfDoc = null;
@@ -97,32 +117,8 @@
       currentPDF = currentPDF.trim();
       document.getElementById('pdfTitle').innerText = `📖 ${currentPDF}`;
 
-      const pdfLinks = {
-        "106~114 台大單操輸送": "https://raw.githubusercontent.com/WOODYHU9512/cheisgood/main/106~114%20台大單操輸送.pdf",
-        "106~114 台大化熱化反": "https://raw.githubusercontent.com/WOODYHU9512/cheisgood/main/106~114%20台大化熱化反.pdf",
-        "106~114 台大工數": "https://raw.githubusercontent.com/WOODYHU9512/cheisgood/main/106~114%20台大工數.pdf",
-        "106~114 清大單操輸送": "https://raw.githubusercontent.com/WOODYHU9512/cheisgood/main/106~114%20清大單操輸送.pdf",
-        "106~114 清大化熱化反": "https://raw.githubusercontent.com/WOODYHU9512/cheisgood/main/106~114%20清大化熱化反.pdf",
-        "106-114 成大單操輸送": "https://raw.githubusercontent.com/WOODYHU9512/cheisgood/main/106-114%20成大單操輸送.pdf",
-        "106-114 成大化熱": "https://raw.githubusercontent.com/WOODYHU9512/cheisgood/main/106-114%20成大化熱.pdf",
-        "106-114 成大化反": "https://raw.githubusercontent.com/WOODYHU9512/cheisgood/main/106-114%20成大化反.pdf",
-        "106-114 台科大工數與單操輸送": "https://raw.githubusercontent.com/WOODYHU9512/cheisgood/main/106-114%20台科大工數與單操輸送.pdf",
-        "106~114 台科大化熱化反": "https://raw.githubusercontent.com/WOODYHU9512/cheisgood/main/106~114%20台科大化熱化反.pdf",
-        "106-114 中興工程數學與輸送現象": "https://raw.githubusercontent.com/WOODYHU9512/cheisgood/main/106-114%20中興工程數學與輸送現象.pdf",
-        "106-114 中興化熱化反": "https://raw.githubusercontent.com/WOODYHU9512/cheisgood/main/106-114%20中興化熱化反.pdf",
-        "106~114 中央單操輸送": "https://raw.githubusercontent.com/WOODYHU9512/cheisgood/main/106~114%20中央單操輸送.pdf",
-        "106~114 中央化熱化反": "https://raw.githubusercontent.com/WOODYHU9512/cheisgood/main/106~114%20中央化熱化反.pdf"
-      };
+      const pdfUrl = `https://raw.githubusercontent.com/WOODYHU9512/cheisgood/main/${encodeURIComponent(currentPDF)}.pdf`;
 
-      const foundKey = Object.keys(pdfLinks).find(key => key.trim() === currentPDF);
-
-      if (!foundKey) {
-        document.getElementById('loading').innerText = "❌ 找不到該 PDF 連結！";
-        document.getElementById('errorContainer').style.display = "block";
-        return;
-      }
-
-      const pdfUrl = pdfLinks[foundKey];
       document.getElementById('loading').innerText = "🔄 載入中... 請稍候";
 
       pdfjsLib.getDocument(pdfUrl).promise.then(function(pdf) {
@@ -148,11 +144,5 @@
       }
     });
   </script>
-</head>
-<body>
-  <h2 id="pdfTitle">📖 PDF 觀看</h2>
-  <div id="loading">🔄 載入中... 請稍候</div>
-  <div id="pdfContainer"></div>
-  <div id="errorContainer"></div>
 </body>
 </html>
