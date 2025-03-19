@@ -43,41 +43,6 @@
   </style>
 
   <script>
-    let pdfDoc = null;
-    let pageNum = 1;
-    let isRendering = false;
-
-    function renderPage(num) {
-      if (isRendering) return;
-      isRendering = true;
-
-      pdfDoc.getPage(num).then(function(page) {
-        let canvas = document.createElement('canvas');
-        let ctx = canvas.getContext('2d', { willReadFrequently: true });
-
-        let viewport = page.getViewport({ scale: 1.5 });
-        canvas.width = viewport.width;
-        canvas.height = viewport.height;
-
-        let renderContext = {
-          canvasContext: ctx,
-          viewport: viewport
-        };
-
-        page.render(renderContext).promise.then(() => {
-          document.getElementById('pdfContainer').appendChild(canvas);
-          isRendering = false;
-          pageNum++;
-
-          if (pageNum <= pdfDoc.numPages) {
-            setTimeout(() => renderPage(pageNum), 300);
-          } else {
-            document.getElementById('loading').innerText = "✅ PDF 讀取完成！";
-          }
-        });
-      });
-    }
-
     function loadPDF() {
       let currentPDF = localStorage.getItem('currentPDF');
 
@@ -90,7 +55,7 @@
         return;
       }
 
-      currentPDF = currentPDF.replace(/\.pdf$/, "").trim();
+      currentPDF = currentPDF.trim();
       document.getElementById('pdfTitle').innerText = `📖 ${currentPDF}`;
 
       const pdfLinks = {
@@ -105,7 +70,9 @@
         "106-114 台科大工數與單操輸送": "https://raw.githubusercontent.com/WOODYHU9512/cheisgood/main/106-114%20台科大工數與單操輸送.pdf",
         "106~114 台科大化熱化反": "https://raw.githubusercontent.com/WOODYHU9512/cheisgood/main/106~114%20台科大化熱化反.pdf",
         "106-114 中興工程數學與輸送現象": "https://raw.githubusercontent.com/WOODYHU9512/cheisgood/main/106-114%20中興工程數學與輸送現象.pdf",
-        "106-114 中興化熱化反": "https://raw.githubusercontent.com/WOODYHU9512/cheisgood/main/106-114%20中興化熱化反.pdf"
+        "106-114 中興化熱化反": "https://raw.githubusercontent.com/WOODYHU9512/cheisgood/main/106-114%20中興化熱化反.pdf",
+        "106~114 中央單操輸送": "https://raw.githubusercontent.com/WOODYHU9512/cheisgood/main/106~114%20%E4%B8%AD%E5%A4%AE%E5%96%AE%E6%93%8D%E8%BC%B8%E9%80%81.pdf",
+        "106~114 中央化熱化反": "https://raw.githubusercontent.com/WOODYHU9512/cheisgood/main/106~114%20%E4%B8%AD%E5%A4%AE%E5%8C%96%E7%86%B1%E5%8C%96%E5%8F%8D.pdf"
       };
 
       const foundKey = Object.keys(pdfLinks).find(key => key.trim() === currentPDF);
@@ -127,7 +94,7 @@
       pdfjsLib.getDocument(pdfUrl).promise.then(function(pdf) {
         pdfDoc = pdf;
         document.getElementById('loading').innerText = "✅ PDF 讀取完成！";
-        renderPage(1);  // 🚀 確保第一頁渲染
+        renderPage(1);
       }).catch(function(error) {
         console.error("❌ PDF 加載錯誤：", error);
         document.getElementById('loading').innerText = "❌ 無法載入 PDF";
@@ -141,4 +108,6 @@
   <h2 id="pdfTitle">📖 PDF 觀看</h2>
   <div id="loading">🔄 載入中... 請稍候</div>
   <div id="pdfContainer"></div>
-  <
+  <div id="errorContainer"></div>
+</body>
+</html>
