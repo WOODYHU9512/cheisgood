@@ -4,29 +4,121 @@
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>PDF 觀看</title>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/pdf.js/2.16.105/pdf.min.js"></script>
+
+  <style>
+    body {
+      margin: 0;
+      overflow: hidden;
+    }
+    #pdfContainer {
+      width: 100vw;
+      height: 100vh;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      background: black;
+    }
+    canvas {
+      max-width: 100%;
+      max-height: 100%;
+    }
+    /* 禁止選取、右鍵 */
+    body, canvas {
+      user-select: none;
+      -webkit-user-select: none;
+      -moz-user-select: none;
+      -ms-user-select: none;
+    }
+    /* 防止截圖 */
+    .noScreenshot {
+      position: fixed;
+      top: 0;
+      left: 0;
+      width: 100vw;
+      height: 100vh;
+      background: rgba(255, 255, 255, 0);
+      z-index: 9999;
+      pointer-events: none;
+    }
+  </style>
+
   <script>
     function renderPDF() {
       const permissions = JSON.parse(localStorage.getItem('permissions'));
       const currentPDF = localStorage.getItem('currentPDF');  
-      const subjectName = currentPDF ? currentPDF.replace('全部.pdf', '') : null; 
+      const subjectName = currentPDF ? currentPDF.replace('全部.pdf', '') : null;
 
       console.log("📄 嘗試開啟 PDF:", currentPDF);
       console.log("🔍 當前權限:", permissions);
+      console.log("📌 解析出的科目名稱:", subjectName);
 
       if (!permissions || !subjectName || !permissions[subjectName]) {
         alert("🚫 您無權訪問此解答！");
+        console.log("❌ 權限拒絕訪問！", subjectName, permissions);
         window.location.href = 'index.html';
         return;
       }
 
+      // PDF 來源 URL
       const pdfUrl = `https://raw.githubusercontent.com/WOODYHU9512/cheisgood/main/${currentPDF}`;
-      window.location.href = pdfUrl;
+      var container = document.getElementById('pdfContainer');
+
+      pdfjsLib.getDocument(pdfUrl).promise.then(function(pdf) {
+        for (let pageNum = 1; pageNum <= pdf.numPages; pageNum++) {
+          pdf.getPage(pageNum).then(function(page) {
+            var canvas = document.createElement('canvas');
+            container.appendChild(canvas);
+            var ctx = canvas.getContext('2d', { willReadFrequently: true });
+
+            var viewport = page.getViewport({ scale: 2.0 });
+            canvas.width = viewport.width;
+            canvas.height = viewport.height;
+
+            var renderContext = {
+              canvasContext: ctx,
+              viewport: viewport
+            };
+            page.render(renderContext);
+          });
+        }
+      });
     }
 
-    window.onload = renderPDF;
+    // 禁止右鍵
+    document.addEventListener('contextmenu', event => event.preventDefault());
+
+    // 禁止 F12、開發者工具
+    document.addEventListener("keydown", function(event) {
+      if (event.keyCode == 123) {  // 禁止 F12
+        event.preventDefault();
+      }
+      if (event.ctrlKey && event.shiftKey && (event.keyCode == 73 || event.keyCode == 74)) { // 禁止 Ctrl+Shift+I / Ctrl+Shift+J
+        event.preventDefault();
+      }
+      if (event.ctrlKey && event.keyCode == 85) { // 禁止 Ctrl+U（檢視原始碼）
+        event.preventDefault();
+      }
+      if (event.ctrlKey && event.keyCode == 80) { // 禁止 Ctrl+P（列印）
+        event.preventDefault();
+      }
+    });
+
+    // 禁止截圖（顯示透明遮罩）
+    function preventScreenshot() {
+      const overlay = document.createElement('div');
+      overlay.classList.add('noScreenshot');
+      document.body.appendChild(overlay);
+    }
+
+    window.onload = function() {
+      preventScreenshot();
+      renderPDF();
+    };
   </script>
 </head>
 <body>
-  <h2>PDF 觀看</h2>
+  <h2 style="text-align:center; color:white;">PDF 觀看</h2>
+  <div id="pdfContainer"></div>
 </body>
 </html>
