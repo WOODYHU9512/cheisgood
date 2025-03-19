@@ -64,21 +64,23 @@
   <div id="errorContainer"></div>
 
   <!-- 🔥 顯示計時器（移到左上角） -->
-  <div id="countdown">⏳ 自動登出倒數：<span id="timer">10</span> 秒</div>
-  <div id="logout-warning" style="
+<div id="logout-warning" style="
   position: fixed;
-  top: 0;
-  left: 0;
-  width: 100%;
-  background-color: red;
+  top: 5px;
+  left: 50%;
+  transform: translateX(-50%);
+  background-color: rgba(255, 0, 0, 0.8);
   color: white;
-  text-align: center;
-  padding: 10px;
-  font-size: 18px;
+  padding: 5px 15px;
+  font-size: 14px;
   font-weight: bold;
-  z-index: 1000;">
-  ⚠️ **請務必使用「登出」按鈕登出，否則您的帳戶可能無法正確登出！**
+  border-radius: 5px;
+  z-index: 1000;
+  box-shadow: 0px 2px 5px rgba(0, 0, 0, 0.2);
+">
+  ⚠️ **請使用「登出」按鈕登出！**
 </div>
+
 
 
   <!-- 🔥 登出按鈕 -->
