@@ -11,8 +11,8 @@
       const container = document.getElementById('answerContainer');
       const welcomeMessage = document.getElementById('welcomeMessage');
 
-      console.log("當前登入用戶:", username);  
-      console.log("當前權限:", permissions);  
+      console.log("👤 當前登入用戶:", username);  
+      console.log("🔎 當前權限:", permissions);  
 
       if (!permissions || !username) {
         alert("您無權訪問此頁面，請先登入！");
@@ -44,14 +44,14 @@
     function checkAccessAndShowPDF(pdfFile, subjectName) {
       const permissions = JSON.parse(localStorage.getItem('permissions'));
 
-      console.log("點擊解答時的權限數據:", permissions);
+      console.log("🎯 嘗試打開:", pdfFile, " - 權限:", permissions);
 
       if (!permissions || !permissions[subjectName]) {
-        alert("您無權訪問此解答！");
+        alert("🚫 您無權訪問此解答！");
         window.location.href = 'index.html';  
       } else {
-        localStorage.setItem('currentPDF', pdfFile); // 紀錄目前選擇的 PDF
-        window.location.href = `pdf-viewer.html`; // 跳轉到 PDF 頁面
+        localStorage.setItem('currentPDF', pdfFile);  
+        window.location.href = `pdf-viewer.html`;  
       }
     }
 
