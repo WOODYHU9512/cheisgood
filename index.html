@@ -15,28 +15,66 @@
       }
 
       try {
-        // 讀取 GitHub 上的 user.json
-        const response = await fetch('https://raw.githubusercontent.com/WOODYHU9512/cheisgood/main/user.json');
-        const data = await response.json();
+        // 讀取 GitHub 上的 user.json 和 activeSessions.json
+        const userResponse = await fetch('https://raw.githubusercontent.com/WOODYHU9512/cheisgood/main/user.json');
+        const sessionResponse = await fetch('https://raw.githubusercontent.com/WOODYHU9512/cheisgood/main/activeSessions.json');
+        
+        const userData = await userResponse.json();
+        const sessionData = await sessionResponse.json();
 
         // 查找符合的用戶
-        const user = data.users.find(u => u.username === username && u.password === password);
+        const user = userData.users.find(u => u.username === username && u.password === password);
 
-        if (user) {
-          console.log("✅ 登入成功！儲存權限:", user.permissions);  
-          
-          // 儲存用戶權限
-          localStorage.setItem('permissions', JSON.stringify(user.permissions));
-          localStorage.setItem('loggedInUser', username);  
-
-          window.location.href = 'pdf-select.html';  
-        } else {
+        if (!user) {
           document.getElementById('result').innerText = "帳號或密碼錯誤！";
+          return;
         }
+
+        // 產生一個 sessionToken
+        const sessionToken = Math.random().toString(36).substr(2, 10);
+        
+        // 如果該帳號已經登入，先踢掉舊的 session
+        if (sessionData.sessions[username]) {
+          console.log(`⚠️ ${username} 已登入，將踢出前一個使用者！`);
+          alert(`⚠️ ${username} 已登入，前一個使用者將被踢出！`);
+        }
+
+        // 記錄新的 session
+        sessionData.sessions[username] = { sessionToken, loginTime: new Date().toISOString() };
+
+        // 更新 session 資料到 GitHub
+        await fetch('https://api.github.com/repos/WOODYHU9512/cheisgood/contents/activeSessions.json', {
+          method: 'PUT',
+          headers: {
+            'Authorization': `token YOUR_GITHUB_PERSONAL_ACCESS_TOKEN`,
+            'Content-Type': 'application/json'
+          },
+          body: JSON.stringify({
+            message: `Update active session for ${username}`,
+            content: btoa(JSON.stringify(sessionData, null, 2)),
+            sha: sessionData.sha // 取得當前檔案的 SHA
+          })
+        });
+
+        console.log("✅ 登入成功！儲存權限:", user.permissions);  
+        
+        // 儲存登入資訊
+        localStorage.setItem('permissions', JSON.stringify(user.permissions));
+        localStorage.setItem('loggedInUser', username);
+        localStorage.setItem('sessionToken', sessionToken);
+
+        window.location.href = 'pdf-select.html';
       } catch (error) {
-        console.error("❌ 載入帳號資料錯誤：", error);
+        console.error("❌ 登入時發生錯誤：", error);
         document.getElementById('result').innerText = "登入時發生錯誤，請稍後再試！";
       }
+    }
+
+    // 登出時，清除 session
+    function logout() {
+      localStorage.removeItem('loggedInUser');
+      localStorage.removeItem('sessionToken');
+      window.location.href = 'index.html';
     }
   </script>
 </head>
