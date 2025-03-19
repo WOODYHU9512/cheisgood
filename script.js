@@ -96,7 +96,25 @@ if (window.location.pathname.includes("pdf-select") || window.location.pathname.
         }, 1000);
     }
 
+    // ✅ 檢查 `localStorage` 是否有保存計時器狀態，避免頁面跳轉時重置
+    const lastActivity = localStorage.getItem("lastActivity");
+
+    if (lastActivity) {
+        const currentTime = Date.now();
+        const timeDiff = (currentTime - lastActivity) / 1000; // 秒數差
+
+        if (timeDiff < 30 * 60) {  // 如果時間差小於30分鐘
+            timeLeft = Math.max(0, 30 * 60 - timeDiff);
+            updateTimer();
+        }
+    }
+
     document.addEventListener("mousemove", startIdleTimer);
     document.addEventListener("keydown", startIdleTimer);
     startIdleTimer();
+
+    // 🚀 更新 `localStorage` 記錄最後的活動時間
+    window.addEventListener("beforeunload", () => {
+        localStorage.setItem("lastActivity", Date.now());
+    });
 }
