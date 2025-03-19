@@ -1,12 +1,4 @@
-<!DOCTYPE html>
-<html lang="zh-TW">
-<head>
-  <meta charset="UTF-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>登入系統</title>
-
-  <!-- ✅ 確保 Firebase 9+ 模組載入 -->
-  <script type="module">
+<script type="module">
     import { initializeApp } from "https://www.gstatic.com/firebasejs/9.6.1/firebase-app.js";
     import { getDatabase, ref, get, update } from "https://www.gstatic.com/firebasejs/9.6.1/firebase-database.js";
 
@@ -16,10 +8,11 @@
 
     const app = initializeApp(firebaseConfig);
     const db = getDatabase(app);
-    
-    let sessionToken = "";
 
-    // ✅ 修正 checkCredentials
+    let sessionToken = "";
+    let idleTimeout;  // 設定自動登出的計時器
+    const IDLE_TIME_LIMIT = 10 * 60 * 1000;  // 🔥 設定為 10 分鐘
+
     window.checkCredentials = async function() {
       const username = document.getElementById('username').value.trim();
       const password = document.getElementById('password').value.trim();
@@ -64,6 +57,8 @@
         localStorage.setItem('sessionToken', sessionToken);
         window.addEventListener("beforeunload", logout);
 
+        startIdleTimer();  // 🔥 開始計時自動登出
+
         window.location.href = 'pdf-select.html';
 
       } catch (error) {
@@ -71,6 +66,22 @@
         document.getElementById('result').innerText = "🚨 Firebase 連線錯誤，請檢查設定！";
       }
     }
+
+    // 🚀 設定閒置計時器
+    function startIdleTimer() {
+        console.log("⏳ 閒置計時器啟動...");
+        clearTimeout(idleTimeout);
+        idleTimeout = setTimeout(() => {
+            console.log("⏰ 閒置超過 10 分鐘，自動登出！");
+            alert("您已閒置 10 分鐘，將自動登出！");
+            logout();
+        }, IDLE_TIME_LIMIT);
+    }
+
+    // 🔥 監聽使用者活動（滑鼠、鍵盤、觸碰）
+    document.addEventListener("mousemove", startIdleTimer);
+    document.addEventListener("keydown", startIdleTimer);
+    document.addEventListener("touchstart", startIdleTimer);
 
     // 🚀 修正 logout
     window.logout = async function() {
@@ -100,19 +111,8 @@
 
       localStorage.removeItem('loggedInUser');
       localStorage.removeItem('sessionToken');
+      window.location.href = 'index.html'; // 回到登入頁
     }
 
     window.addEventListener("beforeunload", logout);
-  </script>
-</head>
-<body>
-  <h2>請輸入帳號和密碼</h2>
-  <form onsubmit="event.preventDefault(); checkCredentials();">
-    <input type="text" id="username" placeholder="帳號" required /><br />
-    <input type="password" id="password" placeholder="密碼" required /><br />
-    <button type="submit">登入</button>
-  </form>
-
-  <div id="result" style="margin-top: 20px; font-size: 20px; font-weight: bold;"></div>
-</body>
-</html>
+</script>
