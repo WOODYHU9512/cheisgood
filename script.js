@@ -1,7 +1,7 @@
 console.log("🔥 `script.js` 已載入");
 
 import { initializeApp } from "https://www.gstatic.com/firebasejs/9.6.1/firebase-app.js";
-import { getDatabase, ref, get, update } from "https://www.gstatic.com/firebasejs/9.6.1/firebase-database.js";
+import { getDatabase, ref, update } from "https://www.gstatic.com/firebasejs/9.6.1/firebase-database.js";
 
 const firebaseConfig = {
     databaseURL: "https://access-7a3c3-default-rtdb.firebaseio.com/"
@@ -13,7 +13,7 @@ const db = getDatabase(app);
 function getUserRef() {
     const username = localStorage.getItem('loggedInUser');
     if (!username) return null;
-    return ref(db, `users/${username}`);  // 🔥 根據登入的使用者更新
+    return ref(db, `users/${username}`);  // 🔥 確保只更新當前使用者
 }
 
 // ✅ 確保用戶已登入
@@ -49,11 +49,23 @@ window.logout = async function() {
 
 // 🚀 **監測分頁關閉，確保登出**
 window.addEventListener("beforeunload", function(event) {
-    const userRef = getUserRef();
-    if (!userRef) return;
+    if (sessionStorage.getItem("pageNavigation")) {
+        console.log("🔄 偵測到頁面跳轉，不執行登出");
+        sessionStorage.removeItem("pageNavigation");  // ✅ 清除跳轉標記
+    } else {
+        console.log("🚪 瀏覽器/分頁關閉，執行登出");
+        logout();
+    }
+});
 
-    const logoutData = JSON.stringify({ isLoggedIn: false, sessionToken: "" });
-    navigator.sendBeacon(`https://access-7a3c3-default-rtdb.firebaseio.com/users/${localStorage.getItem('loggedInUser')}.json`, logoutData);
+// ✅ **標記頁面跳轉，避免誤登出**
+document.addEventListener("DOMContentLoaded", function () {
+    const links = document.querySelectorAll("a, button");
+    links.forEach(link => {
+        link.addEventListener("click", function() {
+            sessionStorage.setItem("pageNavigation", "true");
+        });
+    });
 });
 
 // ✅ 只有 `pdf-select.html` 和 `pdf-viewer.html` 需要這些功能
