@@ -6,18 +6,22 @@
   <title>選擇考古題觀看</title>
   <script>
     function loadPDFOptions() {
-      // 讀取權限資料
-      const permissions = JSON.parse(localStorage.getItem('permissions'));
+      const permissions = JSON.parse(localStorage.getItem('permissions'));  
+      const username = localStorage.getItem('loggedInUser');  
       const container = document.getElementById('answerContainer');
-      
-      // 如果用戶沒有權限資料，跳回登入頁
-      if (!permissions) {
+      const welcomeMessage = document.getElementById('welcomeMessage');
+
+      console.log("當前登入用戶:", username);  
+      console.log("當前權限:", permissions);  
+
+      if (!permissions || !username) {
         alert("您無權訪問此頁面，請先登入！");
-        window.location.href = 'index.html';  // 跳回登入頁
+        window.location.href = 'index.html';  
         return;
       }
 
-      // 定義考古題清單
+      welcomeMessage.innerText = `歡迎，${username}！請選擇考古題觀看：`;
+
       const subjects = [
         { name: "台大", file: "台大全部.pdf" },
         { name: "清大", file: "清大全部.pdf" },
@@ -27,35 +31,32 @@
         { name: "中興", file: "中興全部.pdf" }
       ];
 
-      // 根據權限顯示可訪問的 PDF 按鈕
       subjects.forEach(subject => {
-        if (permissions[subject.name]) {  // 如果有權限
+        if (permissions[subject.name]) {  
           let button = document.createElement('button');
           button.innerText = "觀看 " + subject.name + " 解答";
-          button.onclick = function() { checkAccessAndShowPDF(subject.file); };
+          button.onclick = function() { checkAccessAndShowPDF(subject.file, subject.name); };
           container.appendChild(button);
         }
       });
     }
 
-    // 檢查用戶是否有權限，然後顯示對應的 PDF
-    function checkAccessAndShowPDF(pdfFile) {
+    function checkAccessAndShowPDF(pdfFile, subjectName) {
       const permissions = JSON.parse(localStorage.getItem('permissions'));
 
-      // 如果用戶沒有該 PDF 的權限，顯示錯誤並跳回登入頁
-      if (!permissions || !permissions[pdfFile.replace('.pdf', '')]) {
+      if (!permissions || !permissions[subjectName]) {
         alert("您無權訪問此解答！");
-        window.location.href = 'index.html';  // 無權訪問，跳回登入頁
+        window.location.href = 'index.html';  
       } else {
-        window.location.href = `pdf-viewer.html?file=${pdfFile}`; // 具有權限，跳轉到 PDF 頁面
+        window.location.href = `pdf-viewer.html?file=${pdfFile}`;  
       }
     }
 
-    window.onload = loadPDFOptions; // 頁面加載時顯示用戶可訪問的解答
+    window.onload = loadPDFOptions;
   </script>
 </head>
 <body>
-  <h2>選擇你要查看的考古題</h2>
+  <h2 id="welcomeMessage"></h2>
   <div id="answerContainer"></div>
 </body>
 </html>
