@@ -92,53 +92,54 @@
     function loadPDF() {
       const permissions = JSON.parse(localStorage.getItem('permissions'));
       const currentPDF = localStorage.getItem('currentPDF');
-      const subjectName = currentPDF ? currentPDF.replace('全部.pdf', '') : null;
 
       console.log("📄 嘗試開啟 PDF:", currentPDF);
       console.log("🔍 當前權限:", permissions);
-      console.log("📌 解析出的科目名稱:", subjectName);
 
-      if (!permissions || !subjectName || !permissions[subjectName]) {
+      if (!permissions || !currentPDF) {
         alert("🚫 您無權訪問此解答！");
-        console.log("❌ 權限拒絕訪問！", subjectName, permissions);
+        console.log("❌ 權限拒絕訪問！", currentPDF, permissions);
         window.location.href = 'index.html';
         return;
       }
 
+      // **更新後的 PDF 連結對應表**
       const pdfLinks = {
-        "中央": "https://raw.githubusercontent.com/WOODYHU9512/cheisgood/main/中央.pdf",
-        "中興": "https://raw.githubusercontent.com/WOODYHU9512/cheisgood/main/中興.pdf",
-        "台大": "https://raw.githubusercontent.com/WOODYHU9512/cheisgood/main/台大.pdf",
-        "台科大": "https://raw.githubusercontent.com/WOODYHU9512/cheisgood/main/台科大全部.pdf",
-        "成大": "https://raw.githubusercontent.com/WOODYHU9512/cheisgood/main/成大.pdf",
-        "清大": "https://raw.githubusercontent.com/WOODYHU9512/cheisgood/main/清大.pdf"
+        "106~114 台大單操輸送": "https://raw.githubusercontent.com/WOODYHU9512/cheisgood/main/106~114%20%E5%8F%B0%E5%A4%A7%E5%96%AE%E6%93%8D%E8%BC%B8%E9%80%81.pdf",
+        "106~114 台大化熱化反": "https://raw.githubusercontent.com/WOODYHU9512/cheisgood/main/106~114%20%E5%8F%B0%E5%A4%A7%E5%8C%96%E7%86%B1%E5%8C%96%E5%8F%8D.pdf",
+        "106~114 台大工數": "https://raw.githubusercontent.com/WOODYHU9512/cheisgood/main/106~114%20%E5%8F%B0%E5%A4%A7%E5%B7%A5%E6%95%B8.pdf",
+        "106~114 清大單操輸送": "https://raw.githubusercontent.com/WOODYHU9512/cheisgood/main/106~114%20%E6%B8%85%E5%A4%A7%E5%96%AE%E6%93%8D%E8%BC%B8%E9%80%81.pdf",
+        "106~114 清大化熱化反": "https://raw.githubusercontent.com/WOODYHU9512/cheisgood/main/106~114%20%E6%B8%85%E5%A4%A7%E5%8C%96%E7%86%B1%E5%8C%96%E5%8F%8D.pdf",
+        "106-114 成大單操輸送": "https://raw.githubusercontent.com/WOODYHU9512/cheisgood/main/106-114%20%E6%88%90%E5%A4%A7%E5%96%AE%E6%93%8D%E8%BC%B8%E9%80%81.pdf",
+        "106-114 成大化熱": "https://raw.githubusercontent.com/WOODYHU9512/cheisgood/main/106-114%20%E6%88%90%E5%A4%A7%E5%8C%96%E7%86%B1.pdf",
+        "106-114 成大化反": "https://raw.githubusercontent.com/WOODYHU9512/cheisgood/main/106-114%20%E6%88%90%E5%A4%A7%E5%8C%96%E5%8F%8D.pdf",
+        "106-114 台科大工數與單操輸送": "https://raw.githubusercontent.com/WOODYHU9512/cheisgood/main/106-114%20%E5%8F%B0%E7%A7%91%E5%A4%A7%E5%B7%A5%E6%95%B8%E8%88%87%E5%96%AE%E6%93%8D%E8%BC%B8%E9%80%81.pdf",
+        "106~114 台科大化熱化反": "https://raw.githubusercontent.com/WOODYHU9512/cheisgood/main/106~114%20%E5%8F%B0%E7%A7%91%E5%A4%A7%E5%8C%96%E7%86%B1%E5%8C%96%E5%8F%8D.pdf",
+        "106-114 中興工程數學與輸送現象": "https://raw.githubusercontent.com/WOODYHU9512/cheisgood/main/106-114%20%E4%B8%AD%E8%88%88%E5%B7%A5%E7%A8%8B%E6%95%B8%E5%AD%B8%E8%88%87%E8%BC%B8%E9%80%81%E7%8F%BE%E8%B1%A1.pdf",
+        "106-114 中興化熱化反": "https://raw.githubusercontent.com/WOODYHU9512/cheisgood/main/106-114%20%E4%B8%AD%E8%88%88%E5%8C%96%E7%86%B1%E5%8C%96%E5%8F%8D.pdf"
       };
 
-      if (!pdfLinks[subjectName]) {
-        alert("❌ 找不到該科目的 PDF 連結！");
+      if (!pdfLinks[currentPDF]) {
+        alert("❌ 找不到該 PDF 連結！");
         window.location.href = 'index.html';
         return;
       }
 
-      const pdfUrl = pdfLinks[subjectName];
-
+      const pdfUrl = pdfLinks[currentPDF];
       document.getElementById('loading').innerText = "🔄 載入中... 請稍候";
 
       pdfjsLib.getDocument(pdfUrl).promise.then(function(pdf) {
         pdfDoc = pdf;
         renderPage(pageNum);
-      }).catch(function(error) {
-        console.error("❌ PDF 加載錯誤：", error);
-        document.getElementById('loading').innerText = "❌ 無法載入 PDF";
       });
     }
 
-    // 禁止右鍵
-    document.addEventListener('contextmenu', event => event.preventDefault());
-
-    // 禁止 F12、開發者工具
-    document.addEventListener("keydown", function(event) {
-      if (event.keyCode == 123) {  // 禁止 F12
-        event.preventDefault();
-      }
-      if (event.ctrlKey && event.shiftKey && (event.keyCode == 73 || event.keyCode == 74)) { // 禁止 Ctrl+Shift+I / Ctrl
+    window.onload = loadPDF;
+  </script>
+</head>
+<body>
+  <h2>📖 PDF 觀看</h2>
+  <div id="loading">🔄 載入中... 請稍候</div>
+  <div id="pdfContainer"></div>
+</body>
+</html>
