@@ -1,7 +1,7 @@
 console.log("🔥 `script.js` 已載入");
 
 import { initializeApp } from "https://www.gstatic.com/firebasejs/9.6.1/firebase-app.js";
-import { getDatabase, ref, get, update, onDisconnect } from "https://www.gstatic.com/firebasejs/9.6.1/firebase-database.js";
+import { getDatabase, ref, get, update } from "https://www.gstatic.com/firebasejs/9.6.1/firebase-database.js";
 
 const firebaseConfig = {
     databaseURL: "https://access-7a3c3-default-rtdb.firebaseio.com/"
@@ -17,10 +17,6 @@ function checkLoginStatus() {
     if (!username || !sessionToken) {
         console.log("⛔ 未登入，跳轉至登入頁面");
         window.location.href = 'index.html';
-    } else {
-        // 🚀 設定 Firebase `onDisconnect()`，確保強制關機時也能登出
-        const userRef = ref(db, "users/" + username);
-        onDisconnect(userRef).update({ isLoggedIn: false, sessionToken: "" });
     }
 }
 
@@ -58,9 +54,12 @@ window.logout = async function() {
     window.location.href = 'index.html';
 };
 
-// 🚀 **監測分頁關閉，確保登出**
+// 🚀 **修正 `beforeunload` 事件，避免在跳轉時執行登出**
 window.addEventListener("beforeunload", async function(event) {
-    await logout();
+    // 只有當用戶 **真的關閉瀏覽器或分頁** 時才登出
+    if (!document.visibilityState || document.visibilityState === "hidden") {
+        await logout();
+    }
 });
 
 // ✅ 只有 `pdf-select.html` 和 `pdf-viewer.html` 需要這些功能
@@ -96,7 +95,7 @@ if (window.location.pathname.includes("pdf-select") || window.location.pathname.
         }, 1000);
     }
 
-    // ✅ 檢查 `localStorage` 是否有保存計時器狀態，避免頁面跳轉時重置
+    // ✅ 確保 `pdf-select.html` 跳轉到 `pdf-viewer.html` 時，計時器不會重新計算
     const lastActivity = localStorage.getItem("lastActivity");
 
     if (lastActivity) {
