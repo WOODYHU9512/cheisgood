@@ -4,24 +4,43 @@
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>PDF 觀看</title>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/pdf.js/2.16.105/pdf.min.js"></script>
 
   <style>
     body {
       margin: 0;
-      overflow: hidden;
       background-color: black;
+      color: white;
+      text-align: center;
     }
-    .pdf-container {
+    #pdfContainer {
       width: 100vw;
-      height: 100vh;
-      position: relative;
+      height: 90vh;
+      overflow-y: auto;
+      background: black;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
     }
-    iframe {
-      width: 100%;
-      height: 100%;
-      border: none;
+    canvas {
+      max-width: 100%;
+      height: auto;
+      margin-bottom: 10px;
     }
-    /* 防止截圖（透明遮罩） */
+    #loading {
+      font-size: 20px;
+      font-weight: bold;
+      color: white;
+      margin-top: 20px;
+    }
+    /* 禁止選取、右鍵 */
+    body, canvas {
+      user-select: none;
+      -webkit-user-select: none;
+      -moz-user-select: none;
+      -ms-user-select: none;
+    }
+    /* 防止截圖 */
     .noScreenshot {
       position: fixed;
       top: 0;
@@ -35,11 +54,46 @@
   </style>
 
   <script>
+    let pdfDoc = null;
+    let pageNum = 1;
+    let isRendering = false;
+
+    function renderPage(num) {
+      if (isRendering) return;
+      isRendering = true;
+
+      pdfDoc.getPage(num).then(function(page) {
+        let canvas = document.createElement('canvas');
+        let ctx = canvas.getContext('2d', { willReadFrequently: true });
+
+        let viewport = page.getViewport({ scale: 1.8 });
+        canvas.width = viewport.width;
+        canvas.height = viewport.height;
+
+        let renderContext = {
+          canvasContext: ctx,
+          viewport: viewport
+        };
+
+        page.render(renderContext).promise.then(() => {
+          document.getElementById('pdfContainer').appendChild(canvas);
+          isRendering = false;
+          pageNum++;
+
+          if (pageNum <= pdfDoc.numPages) {
+            setTimeout(() => renderPage(pageNum), 500); // 延遲載入下一頁，減少當機風險
+          } else {
+            document.getElementById('loading').innerText = "✅ PDF 讀取完成！";
+          }
+        });
+      });
+    }
+
     function loadPDF() {
       const permissions = JSON.parse(localStorage.getItem('permissions'));
       const currentPDF = localStorage.getItem('currentPDF');
       const subjectName = currentPDF ? currentPDF.replace('全部.pdf', '') : null;
-      
+
       console.log("📄 嘗試開啟 PDF:", currentPDF);
       console.log("🔍 當前權限:", permissions);
       console.log("📌 解析出的科目名稱:", subjectName);
@@ -51,14 +105,13 @@
         return;
       }
 
-      // Google Drive PDF 連結對應
       const pdfLinks = {
-        "中央": "https://drive.google.com/file/d/10LVz6EyEv7ayH1eONNWtCEIMYJqkiT7H/preview",
-        "中興": "https://drive.google.com/file/d/16TdDSc_urotuDj0gy4tnK4tNoUi9IFTr/preview",
-        "台大": "https://drive.google.com/file/d/14wfm0n7kU9MARvQHtkpdhiBW0EdDf92E/preview",
-        "台科大": "https://drive.google.com/file/d/1lzZzdIDP68dtp2K1_eY3El4_ssnf7Tfc/preview",
-        "成大": "https://drive.google.com/file/d/10-3_XiDfqtdCd2zyHYbIpfV0sOz2rNWk/preview",
-        "清大": "https://drive.google.com/file/d/1zkKxiPTMYDcFQMIsEU0YyfhtWTQh_ML0/preview"
+        "中央": "https://raw.githubusercontent.com/WOODYHU9512/cheisgood/main/中央.pdf",
+        "中興": "https://raw.githubusercontent.com/WOODYHU9512/cheisgood/main/中興.pdf",
+        "台大": "https://raw.githubusercontent.com/WOODYHU9512/cheisgood/main/台大.pdf",
+        "台科大": "https://raw.githubusercontent.com/WOODYHU9512/cheisgood/main/台科大全部.pdf",
+        "成大": "https://raw.githubusercontent.com/WOODYHU9512/cheisgood/main/成大.pdf",
+        "清大": "https://raw.githubusercontent.com/WOODYHU9512/cheisgood/main/清大.pdf"
       };
 
       if (!pdfLinks[subjectName]) {
@@ -67,8 +120,17 @@
         return;
       }
 
-      // 設定 iframe 來源
-      document.getElementById('pdfFrame').src = pdfLinks[subjectName];
+      const pdfUrl = pdfLinks[subjectName];
+
+      document.getElementById('loading').innerText = "🔄 載入中... 請稍候";
+
+      pdfjsLib.getDocument(pdfUrl).promise.then(function(pdf) {
+        pdfDoc = pdf;
+        renderPage(pageNum);
+      }).catch(function(error) {
+        console.error("❌ PDF 加載錯誤：", error);
+        document.getElementById('loading').innerText = "❌ 無法載入 PDF";
+      });
     }
 
     // 禁止右鍵
@@ -79,34 +141,4 @@
       if (event.keyCode == 123) {  // 禁止 F12
         event.preventDefault();
       }
-      if (event.ctrlKey && event.shiftKey && (event.keyCode == 73 || event.keyCode == 74)) { // 禁止 Ctrl+Shift+I / Ctrl+Shift+J
-        event.preventDefault();
-      }
-      if (event.ctrlKey && event.keyCode == 85) { // 禁止 Ctrl+U（檢視原始碼）
-        event.preventDefault();
-      }
-      if (event.ctrlKey && event.keyCode == 80) { // 禁止 Ctrl+P（列印）
-        event.preventDefault();
-      }
-    });
-
-    // 禁止截圖（透明遮罩）
-    function preventScreenshot() {
-      const overlay = document.createElement('div');
-      overlay.classList.add('noScreenshot');
-      document.body.appendChild(overlay);
-    }
-
-    window.onload = function() {
-      preventScreenshot();
-      loadPDF();
-    };
-  </script>
-</head>
-<body>
-  <h2 style="text-align:center; color:white;">PDF 觀看</h2>
-  <div class="pdf-container">
-    <iframe id="pdfFrame"></iframe>
-  </div>
-</body>
-</html>
+      if (event.ctrlKey && event.shiftKey && (event.keyCode == 73 || event.keyCode == 74)) { // 禁止 Ctrl+Shift+I / Ctrl
