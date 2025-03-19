@@ -4,62 +4,109 @@
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>選擇考古題觀看</title>
+  <style>
+    body {
+      text-align: center;
+      font-family: Arial, sans-serif;
+    }
+    .school-button, .subject-button {
+      margin: 10px;
+      padding: 10px 20px;
+      font-size: 18px;
+      cursor: pointer;
+      background-color: #007bff;
+      color: white;
+      border: none;
+      border-radius: 5px;
+    }
+    .subject-container {
+      display: none;
+      margin-top: 20px;
+    }
+  </style>
+
   <script>
-    function loadPDFOptions() {
-      const permissions = JSON.parse(localStorage.getItem('permissions'));  
+    const pdfSubjects = {
+      "台大": {
+        "106~114 台大單操輸送": "106~114 台大單操輸送.pdf",
+        "106~114 台大化熱化反": "106~114 台大化熱化反.pdf",
+        "106~114 台大工數": "106~114 台大工數.pdf"
+      },
+      "清大": {
+        "106~114 清大單操輸送": "106~114 清大單操輸送.pdf",
+        "106~114 清大化熱化反": "106~114 清大化熱化反.pdf"
+      },
+      "成大": {
+        "106-114 成大單操輸送": "106-114 成大單操輸送.pdf",
+        "106-114 成大化熱": "106-114 成大化熱.pdf",
+        "106-114 成大化反": "106-114 成大化反.pdf"
+      },
+      "台科大": {
+        "106-114 台科大工數與單操輸送": "106-114 台科大工數與單操輸送.pdf",
+        "106~114 台科大化熱化反": "106~114 台科大化熱化反.pdf"
+      },
+      "中興": {
+        "106-114 中興工程數學與輸送現象": "106-114 中興工程數學與輸送現象.pdf",
+        "106-114 中興化熱化反": "106-114 中興化熱化反.pdf"
+      }
+    };
+
+    function showSubjects(school) {
+      const permissions = JSON.parse(localStorage.getItem('permissions'));
       const username = localStorage.getItem('loggedInUser');  
-      const container = document.getElementById('answerContainer');
-      const welcomeMessage = document.getElementById('welcomeMessage');
+      const container = document.getElementById('subjectContainer');
 
-      console.log("👤 當前登入用戶:", username);  
-      console.log("🔎 當前權限:", permissions);  
+      container.innerHTML = "";  
+      container.style.display = "block";
 
-      if (!permissions || !username) {
-        alert("您無權訪問此頁面，請先登入！");
-        window.location.href = 'index.html';  
+      console.log("👤 當前登入用戶:", username);
+      console.log("🔎 當前權限:", permissions);
+
+      if (!permissions || !permissions[school]) {
+        alert("🚫 您無權訪問此學校的解答！");
         return;
       }
 
-      welcomeMessage.innerText = `歡迎，${username}！請選擇考古題觀看：`;
-
-      const subjects = [
-        { name: "台大", file: "台大全部.pdf" },
-        { name: "清大", file: "清大全部.pdf" },
-        { name: "成大", file: "成大全部.pdf" },
-        { name: "台科", file: "台科大全部.pdf" },
-        { name: "中央", file: "中央全部.pdf" },
-        { name: "中興", file: "中興全部.pdf" }
-      ];
-
-      subjects.forEach(subject => {
-        if (permissions[subject.name]) {  
-          let button = document.createElement('button');
-          button.innerText = "觀看 " + subject.name + " 解答";
-          button.onclick = function() { checkAccessAndShowPDF(subject.file, subject.name); };
-          container.appendChild(button);
-        }
-      });
+      for (let subject in pdfSubjects[school]) {
+        let button = document.createElement('button');
+        button.innerText = subject;
+        button.classList.add("subject-button");
+        button.onclick = function() { checkAccessAndShowPDF(pdfSubjects[school][subject], school, subject); };
+        container.appendChild(button);
+      }
     }
 
-    function checkAccessAndShowPDF(pdfFile, subjectName) {
+    function checkAccessAndShowPDF(pdfFile, school, subject) {
       const permissions = JSON.parse(localStorage.getItem('permissions'));
 
-      console.log("🎯 嘗試打開:", pdfFile, " - 權限:", permissions);
+      console.log("🎯 嘗試打開:", pdfFile);
+      console.log("🔎 讀取到的權限數據:", permissions);
 
-      if (!permissions || !permissions[subjectName]) {
+      if (!permissions || !permissions[school]) {
         alert("🚫 您無權訪問此解答！");
         window.location.href = 'index.html';  
       } else {
-        localStorage.setItem('currentPDF', pdfFile);  
+        localStorage.setItem('currentPDF', pdfFile);
+        console.log("✅ 權限檢查通過，前往 PDF 頁面", pdfFile);
         window.location.href = `pdf-viewer.html`;  
       }
     }
 
-    window.onload = loadPDFOptions;
+    window.onload = function() {
+      const container = document.getElementById('schoolContainer');
+      for (let school in pdfSubjects) {
+        let button = document.createElement('button');
+        button.innerText = school;
+        button.classList.add("school-button");
+        button.onclick = function() { showSubjects(school); };
+        container.appendChild(button);
+      }
+    };
   </script>
 </head>
 <body>
-  <h2 id="welcomeMessage"></h2>
-  <div id="answerContainer"></div>
+  <h2>請選擇學校</h2>
+  <div id="schoolContainer"></div>
+  <div id="subjectContainer" class="subject-container"></div>
 </body>
 </html>
