@@ -23,9 +23,9 @@
         const user = data.users.find(u => u.username === username && u.password === password);
 
         if (user) {
-          console.log("登入成功，儲存權限:", user.permissions);  // 測試是否正確抓到權限
+          console.log("✅ 登入成功！儲存權限:", user.permissions);  
           
-          // 儲存用戶權限，確保格式正確
+          // 儲存用戶權限
           localStorage.setItem('permissions', JSON.stringify(user.permissions));
           localStorage.setItem('loggedInUser', username);  
 
@@ -34,7 +34,7 @@
           document.getElementById('result').innerText = "帳號或密碼錯誤！";
         }
       } catch (error) {
-        console.error("載入帳號資料錯誤：", error);
+        console.error("❌ 載入帳號資料錯誤：", error);
         document.getElementById('result').innerText = "登入時發生錯誤，請稍後再試！";
       }
     }
