@@ -9,12 +9,16 @@ const firebaseConfig = {
 const app = initializeApp(firebaseConfig);
 const db = getDatabase(app);
 
+// ✅ **取得當前登入使用者的 Firebase 參照**
+function getUserRef() {
+    const username = localStorage.getItem('loggedInUser');
+    if (!username) return null;
+    return ref(db, `users/${username}`);  // 🔥 根據登入的使用者更新
+}
+
 // ✅ 確保用戶已登入
 function checkLoginStatus() {
-    const username = localStorage.getItem('loggedInUser');
-    const sessionToken = localStorage.getItem('sessionToken');
-
-    if (!username || !sessionToken) {
+    if (!localStorage.getItem('loggedInUser') || !localStorage.getItem('sessionToken')) {
         console.log("⛔ 未登入，跳轉至登入頁面");
         window.location.href = 'index.html';
     }
@@ -22,24 +26,13 @@ function checkLoginStatus() {
 
 // 🚀 **登出功能**
 async function logout() {
-    const username = localStorage.getItem('loggedInUser');
-    const storedToken = localStorage.getItem('sessionToken');
-
-    if (!username) return;
+    const userRef = getUserRef();
+    if (!userRef) return;
 
     try {
-        const userRef = ref(db, "users/" + username);
-        const snapshot = await get(userRef);
-
-        if (snapshot.exists()) {
-            const user = snapshot.val();
-
-            if (user.sessionToken === storedToken) {
-                console.log(`🚪 ${username} 正在登出...`);
-                await update(userRef, { isLoggedIn: false, sessionToken: "" });
-                console.log(`✅ ${username} 已成功登出！`);
-            }
-        }
+        console.log(`🚪 正在登出 ${localStorage.getItem('loggedInUser')}...`);
+        await update(userRef, { isLoggedIn: false, sessionToken: "" });
+        console.log(`✅ ${localStorage.getItem('loggedInUser')} 已成功登出！`);
     } catch (error) {
         console.error("❌ 登出錯誤：", error);
     }
@@ -56,14 +49,11 @@ window.logout = async function() {
 
 // 🚀 **監測分頁關閉，確保登出**
 window.addEventListener("beforeunload", function(event) {
-    const username = localStorage.getItem('loggedInUser');
-    if (username) {
-        // 使用 sendBeacon 確保關閉分頁時仍然能回傳登出請求
-        const userRef = ref(db, "users/" + username);
-        const logoutData = JSON.stringify({ isLoggedIn: false, sessionToken: "" });
+    const userRef = getUserRef();
+    if (!userRef) return;
 
-        navigator.sendBeacon(`https://access-7a3c3-default-rtdb.firebaseio.com/users/${username}.json`, logoutData);
-    }
+    const logoutData = JSON.stringify({ isLoggedIn: false, sessionToken: "" });
+    navigator.sendBeacon(`https://access-7a3c3-default-rtdb.firebaseio.com/users/${localStorage.getItem('loggedInUser')}.json`, logoutData);
 });
 
 // ✅ 只有 `pdf-select.html` 和 `pdf-viewer.html` 需要這些功能
@@ -97,19 +87,6 @@ if (window.location.pathname.includes("pdf-select") || window.location.pathname.
                 window.location.href = 'index.html';
             }
         }, 1000);
-    }
-
-    // ✅ 確保 `pdf-viewer.html` 正確顯示計時器為 30:00
-    const lastActivity = localStorage.getItem("lastActivity");
-
-    if (lastActivity) {
-        const currentTime = Date.now();
-        const timeDiff = (currentTime - lastActivity) / 1000; // 秒數差
-
-        if (timeDiff < 30 * 60) {  // 如果時間差小於30分鐘
-            timeLeft = Math.max(0, 30 * 60 - timeDiff);
-            updateTimer();
-        }
     }
 
     document.addEventListener("mousemove", startIdleTimer);
