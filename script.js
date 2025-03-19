@@ -52,25 +52,12 @@ window.logout = async function() {
     window.location.href = 'index.html';
 };
 
-// 🚀 **監測分頁/瀏覽器關閉，確保登出**
-window.addEventListener("beforeunload", async function(event) {
-    const username = localStorage.getItem('loggedInUser');
-    if (!username) return;
-
+// 🚀 **監測分頁/瀏覽器關閉，跳出警告**
+window.addEventListener("beforeunload", function(event) {
     if (!sessionStorage.getItem("pageNavigation")) {
-        console.log("🚪 瀏覽器/分頁關閉，執行登出");
-        const userRef = await getUserRef();
-        const snapshot = await get(userRef);
-        if (snapshot.exists()) {
-            const userData = snapshot.val();
-            await fetch(`https://access-7a3c3-default-rtdb.firebaseio.com/users/${username}.json`, {
-                method: "PATCH",
-                headers: { "Content-Type": "application/json" },
-                body: JSON.stringify({ isLoggedIn: false, sessionToken: "", password: userData.password })
-            });
-        }
+        event.preventDefault();
+        event.returnValue = "⚠️ 請使用「登出」按鈕登出，否則您的帳戶可能無法正確登出！";
     } else {
-        console.log("🔄 偵測到頁面跳轉，不執行登出");
         sessionStorage.removeItem("pageNavigation");
     }
 });
