@@ -3,32 +3,32 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>選擇解答觀看</title>
+  <title>登入系統</title>
   <script>
-    var permissions = JSON.parse(localStorage.getItem('permissions'));
+    // 這個函數會被觸發，當用戶點擊"登入"按鈕時
+    function checkCredentials() {
+      const username = document.getElementById('username').value;  // 取得帳號
+      const password = document.getElementById('password').value;  // 取得密碼
 
-    function loadPDFOptions() {
-      var container = document.getElementById('answerContainer');
-      for (var i = 1; i <= 6; i++) {
-        if (permissions[i - 1] === 'TRUE') {
-          var button = document.createElement('button');
-          button.innerText = "觀看 解答 " + i;
-          button.onclick = function() { showPDF(i); };
-          container.appendChild(button);
+      // 呼叫 Google Apps Script 的 Web App，並傳遞帳號密碼進行驗證
+      google.script.run.withSuccessHandler(function(permissions) {
+        if (permissions) {
+          // 如果驗證成功，儲存權限並跳轉
+          localStorage.setItem('permissions', JSON.stringify(permissions)); // 儲存權限
+          window.location.href = 'pdf-select.html';  // 跳轉到選擇解答頁面
+        } else {
+          alert('帳號或密碼錯誤');  // 驗證失敗顯示錯誤訊息
         }
-      }
+      }).checkCredentials(username, password);  // 呼叫 Google Apps Script 函數進行驗證
     }
-
-    function showPDF(answerNumber) {
-      var pdfUrl = "answer" + answerNumber + ".html";  // 對應的解答頁面
-      window.location.href = pdfUrl;
-    }
-
-    window.onload = loadPDFOptions;
   </script>
 </head>
 <body>
-  <h2>選擇你要查看的解答</h2>
-  <div id="answerContainer"></div>
+  <h2>請輸入帳號和密碼</h2>
+  <form onsubmit="event.preventDefault(); checkCredentials();">
+    <input type="text" id="username" placeholder="帳號" required /><br />
+    <input type="password" id="password" placeholder="密碼" required /><br />
+    <button type="submit">登入</button>
+  </form>
 </body>
 </html>
