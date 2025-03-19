@@ -5,23 +5,22 @@
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>登入系統</title>
 
-  <!-- Firebase SDK ✅ 正確載入 -->
+  <!-- ✅ 確保 Firebase 9+ 模組載入 -->
   <script type="module">
-    // ✅ 1️⃣ 正確載入 Firebase SDK
     import { initializeApp } from "https://www.gstatic.com/firebasejs/9.6.1/firebase-app.js";
     import { getDatabase, ref, get, update } from "https://www.gstatic.com/firebasejs/9.6.1/firebase-database.js";
 
-    // ✅ 2️⃣ 設定 Firebase
     const firebaseConfig = {
       databaseURL: "https://access-7a3c3-default-rtdb.firebaseio.com/"
     };
 
     const app = initializeApp(firebaseConfig);
     const db = getDatabase(app);
+    
+    let sessionToken = "";
 
-    let sessionToken = ""; // 存取目前登入的 sessionToken
-
-    async function checkCredentials() {
+    // ✅ 修正 checkCredentials
+    window.checkCredentials = async function() {
       const username = document.getElementById('username').value.trim();
       const password = document.getElementById('password').value.trim();
 
@@ -38,29 +37,22 @@
 
         if (!snapshot.exists()) {
           document.getElementById('result').innerText = "帳號或密碼錯誤！";
-          console.log("❌ 帳號不存在");
           return;
         }
 
         const user = snapshot.val();
-        console.log("🔑 取得使用者資料：", user);
-
         if (user.password !== password) {
           document.getElementById('result').innerText = "帳號或密碼錯誤！";
-          console.log("❌ 密碼錯誤");
           return;
         }
 
         if (user.isLoggedIn) {
           document.getElementById('result').innerText = "⚠️ 此帳號已在其他地方登入！";
-          console.log("❌ 帳號已被佔用");
           return;
         }
 
-        // 產生一個 sessionToken
         sessionToken = Math.random().toString(36).substr(2, 10);
 
-        // 🔥 標記為已登入
         await update(userRef, {
           isLoggedIn: true,
           sessionToken: sessionToken
@@ -80,8 +72,8 @@
       }
     }
 
-    // 🚀 登出功能
-    async function logout() {
+    // 🚀 修正 logout
+    window.logout = async function() {
       const username = localStorage.getItem('loggedInUser');
       const storedToken = localStorage.getItem('sessionToken');
 
@@ -94,13 +86,11 @@
         if (snapshot.exists()) {
           const user = snapshot.val();
 
-          // 只有當前 sessionToken 相符時，才允許登出
           if (user.sessionToken === storedToken) {
             await update(userRef, {
               isLoggedIn: false,
               sessionToken: ""
             });
-
             console.log(`🚪 ${username} 已登出！`);
           }
         }
@@ -108,12 +98,10 @@
         console.error("❌ 登出時發生錯誤：", error);
       }
 
-      // 清除本機儲存
       localStorage.removeItem('loggedInUser');
       localStorage.removeItem('sessionToken');
     }
 
-    // ✅ 讓 logout 在頁面關閉時執行
     window.addEventListener("beforeunload", logout);
   </script>
 </head>
