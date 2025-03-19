@@ -21,6 +21,7 @@
       display: flex;
       flex-direction: column;
       align-items: center;
+      position: relative;
     }
     canvas {
       max-width: 100%;
@@ -38,6 +39,17 @@
       font-size: 18px;
       margin-top: 20px;
       display: none;
+    }
+    /* 透明層防止右鍵選取 */
+    .noScreenshot {
+      position: fixed;
+      top: 0;
+      left: 0;
+      width: 100vw;
+      height: 100vh;
+      background: rgba(255, 255, 255, 0);
+      z-index: 9999;
+      pointer-events: none;
     }
   </style>
 
@@ -89,7 +101,6 @@
         return;
       }
 
-      // **移除 .pdf，確保名稱匹配**
       currentPDF = currentPDF.replace(/\.pdf$/, "").trim();
       document.getElementById('pdfTitle').innerText = `📖 ${currentPDF}`;
 
@@ -105,9 +116,7 @@
         "106-114 台科大工數與單操輸送": "https://raw.githubusercontent.com/WOODYHU9512/cheisgood/main/106-114%20台科大工數與單操輸送.pdf",
         "106~114 台科大化熱化反": "https://raw.githubusercontent.com/WOODYHU9512/cheisgood/main/106~114%20台科大化熱化反.pdf",
         "106-114 中興工程數學與輸送現象": "https://raw.githubusercontent.com/WOODYHU9512/cheisgood/main/106-114%20中興工程數學與輸送現象.pdf",
-        "106-114 中興化熱化反": "https://raw.githubusercontent.com/WOODYHU9512/cheisgood/main/106-114%20中興化熱化反.pdf",
-        "106~114 中央單操輸送": "https://raw.githubusercontent.com/WOODYHU9512/cheisgood/main/106~114%20中央單操輸送.pdf",
-        "106~114 中央化熱化反": "https://raw.githubusercontent.com/WOODYHU9512/cheisgood/main/106~114%20中央化熱化反.pdf"
+        "106-114 中興化熱化反": "https://raw.githubusercontent.com/WOODYHU9512/cheisgood/main/106-114%20中興化熱化反.pdf"
       };
 
       const foundKey = Object.keys(pdfLinks).find(key => key.trim() === currentPDF);
@@ -135,6 +144,16 @@
       });
     }
 
+    // **🚫 禁止右鍵**
+    document.addEventListener('contextmenu', event => event.preventDefault());
+
+    // **🚫 禁止 F12、Ctrl+U、開發者工具**
+    document.addEventListener("keydown", function(event) {
+      if (event.keyCode == 123 || (event.ctrlKey && (event.keyCode == 85 || event.keyCode == 73 || event.keyCode == 74))) {
+        event.preventDefault();
+      }
+    });
+
     window.onload = loadPDF;
   </script>
 </head>
@@ -143,5 +162,6 @@
   <div id="loading">🔄 載入中... 請稍候</div>
   <div id="pdfContainer"></div>
   <div id="errorContainer"></div>
+  <div class="noScreenshot"></div> <!-- 🚫 透明防截圖層 -->
 </body>
 </html>
