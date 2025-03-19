@@ -48,10 +48,9 @@ async function logout() {
     window.location.href = 'index.html';
 }
 
-// ✅ 讓 HTML 登出按鈕可以呼叫 logout()
 window.logout = logout;
 
-if (window.location.pathname.includes("pdf-viewer")) {
+if (window.location.pathname.includes("pdf-select") || window.location.pathname.includes("pdf-viewer")) {
     checkLoginStatus();
 
     let idleTimeout;
