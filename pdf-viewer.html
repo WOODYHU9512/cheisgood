@@ -49,15 +49,14 @@
 
       if (!currentPDF) {
         document.getElementById('loading').innerText = "🚫 您無權訪問此解答！";
-        console.error("❌ 錯誤：currentPDF 為 null 或未設定");
         document.getElementById('errorContainer').innerText = "❌ 找不到 currentPDF，請確認登入流程是否正確！";
         document.getElementById('errorContainer').style.display = "block";
         return;
       }
 
-      currentPDF = currentPDF.trim(); // 去除多餘空格
+      // **自動移除 .pdf 以確保匹配**
+      currentPDF = currentPDF.replace(/\.pdf$/, "").trim();
 
-      // **確保 currentPDF 與 pdfLinks 鍵名一致**
       const pdfLinks = {
         "106~114 台大單操輸送": "https://raw.githubusercontent.com/WOODYHU9512/cheisgood/main/106~114%20台大單操輸送.pdf",
         "106~114 台大化熱化反": "https://raw.githubusercontent.com/WOODYHU9512/cheisgood/main/106~114%20台大化熱化反.pdf",
@@ -73,7 +72,6 @@
         "106-114 中興化熱化反": "https://raw.githubusercontent.com/WOODYHU9512/cheisgood/main/106-114%20中興化熱化反.pdf"
       };
 
-      // **檢查 currentPDF 是否在 pdfLinks 內**
       const foundKey = Object.keys(pdfLinks).find(key => key.trim() === currentPDF);
 
       if (!foundKey) {
@@ -84,8 +82,6 @@
           <pre>${JSON.stringify(Object.keys(pdfLinks), null, 2)}</pre>
         `;
         document.getElementById('errorContainer').style.display = "block";
-        console.error("❌ 錯誤：currentPDF", currentPDF, "不在 pdfLinks 內");
-        console.log("📌 `pdfLinks` 鍵名:", Object.keys(pdfLinks));
         return;
       }
 
