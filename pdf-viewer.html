@@ -43,12 +43,11 @@
       display: none;
     }
 
-    /* ✅ 計時器樣式 */
+    /* ✅ 計時器移到左上角 */
     #countdown {
       position: fixed;
       top: 10px;
-      left: 50%;
-      transform: translateX(-50%);
+      left: 10px;
       font-size: 18px;
       background: rgba(255, 0, 0, 0.8);
       color: white;
@@ -64,7 +63,7 @@
   <div id="pdfContainer"></div>
   <div id="errorContainer"></div>
 
-  <!-- 🔥 顯示計時器 -->
+  <!-- 🔥 顯示計時器（移到左上角） -->
   <div id="countdown">⏳ 自動登出倒數：<span id="timer">10</span> 秒</div>
 
   <!-- 🔥 登出按鈕 -->
