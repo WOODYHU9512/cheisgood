@@ -54,10 +54,10 @@ window.logout = async function() {
     window.location.href = 'index.html';
 };
 
-// 🚀 **修正 `beforeunload` 事件，避免在跳轉時執行登出**
+// 🚀 **監測分頁關閉，確保登出**
 window.addEventListener("beforeunload", async function(event) {
-    // 只有當用戶 **真的關閉瀏覽器或分頁** 時才登出
-    if (!document.visibilityState || document.visibilityState === "hidden") {
+    // 確保只有在真正關閉瀏覽器或分頁時才登出
+    if (!sessionStorage.getItem('navigated')) {
         await logout();
     }
 });
@@ -95,25 +95,21 @@ if (window.location.pathname.includes("pdf-select") || window.location.pathname.
         }, 1000);
     }
 
-    // ✅ 確保 `pdf-select.html` 跳轉到 `pdf-viewer.html` 時，計時器不會重新計算
-    const lastActivity = localStorage.getItem("lastActivity");
-
-    if (lastActivity) {
-        const currentTime = Date.now();
-        const timeDiff = (currentTime - lastActivity) / 1000; // 秒數差
-
-        if (timeDiff < 30 * 60) {  // 如果時間差小於30分鐘
-            timeLeft = Math.max(0, 30 * 60 - timeDiff);
-            updateTimer();
-        }
+    // ✅ 跳轉到 `pdf-viewer.html` 時避免誤登出
+    if (sessionStorage.getItem('navigated')) {
+        console.log("跳轉後，不執行登出");
+        sessionStorage.removeItem('navigated');
+    } else {
+        document.addEventListener("mousemove", startIdleTimer);
+        document.addEventListener("keydown", startIdleTimer);
+        startIdleTimer();
     }
-
-    document.addEventListener("mousemove", startIdleTimer);
-    document.addEventListener("keydown", startIdleTimer);
-    startIdleTimer();
 
     // 🚀 更新 `localStorage` 記錄最後的活動時間
     window.addEventListener("beforeunload", () => {
         localStorage.setItem("lastActivity", Date.now());
     });
+
+    // 🚀 設定跳轉標誌
+    window.sessionStorage.setItem('navigated', true);
 }
