@@ -7,25 +7,21 @@
   <script src="https://cdnjs.cloudflare.com/ajax/libs/pdf.js/2.16.105/pdf.min.js"></script>
   <script>
     function renderPDF() {
-      const permissions = JSON.parse(localStorage.getItem('permissions')); // 取得用戶權限
+      const permissions = JSON.parse(localStorage.getItem('permissions'));
+      const currentPDF = localStorage.getItem('currentPDF');  
+      const subjectName = currentPDF ? currentPDF.replace('全部.pdf', '') : null; 
 
-      if (!permissions) {
-        alert("您無權訪問此頁面");
-        window.location.href = 'index.html';  // 如果沒有權限，跳回登入頁
-        return;
-      }
+      console.log("目前正在嘗試開啟:", currentPDF);
+      console.log("當前權限:", permissions);
 
-      const urlParams = new URLSearchParams(window.location.search);
-      const pdfFile = urlParams.get('file');  // 取得對應的 PDF 文件名稱
-
-      if (!pdfFile || !permissions[pdfFile.replace('.pdf', '')]) {
+      if (!permissions || !subjectName || !permissions[subjectName]) {
         alert("您無權訪問此解答！");
-        window.location.href = 'index.html';  // 無權訪問，跳回登入頁
+        window.location.href = 'index.html';
         return;
       }
 
-      // 使用 PDF.js 來顯示 PDF
-      const pdfUrl = `https://raw.githubusercontent.com/WOODYHU9512/cheisgood/main/${pdfFile}`;
+      // 正確載入 PDF
+      const pdfUrl = `https://raw.githubusercontent.com/WOODYHU9512/cheisgood/main/${currentPDF}`;
       var container = document.getElementById('pdfContainer');
 
       pdfjsLib.getDocument(pdfUrl).promise.then(function(pdf) {
@@ -49,7 +45,7 @@
       });
     }
 
-    window.onload = renderPDF;  // 頁面加載時顯示 PDF
+    window.onload = renderPDF;
   </script>
 </head>
 <body>
