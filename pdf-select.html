@@ -145,7 +145,7 @@
       const snapshot = await get(userRef);
 
       if (snapshot.exists() && snapshot.val() !== null) {
-        authorizedSchools = Object.keys(snapshot.val()); // ✅ 取出 purchased 的 key 當成陣列
+        authorizedSchools = Object.keys(snapshot.val());
       } else {
         authorizedSchools = [];
       }
@@ -166,27 +166,23 @@
       });
     }
 
-    function updateSubjects() {
-  const school = document.getElementById("schoolSelect").value;
-  const subjectSelect = document.getElementById("subjectSelect");
+    window.updateSubjects = function() {
+      const school = document.getElementById("schoolSelect").value;
+      const subjectSelect = document.getElementById("subjectSelect");
 
-  subjectSelect.innerHTML = ""; // ✅ 先清空選單
+      subjectSelect.innerHTML = "<option value=''>請選擇科目</option>";
 
-  if (!school || !subjects.hasOwnProperty(school)) {
-    subjectSelect.innerHTML = "<option value=''>請選擇科目</option>";
-    return;
-  }
+      if (!school || !subjects.hasOwnProperty(school)) return;
 
-  // ✅ 添加可選科目
-  Object.entries(subjects[school]).forEach(([subject, fileId]) => {
-    let option = document.createElement("option");
-    option.value = fileId;  // ✅ 存 Google Drive File ID
-    option.textContent = subject;
-    subjectSelect.appendChild(option);
-  });
+      Object.entries(subjects[school]).forEach(([subject, fileId]) => {
+        let option = document.createElement("option");
+        option.value = fileId;
+        option.textContent = subject;
+        subjectSelect.appendChild(option);
+      });
 
-  console.log(`✅ 選擇學校：${school}，顯示科目數量：${Object.keys(subjects[school]).length}`);
-}
+      console.log(`✅ 選擇學校：${school}，顯示科目數量：${Object.keys(subjects[school]).length}`);
+    };
 
     function viewPDF() {
       const subjectId = document.getElementById("subjectSelect").value;
