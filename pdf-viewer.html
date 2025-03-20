@@ -128,13 +128,16 @@
         return;
       }
 
+      // ✅ 設定標題顯示 PDF 名稱
       document.getElementById("pdfTitle").innerText = `📖 ${fileName}`;
+
+      // ✅ Google Drive 預覽連結格式
       let pdfUrl = `https://drive.google.com/file/d/${fileId}/preview?embedded=true`;
       document.getElementById("pdfFrame").src = pdfUrl;
     }
 
     // ✅ 設定計時器（30 分鐘倒數）
-    let idleTime = 30 * 60; // 30分鐘（秒）
+    let idleTime = 30 * 60;
     let countdownTimer = setInterval(() => {
       idleTime--;
       let minutes = Math.floor(idleTime / 60);
@@ -150,7 +153,7 @@
 
     // ✅ 監聽使用者活動，重置計時器
     function resetTimer() {
-      idleTime = 30 * 60; // 重設為 30 分鐘
+      idleTime = 30 * 60;
     }
     document.addEventListener("mousemove", resetTimer);
     document.addEventListener("keydown", resetTimer);
