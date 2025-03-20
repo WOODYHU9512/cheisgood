@@ -34,7 +34,7 @@
 
     /* ✅ 透明遮罩（防止點擊 Google Drive 下載按鈕） */
     .overlay {
-      width: 100px; /* ✅ 擴大遮罩 */
+      width: 100px;
       height: 100px;
       position: absolute;
       opacity: 0;
@@ -107,9 +107,20 @@
   <!-- ✅ 登出按鈕 -->
   <button id="logout-btn" onclick="logout()">🚪 登出</button>
 
-  <script>
+  <script type="module">
+    import { initializeApp } from "https://www.gstatic.com/firebasejs/9.6.1/firebase-app.js";
+    import { getDatabase, ref, get, update } from "https://www.gstatic.com/firebasejs/9.6.1/firebase-database.js";
+
+    // ✅ 初始化 Firebase
+    const firebaseConfig = {
+      databaseURL: "https://access-7a3c3-default-rtdb.firebaseio.com/"
+    };
+    const app = initializeApp(firebaseConfig);
+    const db = getDatabase(app);
+
     function loadPDF() {
       let fileId = localStorage.getItem("currentPDF");
+      let fileName = localStorage.getItem("currentPDFName");
 
       if (!fileId) {
         alert("❌ 無法載入 PDF，請重新選擇科目！");
@@ -117,7 +128,7 @@
         return;
       }
 
-      // ✅ Google Drive 正確嵌入格式
+      document.getElementById("pdfTitle").innerText = `📖 ${fileName}`;
       let pdfUrl = `https://drive.google.com/file/d/${fileId}/preview?embedded=true`;
       document.getElementById("pdfFrame").src = pdfUrl;
     }
@@ -153,8 +164,7 @@
       if (!username) return;
 
       try {
-        const db = getDatabase();
-        const userRef = ref(db, "users/" + username);
+        const userRef = ref(db, `users/${username}`);
         const snapshot = await get(userRef);
 
         if (snapshot.exists()) {
@@ -173,6 +183,8 @@
 
       localStorage.removeItem('loggedInUser');
       localStorage.removeItem('sessionToken');
+      localStorage.removeItem('currentPDF');
+      localStorage.removeItem('currentPDFName');
       window.location.href = 'index.html';
     }
 
@@ -186,20 +198,6 @@
         event.preventDefault();
       }
     });
-
-    // ✅ 防止開發者工具
-    function detectDevTools() {
-      let threshold = 200;
-      let start = performance.now();
-      debugger; // 這行在 F12 打開時會被觸發
-      let end = performance.now();
-      
-      if (end - start > threshold) {
-        alert("❌ 禁止開啟開發者工具！");
-        window.location.href = "index.html";
-      }
-    }
-    setInterval(detectDevTools, 2000); // 每 2 秒檢查一次是否開啟 DevTools
 
     window.onload = loadPDF;
   </script>
