@@ -184,12 +184,10 @@
 
     function viewPDF() {
       const subjectId = document.getElementById("subjectSelect").value;
-
       if (!subjectId) {
         alert("❌ 請選擇科目！");
         return;
       }
-
       localStorage.setItem("currentPDF", subjectId);
       window.location.href = "pdf-viewer.html";
     }
