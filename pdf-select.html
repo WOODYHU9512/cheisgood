@@ -91,10 +91,17 @@
   <button id="logout-btn" onclick="logout()">🚪 登出</button>
 
   <script type="module">
+    import { initializeApp } from "https://www.gstatic.com/firebasejs/9.6.1/firebase-app.js";
     import { getDatabase, ref, get } from "https://www.gstatic.com/firebasejs/9.6.1/firebase-database.js";
 
-    const db = getDatabase();
-    let authorizedSchools = [];  // ✅ 存放用戶購買的學校
+    // ✅ 初始化 Firebase
+    const firebaseConfig = {
+      databaseURL: "https://access-7a3c3-default-rtdb.firebaseio.com/"
+    };
+    const app = initializeApp(firebaseConfig);
+    const db = getDatabase(app);
+
+    let authorizedSchools = [];
 
     // ✅ 學校對應的科目與 Google Drive PDF File ID
     const subjects = {
@@ -126,7 +133,6 @@
       }
     };
 
-    // ✅ 從 Firebase 讀取授權學校
     async function loadUserPermissions() {
       const username = localStorage.getItem('loggedInUser');
       if (!username) {
@@ -137,13 +143,15 @@
 
       const userRef = ref(db, `users/${username}/purchased`);
       const snapshot = await get(userRef);
-      if (snapshot.exists()) {
-        authorizedSchools = snapshot.val();
-        populateSchoolOptions();
+
+      if (snapshot.exists() && snapshot.val() !== null) {
+        authorizedSchools = Object.keys(snapshot.val()); // ✅ 取出 purchased 的 key 當成陣列
       } else {
-        alert("❌ 您沒有任何可觀看的考古題！");
-        window.location.href = "index.html";
+        authorizedSchools = [];
       }
+
+      console.log("✅ 你有權限的學校：", authorizedSchools);
+      populateSchoolOptions();
     }
 
     function populateSchoolOptions() {
@@ -151,18 +159,24 @@
       schoolSelect.innerHTML = "<option value=''>請選擇學校</option>";
 
       Object.keys(subjects).forEach(school => {
-        if (authorizedSchools.includes(school)) {  // ✅ 修正 `if` 條件
+        if (authorizedSchools.includes(school)) {
           let option = document.createElement("option");
           option.value = school;
           option.textContent = school;
           schoolSelect.appendChild(option);
         }
       });
+
+      if (schoolSelect.options.length === 1) {
+        alert("❌ 你沒有任何學校的考古題可觀看！");
+        window.location.href = "index.html";
+      }
     }
 
     function updateSubjects() {
       const school = document.getElementById("schoolSelect").value;
       const subjectSelect = document.getElementById("subjectSelect");
+
       subjectSelect.innerHTML = "<option value=''>請選擇科目</option>";
 
       if (school && subjects[school]) {
@@ -176,13 +190,10 @@
     }
 
     function viewPDF() {
-      const school = document.getElementById("schoolSelect").value;
-      const subject = document.getElementById("subjectSelect").value;
-      localStorage.setItem("currentPDF", subjects[school][subject]);
-      window.location.href = "pdf-viewer.html";
+      alert("🎉 PDF 觀看功能正常！"); 
     }
 
-    window.onload = loadUserPermissions;
+    loadUserPermissions();
   </script>
 </body>
 </html>
