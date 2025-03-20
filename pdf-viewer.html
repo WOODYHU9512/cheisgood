@@ -151,7 +151,22 @@
       window.location.href = 'index.html';
     }
 
-    // ✅ 禁止下載 / 禁止開發者工具
+    // ✅ 防止開發者工具 (修正誤判問題)
+    function detectDevTools() {
+      let threshold = 200;
+      let start = performance.now();
+      debugger; // 這行在 F12 打開時會被觸發
+      let end = performance.now();
+      
+      if (end - start > threshold) {
+        alert("❌ 禁止開啟開發者工具！");
+        window.location.href = "index.html";
+      }
+    }
+
+    setInterval(detectDevTools, 2000); // 每 2 秒檢查一次是否開啟 DevTools
+
+    // ✅ 禁止下載 / 禁止開發者工具快捷鍵
     document.addEventListener("contextmenu", event => event.preventDefault());
     document.addEventListener("keydown", function(event) {
       if (event.keyCode == 123 ||  // F12
@@ -161,16 +176,6 @@
         event.preventDefault();
       }
     });
-
-    // ✅ 防止開發者工具
-    setInterval(function() {
-      if (window.outerWidth - window.innerWidth > 160 || 
-          window.outerHeight - window.innerHeight > 160) {
-        document.body.innerHTML = "";
-        alert("❌ 禁止開啟開發者工具！");
-        window.location.href = "index.html";
-      }
-    }, 1000);
 
     window.onload = loadPDF;
   </script>
