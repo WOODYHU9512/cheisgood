@@ -1,6 +1,23 @@
 <!DOCTYPE html>
 <html lang="zh-TW">
 <head>
+  <script>
+  function checkReferrer() {
+    const allowedReferrer = "woodyhu9512.github.io";
+    
+    // ✅ 檢查 `document.referrer`，確保是從 GitHub Pages 進入
+    if (!document.referrer || !document.referrer.includes(allowedReferrer)) {
+      alert("⚠️ 你只能從官方網站訪問此頁面！");
+      window.location.href = "https://woodyhu9512.github.io/cheisgood/"; // 🔄 強制跳轉回 GitHub Pages
+    }
+  }
+
+  document.addEventListener("DOMContentLoaded", checkReferrer);
+
+  // 🚀 **防止用戶用開發者工具修改 `document.referrer`**
+  setInterval(checkReferrer, 2000);
+</script>
+
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>登入系統</title>
