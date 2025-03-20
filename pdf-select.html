@@ -94,7 +94,7 @@
     import { getDatabase, ref, get } from "https://www.gstatic.com/firebasejs/9.6.1/firebase-database.js";
 
     const db = getDatabase();
-    let authorizedSchools = {};  // ✅ 存放用戶購買的學校
+    let authorizedSchools = [];  // ✅ 存放用戶購買的學校
 
     // ✅ 學校對應的科目與 Google Drive PDF File ID
     const subjects = {
@@ -151,7 +151,7 @@
       schoolSelect.innerHTML = "<option value=''>請選擇學校</option>";
 
       Object.keys(subjects).forEach(school => {
-        if (authorizedSchools[school]) {
+        if (authorizedSchools.includes(school)) {  // ✅ 修正 `if` 條件
           let option = document.createElement("option");
           option.value = school;
           option.textContent = school;
@@ -163,7 +163,6 @@
     function updateSubjects() {
       const school = document.getElementById("schoolSelect").value;
       const subjectSelect = document.getElementById("subjectSelect");
-
       subjectSelect.innerHTML = "<option value=''>請選擇科目</option>";
 
       if (school && subjects[school]) {
