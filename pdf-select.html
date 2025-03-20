@@ -172,10 +172,10 @@
 
       subjectSelect.innerHTML = "<option value=''>請選擇科目</option>";
 
-      if (school && subjects[school]) {
-        Object.keys(subjects[school]).forEach(subject => {
+      if (school && subjects.hasOwnProperty(school)) {
+        Object.entries(subjects[school]).forEach(([subject, fileId]) => {
           let option = document.createElement("option");
-          option.value = subjects[school][subject]; // ✅ 存 Google Drive File ID
+          option.value = fileId; // ✅ 存 Google Drive File ID
           option.textContent = subject;
           subjectSelect.appendChild(option);
         });
