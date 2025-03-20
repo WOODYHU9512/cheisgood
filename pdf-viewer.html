@@ -1,11 +1,10 @@
 <!DOCTYPE html>
 <html lang="zh-TW">
 <head>
-  <script type="module" src="script.js"></script>  <!-- ✅ 只載入 `script.js` -->
+  <script type="module" src="script.js"></script>  <!-- ✅ 載入 script.js 確保登出 & 計時器功能 -->
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>PDF 觀看</title>
-  <script src="https://cdnjs.cloudflare.com/ajax/libs/pdf.js/2.16.105/pdf.min.js"></script>
 
   <style>
     body {
@@ -14,36 +13,15 @@
       color: white;
       text-align: center;
     }
-    #pdfContainer {
-      width: 100vw;
+
+    /* ✅ PDF iframe 設定 */
+    iframe {
+      width: 100%;
       height: 90vh;
-      overflow-y: auto;
-      background: black;
-      display: flex;
-      flex-direction: column;
-      align-items: center;
-      position: relative;
-    }
-    canvas {
-      max-width: 100%;
-      height: auto;
-      margin-bottom: 10px;
-      pointer-events: none; /* 禁止滑鼠操作 */
-    }
-    #loading {
-      font-size: 20px;
-      font-weight: bold;
-      color: white;
-      margin-top: 20px;
-    }
-    #errorContainer {
-      color: red;
-      font-size: 18px;
-      margin-top: 20px;
-      display: none;
+      border: none;
     }
 
-    /* ✅ 計時器移到左上角 */
+    /* ✅ 計時器顯示 */
     #countdown {
       position: fixed;
       top: 10px;
@@ -55,116 +33,146 @@
       border-radius: 10px;
       font-weight: bold;
     }
+
+    /* ✅ 登出提醒 */
+    #logout-warning {
+      position: fixed;
+      bottom: 5px;
+      left: 50%;
+      transform: translateX(-50%);
+      background-color: rgba(255, 0, 0, 0.8);
+      color: white;
+      padding: 5px 15px;
+      font-size: 14px;
+      font-weight: bold;
+      border-radius: 5px;
+      z-index: 1000;
+      box-shadow: 0px 2px 5px rgba(0, 0, 0, 0.2);
+    }
+
+    /* ✅ 登出按鈕 */
+    #logout-btn {
+      position: fixed;
+      top: 10px;
+      right: 10px;
+      padding: 10px 15px;
+      background-color: red;
+      color: white;
+      border: none;
+      cursor: pointer;
+      font-size: 16px;
+    }
   </style>
 </head>
 <body>
+
   <h2 id="pdfTitle">📖 PDF 觀看</h2>
-  <div id="loading">🔄 載入中... 請稍候</div>
-  <div id="pdfContainer"></div>
-  <div id="errorContainer"></div>
 
-  <!-- 🔥 顯示計時器（移到左上角） -->
-<div id="logout-warning" style="
-  position: fixed;
-  top: 5px;
-  left: 50%;
-  transform: translateX(-50%);
-  background-color: rgba(255, 0, 0, 0.8);
-  color: white;
-  padding: 5px 15px;
-  font-size: 14px;
-  font-weight: bold;
-  border-radius: 5px;
-  z-index: 1000;
-  box-shadow: 0px 2px 5px rgba(0, 0, 0, 0.2);
-">
-  ⚠️ **請使用「登出」按鈕登出！**
-</div>
+  <!-- ✅ 顯示計時器 -->
+  <div id="countdown">⏳ 自動登出倒數：<span id="timer">30:00</span></div>
 
+  <!-- ✅ 顯示 PDF -->
+  <iframe id="pdfFrame"></iframe>
 
+  <!-- ✅ 登出提醒 -->
+  <div id="logout-warning">
+    ⚠️ **請務必透過登出鈕登出！**
+  </div>
 
-  <!-- 🔥 登出按鈕 -->
-  <button onclick="logout()" style="
-  position: fixed; 
-  top: 10px; 
-  right: 10px; 
-  padding: 10px 15px; 
-  background-color: red; 
-  color: white; 
-  border: none; 
-  cursor: pointer;
-  font-size: 16px;">
-    🚪 登出
-  </button>
+  <!-- ✅ 登出按鈕 -->
+  <button id="logout-btn" onclick="logout()">🚪 登出</button>
 
   <script>
-    let pdfDoc = null;
-    let pageNum = 1;
-    let isRendering = false;
-
-    function renderPage(num) {
-      if (isRendering) return;
-      isRendering = true;
-
-      pdfDoc.getPage(num).then(function(page) {
-        let canvas = document.createElement('canvas');
-        let ctx = canvas.getContext('2d', { willReadFrequently: true });
-
-        let viewport = page.getViewport({ scale: 1.5 });
-        canvas.width = viewport.width;
-        canvas.height = viewport.height;
-
-        let renderContext = {
-          canvasContext: ctx,
-          viewport: viewport
-        };
-
-        page.render(renderContext).promise.then(() => {
-          document.getElementById('pdfContainer').appendChild(canvas);
-          isRendering = false;
-          pageNum++;
-
-          if (pageNum <= pdfDoc.numPages) {
-            setTimeout(() => renderPage(pageNum), 300);
-          } else {
-            document.getElementById('loading').innerText = "✅ PDF 讀取完成！";
-          }
-        });
-      }).catch(error => {
-        console.error("❌ 無法渲染 PDF 頁面：", error);
-      });
-    }
-
     function loadPDF() {
-      let currentPDF = localStorage.getItem('currentPDF');
+      let fileId = localStorage.getItem("currentPDF");
 
-      console.log("📄 嘗試開啟 PDF:", currentPDF);
-
-      if (!currentPDF) {
-        document.getElementById('loading').innerText = "🚫 您無權訪問此解答！";
-        document.getElementById('errorContainer').innerText = "❌ 找不到 currentPDF，請確認登入流程是否正確！";
-        document.getElementById('errorContainer').style.display = "block";
+      if (!fileId) {
+        alert("❌ 無法載入 PDF，請重新選擇科目！");
+        window.location.href = "pdf-select.html";
         return;
       }
 
-      currentPDF = currentPDF.trim();
-      document.getElementById('pdfTitle').innerText = `📖 ${currentPDF}`;
-
-      const pdfUrl = `https://raw.githubusercontent.com/WOODYHU9512/cheisgood/main/${encodeURIComponent(currentPDF)}.pdf`;
-
-      document.getElementById('loading').innerText = "🔄 載入中... 請稍候";
-
-      pdfjsLib.getDocument(pdfUrl).promise.then(function(pdf) {
-        pdfDoc = pdf;
-        document.getElementById('loading').innerText = "✅ PDF 讀取完成！";
-        renderPage(1);
-      }).catch(function(error) {
-        console.error("❌ PDF 加載錯誤：", error);
-        document.getElementById('loading').innerText = "❌ 無法載入 PDF";
-      });
+      let pdfUrl = `https://drive.google.com/file/d/${fileId}/preview?embedded=true`;
+      document.getElementById("pdfFrame").src = pdfUrl;
     }
+
+    // ✅ 設定計時器（30 分鐘倒數）
+    let idleTime = 30 * 60; // 30分鐘（秒）
+    let countdownTimer = setInterval(() => {
+      idleTime--;
+      let minutes = Math.floor(idleTime / 60);
+      let seconds = idleTime % 60;
+      document.getElementById("timer").innerText = `${minutes}:${seconds < 10 ? '0' : ''}${seconds}`;
+
+      if (idleTime <= 0) {
+        clearInterval(countdownTimer);
+        alert("⏰ 已超過 30 分鐘未操作，自動登出！");
+        logout();
+      }
+    }, 1000);
+
+    // ✅ 監聽使用者活動，重置計時器
+    function resetTimer() {
+      idleTime = 30 * 60; // 重設為 30 分鐘
+    }
+    document.addEventListener("mousemove", resetTimer);
+    document.addEventListener("keydown", resetTimer);
+    document.addEventListener("touchstart", resetTimer);
+
+    // ✅ 登出功能
+    async function logout() {
+      const username = localStorage.getItem('loggedInUser');
+      const storedToken = localStorage.getItem('sessionToken');
+
+      if (!username) return;
+
+      try {
+        const db = getDatabase();
+        const userRef = ref(db, "users/" + username);
+        const snapshot = await get(userRef);
+
+        if (snapshot.exists()) {
+          const user = snapshot.val();
+          if (user.sessionToken === storedToken) {
+            await update(userRef, {
+              isLoggedIn: false,
+              sessionToken: ""
+            });
+            console.log(`🚪 ${username} 已登出！`);
+          }
+        }
+      } catch (error) {
+        console.error("❌ 登出錯誤：", error);
+      }
+
+      localStorage.removeItem('loggedInUser');
+      localStorage.removeItem('sessionToken');
+      window.location.href = 'index.html';
+    }
+
+    // ✅ 禁止下載 / 禁止開發者工具
+    document.addEventListener("contextmenu", event => event.preventDefault());
+    document.addEventListener("keydown", function(event) {
+      if (event.keyCode == 123 ||  // F12
+          (event.ctrlKey && event.shiftKey && (event.keyCode == 73 || event.keyCode == 74)) || // Ctrl+Shift+I / J
+          (event.ctrlKey && event.keyCode == 85) || // Ctrl+U
+          (event.ctrlKey && event.keyCode == 83)) { // Ctrl+S
+        event.preventDefault();
+      }
+    });
+
+    // ✅ 防止開發者工具
+    setInterval(function() {
+      if (window.outerWidth - window.innerWidth > 160 || 
+          window.outerHeight - window.innerHeight > 160) {
+        document.body.innerHTML = "";
+        alert("❌ 禁止開啟開發者工具！");
+        window.location.href = "index.html";
+      }
+    }, 1000);
 
     window.onload = loadPDF;
   </script>
+
 </body>
 </html>
