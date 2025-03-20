@@ -72,12 +72,6 @@
   <label for="schoolSelect">選擇學校：</label>
   <select id="schoolSelect" onchange="updateSubjects()">
     <option value="">請選擇學校</option>
-    <option value="台大">台大</option>
-    <option value="清大">清大</option>
-    <option value="成大">成大</option>
-    <option value="中央">中央</option>
-    <option value="台科大">台科大</option>
-    <option value="中興">中興</option>
   </select>
 
   <!-- ✅ 科目選擇 -->
@@ -96,7 +90,12 @@
   <!-- ✅ 登出按鈕 -->
   <button id="logout-btn" onclick="logout()">🚪 登出</button>
 
-  <script>
+  <script type="module">
+    import { getDatabase, ref, get } from "https://www.gstatic.com/firebasejs/9.6.1/firebase-database.js";
+
+    const db = getDatabase();
+    let authorizedSchools = {};  // ✅ 存放用戶購買的學校
+
     // ✅ 學校對應的科目與 Google Drive PDF File ID
     const subjects = {
       "台大": {
@@ -127,6 +126,40 @@
       }
     };
 
+    // ✅ 從 Firebase 讀取授權學校
+    async function loadUserPermissions() {
+      const username = localStorage.getItem('loggedInUser');
+      if (!username) {
+        alert("❌ 未登入，請重新登入！");
+        window.location.href = "index.html";
+        return;
+      }
+
+      const userRef = ref(db, `users/${username}/purchased`);
+      const snapshot = await get(userRef);
+      if (snapshot.exists()) {
+        authorizedSchools = snapshot.val();
+        populateSchoolOptions();
+      } else {
+        alert("❌ 您沒有任何可觀看的考古題！");
+        window.location.href = "index.html";
+      }
+    }
+
+    function populateSchoolOptions() {
+      const schoolSelect = document.getElementById("schoolSelect");
+      schoolSelect.innerHTML = "<option value=''>請選擇學校</option>";
+
+      Object.keys(subjects).forEach(school => {
+        if (authorizedSchools[school]) {
+          let option = document.createElement("option");
+          option.value = school;
+          option.textContent = school;
+          schoolSelect.appendChild(option);
+        }
+      });
+    }
+
     function updateSubjects() {
       const school = document.getElementById("schoolSelect").value;
       const subjectSelect = document.getElementById("subjectSelect");
@@ -146,38 +179,11 @@
     function viewPDF() {
       const school = document.getElementById("schoolSelect").value;
       const subject = document.getElementById("subjectSelect").value;
-
-      if (!school || !subject || !subjects[school][subject]) {
-        alert("請選擇科目！");
-        return;
-      }
-
       localStorage.setItem("currentPDF", subjects[school][subject]);
       window.location.href = "pdf-viewer.html";
     }
 
-    // ✅ 計時器（30 分鐘內未動作則登出）
-    let idleTime = 30 * 60;
-    let countdownTimer = setInterval(() => {
-      idleTime--;
-      let minutes = Math.floor(idleTime / 60);
-      let seconds = idleTime % 60;
-      document.getElementById("timer").innerText = `${minutes}:${seconds < 10 ? '0' : ''}${seconds}`;
-
-      if (idleTime <= 0) {
-        clearInterval(countdownTimer);
-        alert("⏰ 已超過 30 分鐘未操作，自動登出！");
-        logout();
-      }
-    }, 1000);
-
-    function resetTimer() {
-      idleTime = 30 * 60;
-    }
-    document.addEventListener("mousemove", resetTimer);
-    document.addEventListener("keydown", resetTimer);
-    document.addEventListener("touchstart", resetTimer);
+    window.onload = loadUserPermissions;
   </script>
-
 </body>
 </html>
