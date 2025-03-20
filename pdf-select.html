@@ -105,7 +105,7 @@
 
     // ✅ 學校對應的科目與 Google Drive PDF File ID
     const subjects = {
-      "台大": {
+     "台大": {
         "106~114 台大單操輸送": "1-8YNZiVw81RjqLPPWmzbC0ng4PAIa53a",
         "106~114 台大化熱化反": "1V1xIOMRl04VJORV4fdKN9Bot76XRnv7A",
         "106~114 台大工數": "1twqzBEGA7A3YEzYLRf-kDcLqBkOS4ujD"
@@ -166,30 +166,36 @@
       });
     }
 
-    function updateSubjects() {
+    window.updateSubjects = function() {
       const school = document.getElementById("schoolSelect").value;
       const subjectSelect = document.getElementById("subjectSelect");
 
       subjectSelect.innerHTML = "<option value=''>請選擇科目</option>";
 
-      if (school && subjects[school]) {
-        Object.entries(subjects[school]).forEach(([subject, fileId]) => {
-          let option = document.createElement("option");
-          option.value = fileId;
-          option.textContent = subject;
-          subjectSelect.appendChild(option);
-        });
-      }
-    }
+      if (!school || !subjects.hasOwnProperty(school)) return;
+
+      Object.entries(subjects[school]).forEach(([subject, fileId]) => {
+        let option = document.createElement("option");
+        option.value = fileId;
+        option.textContent = subject;
+        subjectSelect.appendChild(option);
+      });
+
+      console.log(`✅ 選擇學校：${school}，顯示科目數量：${Object.keys(subjects[school]).length}`);
+    };
 
     function viewPDF() {
-      const subjectId = document.getElementById("subjectSelect").value;
+      const subjectSelect = document.getElementById("subjectSelect");
+      const subjectId = subjectSelect.value;
+      const selectedSubjectText = subjectSelect.options[subjectSelect.selectedIndex].text;
+
       if (!subjectId) {
         alert("❌ 請選擇科目！");
         return;
       }
 
       localStorage.setItem("currentPDF", subjectId);
+      localStorage.setItem("currentPDFName", selectedSubjectText);
       window.location.href = "pdf-viewer.html";
     }
 
