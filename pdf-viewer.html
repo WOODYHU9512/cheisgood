@@ -16,8 +16,8 @@
 
     /* ✅ PDF Viewer 容器 */
     .pdf-container {
-      width: 640px;
-      height: 480px;
+      width: 90vw;
+      height: 90vh;
       position: relative;
       margin: 20px auto;
     }
@@ -32,14 +32,15 @@
       allowfullscreen;
     }
 
-    /* ✅ 透明遮罩（防止點擊下載按鈕） */
+    /* ✅ 透明遮罩（防止點擊 Google Drive 下載按鈕） */
     .overlay {
-      width: 80px;
-      height: 80px;
+      width: 100px; /* ✅ 擴大遮罩 */
+      height: 100px;
       position: absolute;
       opacity: 0;
       right: 0px;
       top: 0px;
+      z-index: 10;
     }
 
     /* ✅ 計時器顯示 */
@@ -116,7 +117,7 @@
         return;
       }
 
-      // ✅ 使用你的 Google Drive 嵌入格式
+      // ✅ Google Drive 正確嵌入格式
       let pdfUrl = `https://drive.google.com/file/d/${fileId}/preview?embedded=true`;
       document.getElementById("pdfFrame").src = pdfUrl;
     }
