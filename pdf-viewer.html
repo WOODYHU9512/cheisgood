@@ -1,7 +1,7 @@
 <!DOCTYPE html>
 <html lang="zh-TW">
 <head>
-  <script type="module" src="script.js"></script>  <!-- ✅ 載入 script.js 確保登出 & 計時器功能 -->
+  <script type="module" src="script.js"></script>  <!-- ✅ 確保登出 & 計時器功能 -->
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>PDF 觀看</title>
@@ -92,7 +92,8 @@
         return;
       }
 
-      let pdfUrl = `https://drive.google.com/file/d/${fileId}/preview?embedded=true`;
+      // ✅ 加上 `&rm=minimal` 來隱藏 Google Drive UI
+      let pdfUrl = `https://drive.google.com/file/d/${fileId}/preview?embedded=true&rm=minimal`;
       document.getElementById("pdfFrame").src = pdfUrl;
     }
 
