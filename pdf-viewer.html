@@ -1,1 +1,208 @@
-XPP
+<!DOCTYPE html>
+<html lang="zh-TW">
+<head>
+  <script type="module" src="script.js"></script>  <!-- ✅ 確保登出 & 計時器功能 -->
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>PDF 觀看</title>
+
+  <style>
+    body {
+      margin: 0;
+      background-color: black;
+      color: white;
+      text-align: center;
+    }
+
+    /* ✅ PDF Viewer 容器 */
+    .pdf-container {
+      width: 90vw;
+      height: 90vh;
+      position: relative;
+      margin: 20px auto;
+    }
+
+    /* ✅ 內嵌 PDF */
+    iframe {
+      width: 100%;
+      height: 100%;
+      border: none;
+      scrolling: no;
+      seamless;
+      allowfullscreen;
+    }
+
+    /* ✅ 透明遮罩（防止點擊 Google Drive 下載按鈕） */
+    .overlay {
+      width: 100px; /* ✅ 擴大遮罩 */
+      height: 100px;
+      position: absolute;
+      opacity: 0;
+      right: 0px;
+      top: 0px;
+      z-index: 10;
+    }
+
+    /* ✅ 計時器顯示 */
+    #countdown {
+      position: fixed;
+      top: 10px;
+      left: 10px;
+      font-size: 18px;
+      background: rgba(255, 0, 0, 0.8);
+      color: white;
+      padding: 10px 15px;
+      border-radius: 10px;
+      font-weight: bold;
+    }
+
+    /* ✅ 登出提醒 */
+    #logout-warning {
+      position: fixed;
+      bottom: 5px;
+      left: 50%;
+      transform: translateX(-50%);
+      background-color: rgba(255, 0, 0, 0.8);
+      color: white;
+      padding: 5px 15px;
+      font-size: 14px;
+      font-weight: bold;
+      border-radius: 5px;
+      z-index: 1000;
+      box-shadow: 0px 2px 5px rgba(0, 0, 0, 0.2);
+    }
+
+    /* ✅ 登出按鈕 */
+    #logout-btn {
+      position: fixed;
+      top: 10px;
+      right: 10px;
+      padding: 10px 15px;
+      background-color: red;
+      color: white;
+      border: none;
+      cursor: pointer;
+      font-size: 16px;
+    }
+  </style>
+</head>
+<body>
+
+  <h2 id="pdfTitle">📖 PDF 觀看</h2>
+
+  <!-- ✅ 顯示計時器 -->
+  <div id="countdown">⏳ 自動登出倒數：<span id="timer">30:00</span></div>
+
+  <!-- ✅ PDF Viewer -->
+  <div class="pdf-container">
+    <iframe id="pdfFrame"></iframe>
+    <div class="overlay"></div> <!-- ✅ 透明遮罩，防止下載 -->
+  </div>
+
+  <!-- ✅ 登出提醒 -->
+  <div id="logout-warning">
+    ⚠️ **請務必透過登出鈕登出！**
+  </div>
+
+  <!-- ✅ 登出按鈕 -->
+  <button id="logout-btn" onclick="logout()">🚪 登出</button>
+
+  <script>
+    function loadPDF() {
+      let fileId = localStorage.getItem("currentPDF");
+
+      if (!fileId) {
+        alert("❌ 無法載入 PDF，請重新選擇科目！");
+        window.location.href = "pdf-select.html";
+        return;
+      }
+
+      // ✅ Google Drive 正確嵌入格式
+      let pdfUrl = `https://drive.google.com/file/d/${fileId}/preview?embedded=true`;
+      document.getElementById("pdfFrame").src = pdfUrl;
+    }
+
+    // ✅ 設定計時器（30 分鐘倒數）
+    let idleTime = 30 * 60; // 30分鐘（秒）
+    let countdownTimer = setInterval(() => {
+      idleTime--;
+      let minutes = Math.floor(idleTime / 60);
+      let seconds = idleTime % 60;
+      document.getElementById("timer").innerText = `${minutes}:${seconds < 10 ? '0' : ''}${seconds}`;
+
+      if (idleTime <= 0) {
+        clearInterval(countdownTimer);
+        alert("⏰ 已超過 30 分鐘未操作，自動登出！");
+        logout();
+      }
+    }, 1000);
+
+    // ✅ 監聽使用者活動，重置計時器
+    function resetTimer() {
+      idleTime = 30 * 60; // 重設為 30 分鐘
+    }
+    document.addEventListener("mousemove", resetTimer);
+    document.addEventListener("keydown", resetTimer);
+    document.addEventListener("touchstart", resetTimer);
+
+    // ✅ 登出功能
+    async function logout() {
+      const username = localStorage.getItem('loggedInUser');
+      const storedToken = localStorage.getItem('sessionToken');
+
+      if (!username) return;
+
+      try {
+        const db = getDatabase();
+        const userRef = ref(db, "users/" + username);
+        const snapshot = await get(userRef);
+
+        if (snapshot.exists()) {
+          const user = snapshot.val();
+          if (user.sessionToken === storedToken) {
+            await update(userRef, {
+              isLoggedIn: false,
+              sessionToken: ""
+            });
+            console.log(`🚪 ${username} 已登出！`);
+          }
+        }
+      } catch (error) {
+        console.error("❌ 登出錯誤：", error);
+      }
+
+      localStorage.removeItem('loggedInUser');
+      localStorage.removeItem('sessionToken');
+      window.location.href = 'index.html';
+    }
+
+    // ✅ 禁止下載 / 禁止開發者工具
+    document.addEventListener("contextmenu", event => event.preventDefault());
+    document.addEventListener("keydown", function(event) {
+      if (event.keyCode == 123 ||  // F12
+          (event.ctrlKey && event.shiftKey && (event.keyCode == 73 || event.keyCode == 74)) || // Ctrl+Shift+I / J
+          (event.ctrlKey && event.keyCode == 85) || // Ctrl+U
+          (event.ctrlKey && event.keyCode == 83)) { // Ctrl+S
+        event.preventDefault();
+      }
+    });
+
+    // ✅ 防止開發者工具
+    function detectDevTools() {
+      let threshold = 200;
+      let start = performance.now();
+      debugger; // 這行在 F12 打開時會被觸發
+      let end = performance.now();
+      
+      if (end - start > threshold) {
+        alert("❌ 禁止開啟開發者工具！");
+        window.location.href = "index.html";
+      }
+    }
+    setInterval(detectDevTools, 2000); // 每 2 秒檢查一次是否開啟 DevTools
+
+    window.onload = loadPDF;
+  </script>
+
+</body>
+</html>
