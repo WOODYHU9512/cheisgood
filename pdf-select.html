@@ -158,19 +158,12 @@
       const schoolSelect = document.getElementById("schoolSelect");
       schoolSelect.innerHTML = "<option value=''>請選擇學校</option>";
 
-      Object.keys(subjects).forEach(school => {
-        if (authorizedSchools.includes(school)) {
-          let option = document.createElement("option");
-          option.value = school;
-          option.textContent = school;
-          schoolSelect.appendChild(option);
-        }
+      authorizedSchools.forEach(school => {
+        let option = document.createElement("option");
+        option.value = school;
+        option.textContent = school;
+        schoolSelect.appendChild(option);
       });
-
-      if (schoolSelect.options.length === 1) {
-        alert("❌ 你沒有任何學校的考古題可觀看！");
-        window.location.href = "index.html";
-      }
     }
 
     function updateSubjects() {
@@ -182,7 +175,7 @@
       if (school && subjects[school]) {
         Object.keys(subjects[school]).forEach(subject => {
           let option = document.createElement("option");
-          option.value = subject;
+          option.value = subjects[school][subject]; // ✅ 存 Google Drive File ID
           option.textContent = subject;
           subjectSelect.appendChild(option);
         });
@@ -190,7 +183,15 @@
     }
 
     function viewPDF() {
-      alert("🎉 PDF 觀看功能正常！"); 
+      const subjectId = document.getElementById("subjectSelect").value;
+
+      if (!subjectId) {
+        alert("❌ 請選擇科目！");
+        return;
+      }
+
+      localStorage.setItem("currentPDF", subjectId);
+      window.location.href = "pdf-viewer.html";
     }
 
     loadUserPermissions();
