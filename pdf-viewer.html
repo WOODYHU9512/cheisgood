@@ -96,8 +96,6 @@
     ⚠️ **請務必透過登出鈕登出！**
   </div>
   <button id="logout-btn" onclick="logout()">🚪 登出</button>
-
-  <!-- ✅ 可視化 log -->
   <div id="log-box"></div>
 
   <script>
@@ -125,6 +123,46 @@
 
       log("✅ PDF 載入完成");
     };
+  </script>
+
+  <script type="module">
+    import { initializeApp } from "https://www.gstatic.com/firebasejs/9.6.1/firebase-app.js";
+    import { getDatabase, ref, get, update } from "https://www.gstatic.com/firebasejs/9.6.1/firebase-database.js";
+
+    const firebaseConfig = {
+      databaseURL: "https://access-7a3c3-default-rtdb.firebaseio.com/"
+    };
+    const app = initializeApp(firebaseConfig);
+    const db = getDatabase(app);
+
+    window.addEventListener("beforeunload", async function () {
+      const username = localStorage.getItem('loggedInUser');
+      const storedToken = localStorage.getItem('sessionToken');
+      if (!username || !storedToken) return;
+
+      try {
+        const userRef = ref(db, "users/" + username);
+        const snapshot = await get(userRef);
+
+        if (snapshot.exists()) {
+          const user = snapshot.val();
+          if (user.sessionToken === storedToken) {
+            await update(userRef, {
+              isLoggedIn: false,
+              sessionToken: ""
+            });
+            window.log("🛑 自動登出成功（viewer）");
+          }
+        }
+      } catch (error) {
+        window.log("❌ 自動登出失敗（viewer）: " + error);
+      }
+
+      localStorage.removeItem('loggedInUser');
+      localStorage.removeItem('sessionToken');
+      localStorage.removeItem('currentPDF');
+      localStorage.removeItem('currentPDFName');
+    });
   </script>
 </body>
 </html>
