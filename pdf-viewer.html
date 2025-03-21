@@ -96,11 +96,11 @@
       document.getElementById("pdfFrame").src = pdfUrl;
     }
 
-    // ✅ 頁面載入標記為跳轉（避免誤登出）
+    // ✅ 頁面載入時標記 pageNavigation，避免被 script.js 誤登出
     window.addEventListener("DOMContentLoaded", () => {
       sessionStorage.setItem("pageNavigation", "true");
 
-      // 兼容 iOS/Safari 等載入慢的情況
+      // ✅ 延遲保險標記一次，兼容手機與慢速載入
       setTimeout(() => {
         sessionStorage.setItem("pageNavigation", "true");
       }, 100);
@@ -108,7 +108,7 @@
       loadPDF();
     });
 
-    // ✅ 歷史返回補標記
+    // ✅ 從歷史紀錄返回也補標記
     window.addEventListener("pageshow", (e) => {
       if (
         e.persisted ||
@@ -118,17 +118,17 @@
       }
     });
 
-    // ✅ 登出按鈕邏輯
+    // ✅ 登出按鈕
     document.getElementById("logout-btn").addEventListener("click", () => {
       window.logout();
     });
 
-    // ✅ 禁用右鍵與常見快捷鍵（防偷存 PDF）
+    // ✅ 禁用右鍵與常見開發者工具快捷鍵
     document.addEventListener("contextmenu", e => e.preventDefault());
     document.addEventListener("keydown", e => {
       if (
         e.keyCode === 123 || // F12
-        (e.ctrlKey && e.shiftKey && (e.keyCode === 73 || e.keyCode === 74)) || // Ctrl+Shift+I/J
+        (e.ctrlKey && e.shiftKey && (e.keyCode === 73 || e.keyCode === 74)) || // Ctrl+Shift+I / J
         (e.ctrlKey && e.keyCode === 85) || // Ctrl+U
         (e.ctrlKey && e.keyCode === 83)    // Ctrl+S
       ) {
