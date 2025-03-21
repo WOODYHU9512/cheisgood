@@ -118,6 +118,21 @@
     const app = initializeApp(firebaseConfig);
     const db = getDatabase(app);
 
+    // 全域內部導航旗標
+    let isInternalNavigation = false;
+
+    // 設定 Firebase onDisconnect
+    function setupOnDisconnect() {
+      const username = localStorage.getItem('loggedInUser');
+      if (!username) return;
+      const userRef = ref(db, `users/${username}`);
+      userRef.onDisconnect().update({
+        isLoggedIn: false,
+        sessionToken: ""
+      });
+    }
+    setupOnDisconnect();
+
     function loadPDF() {
       let fileId = localStorage.getItem("currentPDF");
       let fileName = localStorage.getItem("currentPDFName");
@@ -191,7 +206,14 @@
       window.location.href = 'index.html';
     }
 
-    // ✅ 禁止下載 / 禁止開發者工具
+    // 當非內部跳轉時，beforeunload 事件自動登出
+    window.addEventListener("beforeunload", (event) => {
+      if (!isInternalNavigation) {
+        logout();
+      }
+    });
+
+    // 禁止下載 / 禁止開發者工具
     document.addEventListener("contextmenu", event => event.preventDefault());
     document.addEventListener("keydown", function(event) {
       if (event.keyCode == 123 ||  // F12
