@@ -83,7 +83,6 @@
   <button id="logout-btn">🚪 登出</button>
 
   <script type="module">
-    // ✅ 顯示 PDF
     function loadPDF() {
       const fileId = localStorage.getItem("currentPDF");
       const fileName = localStorage.getItem("currentPDFName");
@@ -97,7 +96,7 @@
       document.getElementById("pdfFrame").src = pdfUrl;
     }
 
-    // ✅ 標記跳轉避免誤登出
+    // ✅ 初次進入、返回瀏覽器歷史設定跳轉標記，避免誤判 pagehide
     window.addEventListener("load", () => {
       sessionStorage.setItem("pageNavigation", "true");
       loadPDF();
@@ -119,12 +118,12 @@
       }
     });
 
-    // ✅ 登出按鈕使用 script.js 登出功能
+    // ✅ 登出按鈕觸發 script.js 的登出功能
     document.getElementById("logout-btn").addEventListener("click", () => {
       window.logout();
     });
 
-    // ✅ 禁用下載與開發者工具
+    // ✅ 禁用下載與 F12 工具
     document.addEventListener("contextmenu", e => e.preventDefault());
     document.addEventListener("keydown", e => {
       if (
