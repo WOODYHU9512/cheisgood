@@ -9,7 +9,7 @@ const firebaseConfig = {
 const app = initializeApp(firebaseConfig);
 const db = getDatabase(app);
 
-// ✅ 登出核心功能（用於按鈕點擊或自動觸發）
+// ✅ 登出核心功能
 async function logoutUser(showLog = true) {
   const username = localStorage.getItem("loggedInUser");
   const sessionToken = localStorage.getItem("sessionToken");
@@ -38,13 +38,13 @@ async function logoutUser(showLog = true) {
   localStorage.removeItem("currentPDFName");
 }
 
-// ✅ 手動點擊登出按鈕
+// ✅ 給登出按鈕用
 window.logout = async function () {
   await logoutUser();
   window.location.href = "index.html";
 };
 
-// ✅ 頁面驗證登入狀態
+// ✅ 驗證 session 合法性
 async function validateSession() {
   const username = localStorage.getItem("loggedInUser");
   const sessionToken = localStorage.getItem("sessionToken");
@@ -64,11 +64,12 @@ async function validateSession() {
   return false;
 }
 
-// ✅ 自動登出（關閉分頁 / 關瀏覽器）
+// ✅ 關閉分頁／瀏覽器／網路斷線 → sendBeacon 登出
 window.addEventListener("pagehide", function () {
   const isNavigating = sessionStorage.getItem("pageNavigation");
   sessionStorage.removeItem("pageNavigation");
-  if (isNavigating) return;
+
+  if (isNavigating) return; // 是跳轉，不登出
 
   const username = localStorage.getItem("loggedInUser");
   const sessionToken = localStorage.getItem("sessionToken");
@@ -81,24 +82,24 @@ window.addEventListener("pagehide", function () {
 
   const url = `https://access-7a3c3-default-rtdb.firebaseio.com/users/${username}.json`;
   navigator.sendBeacon(url, data);
-  console.log("📤 自動登出已發送 (sendBeacon)");
+  console.log("📤 sendBeacon 已發送自動登出");
 });
 
-// ✅ 合法跳轉識別（點擊按鈕或跳轉）
-document.addEventListener("DOMContentLoaded", function () {
-  const links = document.querySelectorAll("a, button, [data-keep-session]");
-  links.forEach(link => {
-    link.addEventListener("click", () => {
+// ✅ 點擊跳轉紀錄 navigation
+document.addEventListener("DOMContentLoaded", () => {
+  const interactiveElements = document.querySelectorAll("a, button");
+  interactiveElements.forEach(el => {
+    el.addEventListener("click", () => {
       sessionStorage.setItem("pageNavigation", "true");
     });
   });
 });
 
-// ✅ 自動登出倒數邏輯（select / viewer）
+// ✅ 自動登出倒數（限 select / viewer）
 if (window.location.pathname.includes("pdf-select") || window.location.pathname.includes("pdf-viewer")) {
   validateSession().then(valid => {
     if (!valid) {
-      console.warn("⛔ 無效 session，跳轉登入頁面");
+      console.warn("⛔ 無效 session，跳轉登入頁");
       window.location.href = "index.html";
     }
   });
@@ -139,16 +140,7 @@ if (window.location.pathname.includes("pdf-select") || window.location.pathname.
 
   resetTimer();
   startIdleCountdown();
+} else {
+  // 非 viewer/select 頁面 → 不綁定 sessionStorage（避免污染）
+  sessionStorage.removeItem("pageNavigation");
 }
-
-// ✅ 多重保險：可見性改變後，若長時間不切回頁面，清除跳轉識別
-let hiddenTimeout;
-document.addEventListener("visibilitychange", () => {
-  if (document.visibilityState === "hidden") {
-    hiddenTimeout = setTimeout(() => {
-      sessionStorage.removeItem("pageNavigation");
-    }, 1000);
-  } else {
-    clearTimeout(hiddenTimeout);
-  }
-});
