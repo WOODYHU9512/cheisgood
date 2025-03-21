@@ -1,7 +1,7 @@
 <!DOCTYPE html>
 <html lang="zh-TW">
 <head>
-  <script type="module" src="script.js"></script>
+  <script type="module" src="script.js"></script> <!-- ✅ 登出與 session 控管 -->
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>選擇學校與科目</title>
@@ -56,22 +56,27 @@
 </head>
 <body>
   <h2>請選擇學校與科目</h2>
+
   <div id="countdown">⏳ 自動登出倒數：<span id="timer">30:00</span></div>
+
   <label for="schoolSelect">選擇學校：</label>
   <select id="schoolSelect">
     <option value="">請選擇學校</option>
   </select>
+
   <label for="subjectSelect">選擇科目：</label>
   <select id="subjectSelect">
     <option value="">請先選擇學校</option>
   </select>
+
   <button id="viewBtn">觀看 PDF</button>
+
   <div id="logout-warning">⚠️ **請務必透過登出鈕登出！**</div>
   <button id="logout-btn">🚪 登出</button>
 
   <script type="module">
     import { initializeApp } from "https://www.gstatic.com/firebasejs/9.6.1/firebase-app.js";
-    import { getDatabase, ref, get, update } from "https://www.gstatic.com/firebasejs/9.6.1/firebase-database.js";
+    import { getDatabase, ref, get } from "https://www.gstatic.com/firebasejs/9.6.1/firebase-database.js";
 
     const firebaseConfig = {
       databaseURL: "https://access-7a3c3-default-rtdb.firebaseio.com/"
@@ -156,21 +161,23 @@
       }
       localStorage.setItem("currentPDF", subjectId);
       localStorage.setItem("currentPDFName", subjectText);
-      sessionStorage.setItem("pageNavigation", "true");
+      sessionStorage.setItem("pageNavigation", "true"); // ✅ 頁面跳轉標記
       window.location.href = "pdf-viewer.html";
     });
 
+    // ✅ 避免返回時誤判為離開
     window.addEventListener("load", () => {
       sessionStorage.setItem("pageNavigation", "true");
       loadUserPermissions();
     });
 
-    window.addEventListener("pageshow", e => {
+    window.addEventListener("pageshow", (e) => {
       if (e.persisted || performance.getEntriesByType("navigation")[0].type === "back_forward") {
         sessionStorage.setItem("pageNavigation", "true");
       }
     });
 
+    // ✅ 使用者隱藏分頁超過一段時間時清除 pageNavigation
     document.addEventListener("visibilitychange", () => {
       if (document.visibilityState === "hidden") {
         setTimeout(() => {
