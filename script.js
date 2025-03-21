@@ -129,7 +129,7 @@ function markNavigation() {
   sessionStorage.setItem("pageNavigation", "true");
 }
 
-// ✅ 頁面初始化時標記一次（預防重新整理也誤判）
+// ✅ 頁面初始化時標記一次（預防重新整理也誤登出）
 document.addEventListener("DOMContentLoaded", () => {
   document.querySelectorAll("a, button").forEach(el => {
     el.addEventListener("click", markNavigation);
