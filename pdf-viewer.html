@@ -95,26 +95,19 @@
       document.getElementById("pdfFrame").src = pdfUrl;
     }
 
-    // 加載時標記跳轉，保障 pagehide 不解釋
+    // 標記跳轉避免誤登出
+    function markNavigation() {
+      sessionStorage.setItem("pageNavigation", "true");
+    }
+
     window.addEventListener("load", () => {
-      setTimeout(() => {
-        sessionStorage.setItem("pageNavigation", "true");
-      }, 0);
+      setTimeout(markNavigation, 0);
       loadPDF();
     });
 
-    // 跳回歷史時也要正確標記
     window.addEventListener("pageshow", (e) => {
       if (e.persisted || performance.getEntriesByType("navigation")[0].type === "back_forward") {
-        sessionStorage.setItem("pageNavigation", "true");
-      }
-    });
-
-    // 保護 sessionStorage 不要被誤消除
-    document.addEventListener("visibilitychange", () => {
-      if (document.visibilityState === "hidden") {
-        // 不再自動移除，改成讓 script.js 判斷
-        // 因為有時看起來是移離，其實是已打開 viewer
+        markNavigation();
       }
     });
 
