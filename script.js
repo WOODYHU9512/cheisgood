@@ -1,138 +1,141 @@
-console.log("🔥 `script.js` 已載入");
+console.log("🔥 script.js loaded");
 
 import { initializeApp } from "https://www.gstatic.com/firebasejs/9.6.1/firebase-app.js";
-import { getDatabase, ref, get, update, child } from "https://www.gstatic.com/firebasejs/9.6.1/firebase-database.js";
+import { getDatabase, ref, get, update } from "https://www.gstatic.com/firebasejs/9.6.1/firebase-database.js";
 
 const firebaseConfig = {
-    databaseURL: "https://access-7a3c3-default-rtdb.firebaseio.com/"
+  databaseURL: "https://access-7a3c3-default-rtdb.firebaseio.com/"
 };
 const app = initializeApp(firebaseConfig);
 const db = getDatabase(app);
 
-// ✅ 取得 Firebase 使用者參照
-async function getUserRef() {
-    const username = localStorage.getItem('loggedInUser');
-    if (!username) return null;
-    return ref(db, `users/${username}`);
-}
+// ✅ 登出核心功能（用於按鈕點擊或自動觸發）
+async function logoutUser(showLog = true) {
+  const username = localStorage.getItem("loggedInUser");
+  const sessionToken = localStorage.getItem("sessionToken");
+  if (!username || !sessionToken) return;
 
-// ✅ 驗證登入狀態
-function checkLoginStatus() {
-    const username = localStorage.getItem('loggedInUser');
-    const token = localStorage.getItem('sessionToken');
-    if (!username || !token) {
-        console.log("⛔ 未登入，跳轉登入頁");
-        window.location.href = 'index.html';
+  try {
+    const userRef = ref(db, `users/${username}`);
+    const snapshot = await get(userRef);
+    if (snapshot.exists()) {
+      const user = snapshot.val();
+      if (user.sessionToken === sessionToken) {
+        await update(userRef, {
+          isLoggedIn: false,
+          sessionToken: ""
+        });
+        if (showLog) console.log(`✅ ${username} 已從 Firebase 登出`);
+      }
     }
+  } catch (err) {
+    console.error("❌ 自動登出失敗：", err);
+  }
+
+  localStorage.removeItem("loggedInUser");
+  localStorage.removeItem("sessionToken");
+  localStorage.removeItem("currentPDF");
+  localStorage.removeItem("currentPDFName");
 }
 
-// ✅ 登出功能
-async function logout() {
-    const username = localStorage.getItem('loggedInUser');
-    const token = localStorage.getItem('sessionToken');
-    if (!username || !token) return;
-
-    try {
-        const userRef = await getUserRef();
-        const snapshot = await get(userRef);
-        if (snapshot.exists()) {
-            const user = snapshot.val();
-            if (user.sessionToken === token) {
-                await update(userRef, { isLoggedIn: false, sessionToken: "" });
-                console.log(`✅ 使用者 ${username} 成功登出`);
-            }
-        }
-    } catch (err) {
-        console.error("❌ 登出錯誤：", err);
-    }
-
-    localStorage.removeItem('loggedInUser');
-    localStorage.removeItem('sessionToken');
-    localStorage.removeItem('currentPDF');
-    localStorage.removeItem('currentPDFName');
-}
-
-// ✅ 同步登出（pagehide 時用）
-function logoutSync() {
-    const username = localStorage.getItem("loggedInUser");
-    const token = localStorage.getItem("sessionToken");
-    if (!username || !token) return;
-
-    const url = `https://access-7a3c3-default-rtdb.firebaseio.com/users/${username}.json`;
-    const payload = JSON.stringify({ isLoggedIn: false, sessionToken: "" });
-
-    const blob = new Blob([payload], { type: 'application/json' });
-    navigator.sendBeacon(url, blob);
-
-    localStorage.removeItem("loggedInUser");
-    localStorage.removeItem("sessionToken");
-    localStorage.removeItem("currentPDF");
-    localStorage.removeItem("currentPDFName");
-}
-
-// ✅ 登出函式供 HTML 使用
+// ✅ 手動點擊登出按鈕
 window.logout = async function () {
-    await logout();
-    window.location.href = 'index.html';
+  await logoutUser();
+  window.location.href = "index.html";
 };
 
-// ✅ 標記點擊跳轉，避免 pagehide 誤判
-window.addEventListener("DOMContentLoaded", () => {
-    const allLinks = document.querySelectorAll("a, button");
-    allLinks.forEach(el => {
-        el.addEventListener("click", () => {
-            sessionStorage.setItem("pageNavigation", "true");
-        });
+// ✅ 頁面驗證登入狀態
+async function validateSession() {
+  const username = localStorage.getItem("loggedInUser");
+  const sessionToken = localStorage.getItem("sessionToken");
+  if (!username || !sessionToken) return false;
+
+  try {
+    const userRef = ref(db, `users/${username}`);
+    const snapshot = await get(userRef);
+    if (snapshot.exists()) {
+      const user = snapshot.val();
+      return user.sessionToken === sessionToken;
+    }
+  } catch (err) {
+    console.error("❌ 驗證登入失敗：", err);
+  }
+
+  return false;
+}
+
+// ✅ 自動登出（pagehide）處理
+window.addEventListener("pagehide", function (event) {
+  const isNavigating = sessionStorage.getItem("pageNavigation");
+  sessionStorage.removeItem("pageNavigation");
+  if (isNavigating) return;
+
+  const username = localStorage.getItem("loggedInUser");
+  if (!username) return;
+
+  const data = JSON.stringify({
+    isLoggedIn: false,
+    sessionToken: ""
+  });
+
+  const url = `https://access-7a3c3-default-rtdb.firebaseio.com/users/${username}.json`;
+  navigator.sendBeacon(url, data);
+  console.log("📤 自動登出已發送 (sendBeacon)");
+});
+
+// ✅ 點擊所有超連結與按鈕都視為頁面跳轉
+document.addEventListener("DOMContentLoaded", function () {
+  const links = document.querySelectorAll("a, button");
+  links.forEach(link => {
+    link.addEventListener("click", () => {
+      sessionStorage.setItem("pageNavigation", "true");
     });
+  });
 });
 
-// ✅ pagehide：若不是跳轉，觸發同步登出
-window.addEventListener("pagehide", () => {
-    const navigating = sessionStorage.getItem("pageNavigation");
-    if (navigating) {
-        sessionStorage.removeItem("pageNavigation");
-    } else {
-        console.log("👋 離開頁面，自動登出");
-        logoutSync();
-    }
-});
-
-// ✅ 閒置登出邏輯（pdf-select / pdf-viewer）
+// ✅ 自動登出倒數（僅限 select / viewer 頁面）
 if (window.location.pathname.includes("pdf-select") || window.location.pathname.includes("pdf-viewer")) {
-    checkLoginStatus();
-
-    let idleTimeout;
-    let timeLeft = 30 * 60; // 30 分鐘
-    const timerDisplay = document.getElementById("timer");
-
-    function updateTimer() {
-        if (timerDisplay) {
-            const min = Math.floor(timeLeft / 60);
-            const sec = timeLeft % 60;
-            timerDisplay.innerText = `${min}:${sec < 10 ? "0" : ""}${sec}`;
-        }
+  validateSession().then(valid => {
+    if (!valid) {
+      console.warn("⛔ 無效 session，跳轉登入頁面");
+      window.location.href = "index.html";
     }
+  });
 
-    function startIdleTimer() {
-        clearInterval(idleTimeout);
-        timeLeft = 30 * 60;
-        updateTimer();
+  let timeLeft = 30 * 60;
+  let idleTimer;
 
-        idleTimeout = setInterval(async () => {
-            timeLeft--;
-            updateTimer();
+  const timerDisplay = document.getElementById("timer");
+  function updateTimer() {
+    if (!timerDisplay) return;
+    const m = Math.floor(timeLeft / 60);
+    const s = timeLeft % 60;
+    timerDisplay.innerText = `${m}:${s < 10 ? "0" : ""}${s}`;
+  }
 
-            if (timeLeft <= 0) {
-                clearInterval(idleTimeout);
-                console.log("⏰ 閒置時間到，強制登出");
-                await logout();
-                window.location.href = 'index.html';
-            }
-        }, 1000);
-    }
+  function resetTimer() {
+    timeLeft = 30 * 60;
+    updateTimer();
+  }
 
-    document.addEventListener("mousemove", startIdleTimer);
-    document.addEventListener("keydown", startIdleTimer);
-    document.addEventListener("touchstart", startIdleTimer);
-    startIdleTimer();
+  function startIdleCountdown() {
+    clearInterval(idleTimer);
+    idleTimer = setInterval(async () => {
+      timeLeft--;
+      updateTimer();
+      if (timeLeft <= 0) {
+        clearInterval(idleTimer);
+        alert("⏰ 閒置超過 30 分鐘，自動登出！");
+        await logoutUser();
+        window.location.href = "index.html";
+      }
+    }, 1000);
+  }
+
+  document.addEventListener("mousemove", resetTimer);
+  document.addEventListener("keydown", resetTimer);
+  document.addEventListener("touchstart", resetTimer);
+
+  resetTimer();
+  startIdleCountdown();
 }
