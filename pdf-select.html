@@ -1,4 +1,3 @@
-<!-- ✅ 修正後的 select.html -->
 <!DOCTYPE html>
 <html lang="zh-TW">
 <head>
@@ -162,7 +161,7 @@
       }
       localStorage.setItem("currentPDF", subjectId);
       localStorage.setItem("currentPDFName", subjectText);
-      sessionStorage.setItem("pageNavigation", "true");
+      sessionStorage.setItem("pageNavigation", "true"); // ✅ 正確標記跳轉
       window.location.href = "pdf-viewer.html";
     });
 
@@ -170,10 +169,17 @@
       window.logout();
     });
 
-    // ✅ 確保第一次載入就設好 pageNavigation（避免被誤判為直接關閉）
+    // ✅ 初次載入 + DOM 完成 時標記跳轉
     window.addEventListener("DOMContentLoaded", () => {
-      setTimeout(() => sessionStorage.setItem("pageNavigation", "true"), 0);
+      sessionStorage.setItem("pageNavigation", "true");
       loadUserPermissions();
+    });
+
+    // ✅ 回到歷史記錄也補標記
+    window.addEventListener("pageshow", (e) => {
+      if (e.persisted || performance.getEntriesByType("navigation")[0].type === "back_forward") {
+        sessionStorage.setItem("pageNavigation", "true");
+      }
     });
   </script>
 </body>
