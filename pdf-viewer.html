@@ -78,74 +78,66 @@
     <div class="overlay"></div>
   </div>
   <div id="logout-warning">⚠️ **請務必透過登出鈕登出！**</div>
-  <button id="logout-btn">🚪 登出</button>
+  <button id="logout-btn" onclick="logout()">🚪 登出</button>
 
   <script type="module">
-    const title = document.getElementById("pdfTitle");
-    const frame = document.getElementById("pdfFrame");
-    const timerDisplay = document.getElementById("timer");
-    const logoutBtn = document.getElementById("logout-btn");
+    import { initializeApp } from "https://www.gstatic.com/firebasejs/9.6.1/firebase-app.js";
+    import { getDatabase, ref, get } from "https://www.gstatic.com/firebasejs/9.6.1/firebase-database.js";
+
+    const firebaseConfig = {
+      databaseURL: "https://access-7a3c3-default-rtdb.firebaseio.com/"
+    };
+    const app = initializeApp(firebaseConfig);
+    const db = getDatabase(app);
 
     function loadPDF() {
       const fileId = localStorage.getItem("currentPDF");
       const fileName = localStorage.getItem("currentPDFName");
-      if (!fileId || !fileName) {
+      if (!fileId) {
         alert("❌ 無法載入 PDF，請重新選擇科目！");
-        sessionStorage.setItem("pageNavigation", "true");
         window.location.href = "pdf-select.html";
         return;
       }
-      title.innerText = `📖 ${fileName}`;
-      frame.src = `https://drive.google.com/file/d/${fileId}/preview?embedded=true`;
+      document.getElementById("pdfTitle").innerText = `📖 ${fileName}`;
+      const pdfUrl = `https://drive.google.com/file/d/${fileId}/preview?embedded=true`;
+      document.getElementById("pdfFrame").src = pdfUrl;
     }
 
-    let idleTime = 30 * 60;
-    function updateTimer() {
-      const min = Math.floor(idleTime / 60);
-      const sec = idleTime % 60;
-      timerDisplay.innerText = `${min}:${sec < 10 ? '0' : ''}${sec}`;
-    }
-    updateTimer();
-
-    const countdown = setInterval(async () => {
-      idleTime--;
-      updateTimer();
-      if (idleTime <= 0) {
-        clearInterval(countdown);
-        alert("⏰ 已超過 30 分鐘未操作，自動登出！");
-        await window.logout();
-      }
-    }, 1000);
-
-    function resetIdle() {
-      idleTime = 30 * 60;
-    }
-    document.addEventListener("mousemove", resetIdle);
-    document.addEventListener("keydown", resetIdle);
-    document.addEventListener("touchstart", resetIdle);
-
-    logoutBtn.addEventListener("click", async () => {
+    // ✅ 設定首次進入標記
+    window.addEventListener("load", () => {
       sessionStorage.setItem("pageNavigation", "true");
-      await window.logout();
+      loadPDF();
     });
 
+    // ✅ 返回歷史紀錄時也設為跳轉
     window.addEventListener("pageshow", e => {
       if (e.persisted || performance.getEntriesByType("navigation")[0].type === "back_forward") {
         sessionStorage.setItem("pageNavigation", "true");
       }
     });
 
-    document.addEventListener("contextmenu", e => e.preventDefault());
-    document.addEventListener("keydown", e => {
-      if (e.keyCode === 123 || (e.ctrlKey && e.shiftKey && (e.key === "I" || e.key === "J")) ||
-          (e.ctrlKey && e.key === "U") || (e.ctrlKey && e.key === "S")) {
-        e.preventDefault();
+    // ✅ visibilityChange 進一步防呆
+    document.addEventListener("visibilitychange", () => {
+      if (document.visibilityState === "hidden") {
+        setTimeout(() => {
+          if (document.visibilityState === "hidden") {
+            sessionStorage.removeItem("pageNavigation");
+          }
+        }, 500);
       }
     });
 
-    window.addEventListener("load", () => {
-      sessionStorage.setItem("pageNavigation", "true");
-      loadPDF();
+    // ✅ 禁止下載與開發者工具
+    document.addEventListener("contextmenu", e => e.preventDefault());
+    document.addEventListener("keydown", e => {
+      if (
+        e.keyCode === 123 ||
+        (e.ctrlKey && e.shiftKey && (e.keyCode === 73 || e.keyCode === 74)) ||
+        (e.ctrlKey && e.keyCode === 85) ||
+        (e.ctrlKey && e.keyCode === 83)
+      ) {
+        e.preventDefault();
+      }
     });
   </script>
 </body>
