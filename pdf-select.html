@@ -117,20 +117,26 @@
       }
     };
 
+    let authorizedSchools = [];
+
     async function loadUserPermissions() {
       const username = localStorage.getItem('loggedInUser');
       if (!username) return;
       const snapshot = await get(ref(db, `users/${username}/purchased`));
       if (snapshot.exists()) {
-        const schools = Object.keys(snapshot.val());
-        schoolSelect.innerHTML = "<option value=''>請選擇學校</option>";
-        schools.forEach(school => {
-          const option = document.createElement("option");
-          option.value = school;
-          option.textContent = school;
-          schoolSelect.appendChild(option);
-        });
+        authorizedSchools = Object.keys(snapshot.val());
+        populateSchoolOptions();
       }
+    }
+
+    function populateSchoolOptions() {
+      schoolSelect.innerHTML = "<option value=''>請選擇學校</option>";
+      authorizedSchools.forEach(school => {
+        const option = document.createElement("option");
+        option.value = school;
+        option.textContent = school;
+        schoolSelect.appendChild(option);
+      });
     }
 
     schoolSelect.addEventListener("change", () => {
@@ -155,28 +161,28 @@
       }
       localStorage.setItem("currentPDF", subjectId);
       localStorage.setItem("currentPDFName", subjectText);
-      sessionStorage.setItem("pageNavigation", "true"); // ✅ 告訴 script.js 這是跳轉，不是關閉
+      sessionStorage.setItem("pageNavigation", "true"); // ✅ 正確標記跳轉
       window.location.href = "pdf-viewer.html";
     });
 
     logoutBtn.addEventListener("click", () => {
-      window.logout(); // ✅ 呼叫 script.js 登出功能
+      window.logout(); // ✅ 呼叫 script.js 中的 logoutUser()
     });
 
-    // ✅ 標記首次載入為跳轉，避免關閉誤判
+    // ✅ 初始載入：標記為跳轉
     window.addEventListener("load", () => {
       sessionStorage.setItem("pageNavigation", "true");
       loadUserPermissions();
     });
 
-    // ✅ 返回歷史紀錄頁面也標記為跳轉
+    // ✅ 返回上一頁時也補標記跳轉
     window.addEventListener("pageshow", (e) => {
       if (e.persisted || performance.getEntriesByType("navigation")[0].type === "back_forward") {
         sessionStorage.setItem("pageNavigation", "true");
       }
     });
 
-    // ✅ 防止背景切換誤清除 pageNavigation
+    // ✅ 若隱藏畫面超過 300ms，就取消 pageNavigation
     document.addEventListener("visibilitychange", () => {
       if (document.visibilityState === "hidden") {
         setTimeout(() => {
