@@ -9,7 +9,7 @@ const firebaseConfig = {
 const app = initializeApp(firebaseConfig);
 const db = getDatabase(app);
 
-// ✅ 登出核心功能（按鈕或計時器使用）
+// ✅ 登出功能
 async function logoutUser(showLog = true) {
   const username = localStorage.getItem("loggedInUser");
   const sessionToken = localStorage.getItem("sessionToken");
@@ -21,10 +21,7 @@ async function logoutUser(showLog = true) {
     if (snapshot.exists()) {
       const user = snapshot.val();
       if (user.sessionToken === sessionToken) {
-        await update(userRef, {
-          isLoggedIn: false,
-          sessionToken: ""
-        });
+        await update(userRef, { isLoggedIn: false, sessionToken: "" });
         if (showLog) console.log(`✅ ${username} 已從 Firebase 登出`);
       }
     }
@@ -38,13 +35,12 @@ async function logoutUser(showLog = true) {
   localStorage.removeItem("currentPDFName");
 }
 
-// ✅ 手動登出按鈕
 window.logout = async function () {
   await logoutUser();
   window.location.href = "index.html";
 };
 
-// ✅ 驗證 sessionToken 是否仍有效
+// ✅ 驗證 session 有效性
 async function validateSession() {
   const username = localStorage.getItem("loggedInUser");
   const sessionToken = localStorage.getItem("sessionToken");
@@ -53,48 +49,60 @@ async function validateSession() {
   try {
     const userRef = ref(db, `users/${username}`);
     const snapshot = await get(userRef);
-    if (snapshot.exists()) {
-      const user = snapshot.val();
-      return user.sessionToken === sessionToken;
-    }
+    return snapshot.exists() && snapshot.val().sessionToken === sessionToken;
   } catch (err) {
     console.error("❌ 驗證登入失敗：", err);
+    return false;
   }
-
-  return false;
 }
 
-// ✅ 頁面關閉時登出（非跳轉才觸發）
-window.addEventListener("pagehide", function () {
+// ✅ 自動登出邏輯（fetch + keepalive）
+function autoLogoutIfClosed() {
   const isNavigating = sessionStorage.getItem("pageNavigation");
-  sessionStorage.removeItem("pageNavigation");
   if (isNavigating) return;
 
   const username = localStorage.getItem("loggedInUser");
   if (!username) return;
 
-  const data = JSON.stringify({ isLoggedIn: false, sessionToken: "" });
-
   fetch(`https://access-7a3c3-default-rtdb.firebaseio.com/users/${username}.json`, {
     method: "PATCH",
     headers: { "Content-Type": "application/json" },
-    body: data,
+    body: JSON.stringify({ isLoggedIn: false, sessionToken: "" }),
     keepalive: true
   });
 
-  console.log("📤 fetch + keepalive 已送出登出請求");
+  console.log("📤 送出自動登出 (fetch + keepalive)");
+}
+
+// ✅ 綁定 pagehide / beforeunload
+window.addEventListener("pagehide", () => {
+  setTimeout(autoLogoutIfClosed, 0);
+});
+window.addEventListener("beforeunload", () => {
+  setTimeout(autoLogoutIfClosed, 0);
 });
 
-// ✅ 點擊按鈕與跳轉連結會標記 pageNavigation
+// ✅ 所有跳轉都標記 pageNavigation
+function markPageNavigation() {
+  sessionStorage.setItem("pageNavigation", "true");
+}
+
 document.addEventListener("DOMContentLoaded", () => {
   document.querySelectorAll("a, button").forEach(el => {
-    el.addEventListener("click", () => {
-      sessionStorage.setItem("pageNavigation", "true");
-    });
+    el.addEventListener("click", markPageNavigation);
   });
+
+  // 初次進入頁面標記
+  markPageNavigation();
 });
 
-// ✅ 閒置 30 分鐘自動登出（限 select/viewer 頁面）
+window.addEventListener("pageshow", (e) => {
+  if (e.persisted || performance.getEntriesByType("navigation")[0].type === "back_forward") {
+    markPageNavigation();
+  }
+});
+
+// ✅ 自動登出計時器
 if (window.location.pathname.includes("pdf-select") || window.location.pathname.includes("pdf-viewer")) {
   validateSession().then(valid => {
     if (!valid) {
@@ -103,7 +111,7 @@ if (window.location.pathname.includes("pdf-select") || window.location.pathname.
     }
   });
 
-  let timeLeft = 30 * 60;
+  let timeLeft = 1800;
   let idleTimer;
   const timerDisplay = document.getElementById("timer");
 
@@ -115,11 +123,11 @@ if (window.location.pathname.includes("pdf-select") || window.location.pathname.
   }
 
   function resetTimer() {
-    timeLeft = 30 * 60;
+    timeLeft = 1800;
     updateTimer();
   }
 
-  function startIdleCountdown() {
+  function startCountdown() {
     clearInterval(idleTimer);
     idleTimer = setInterval(async () => {
       timeLeft--;
@@ -138,5 +146,5 @@ if (window.location.pathname.includes("pdf-select") || window.location.pathname.
   document.addEventListener("touchstart", resetTimer);
 
   resetTimer();
-  startIdleCountdown();
+  startCountdown();
 }
