@@ -159,12 +159,14 @@
         alert("❌ 請選擇科目！");
         return;
       }
+
       localStorage.setItem("currentPDF", subjectId);
       localStorage.setItem("currentPDFName", subjectText);
-      sessionStorage.setItem("pageNavigation", "true");
+
+      sessionStorage.setItem("pageNavigation", "true"); // ✅ 標記跳轉
       setTimeout(() => {
         window.location.href = "pdf-viewer.html";
-      }, 150); // ✅ 延遲跳轉，避免 pagehide 誤判
+      }, 200); // ✅ 延遲確保 pagehide 尚未觸發時已設好
     });
 
     logoutBtn.addEventListener("click", () => {
@@ -172,7 +174,7 @@
     });
 
     window.addEventListener("DOMContentLoaded", () => {
-      setTimeout(() => sessionStorage.setItem("pageNavigation", "true"), 0);
+      setTimeout(() => sessionStorage.setItem("pageNavigation", "true"), 0); // ✅ 首次載入也標記
       loadUserPermissions();
     });
   </script>
