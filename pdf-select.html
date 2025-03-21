@@ -90,10 +90,10 @@
     const app = initializeApp(firebaseConfig);
     const db = getDatabase(app);
 
-    // 全域內部導航旗標：用來判斷是否為內部頁面跳轉
+    // 全域內部導航旗標：判斷是否為內部跳轉
     let isInternalNavigation = false;
 
-    // 設定 Firebase onDisconnect（斷線時自動更新後端狀態）
+    // 設定 Firebase onDisconnect：斷線時自動更新後端狀態
     function setupOnDisconnect() {
       const username = localStorage.getItem('loggedInUser');
       if (!username) return;
@@ -180,7 +180,7 @@
       console.log(`✅ 選擇學校：${school}，顯示科目數量：${Object.keys(subjects[school]).length}`);
     };
 
-    // 修改 viewPDF：內部跳轉前先設定旗標，避免誤觸登出
+    // viewPDF：內部跳轉前先設定旗標，避免 beforeunload 誤執行 logout
     window.viewPDF = function() {
       const subjectSelect = document.getElementById("subjectSelect");
       const subjectId = subjectSelect.value;
@@ -189,19 +189,16 @@
         alert("❌ 請選擇科目！");
         return;
       }
-      // 設定內部導航旗標
-      isInternalNavigation = true;
+      isInternalNavigation = true;  // 內部跳轉，不觸發自動登出
       localStorage.setItem("currentPDF", subjectId);
       localStorage.setItem("currentPDFName", selectedSubjectText);
       window.location.href = "pdf-viewer.html";
     };
 
-    // beforeunload 事件：非內部跳轉時呼叫 logout（先檢查 logout 是否已定義，以免錯誤）
+    // beforeunload：若非內部跳轉（如關閉分頁或瀏覽器），則呼叫 logout
     window.addEventListener("beforeunload", (event) => {
-      if (!isInternalNavigation) {
-        if (typeof logout === "function") {
-          logout();
-        }
+      if (!isInternalNavigation && typeof logout === "function") {
+        logout();
       }
     });
 
