@@ -1,7 +1,8 @@
+// ✅ script.js - 修正版：避免跳轉時被誤判為關閉分頁
 console.log("🔥 script.js loaded");
 
 import { initializeApp } from "https://www.gstatic.com/firebasejs/9.6.1/firebase-app.js";
-import { getDatabase, ref, get, update, onDisconnect } from "https://www.gstatic.com/firebasejs/9.6.1/firebase-database.js";
+import { getDatabase, ref, get, update } from "https://www.gstatic.com/firebasejs/9.6.1/firebase-database.js";
 
 const firebaseConfig = {
   databaseURL: "https://access-7a3c3-default-rtdb.firebaseio.com/"
@@ -53,12 +54,15 @@ async function validateSession() {
   }
 }
 
-// ✅ 自動登出觸發（限非跳轉）
+// ✅ 自動登出邏輯（考慮跳轉延遲）
 function triggerAutoLogout() {
   setTimeout(() => {
     const isNavigating = sessionStorage.getItem("pageNavigation");
     sessionStorage.removeItem("pageNavigation");
-    if (isNavigating) return;
+    if (isNavigating) {
+      console.log("➡️ 偵測到跳轉，不自動登出");
+      return;
+    }
 
     const username = localStorage.getItem("loggedInUser");
     if (!username) return;
@@ -70,52 +74,28 @@ function triggerAutoLogout() {
       keepalive: true
     });
 
-    console.log("📤 自動登出已發送（非跳轉）");
-  }, 200); // 加入延遲確保 sessionStorage 被新頁面覆蓋前判斷
+    console.log("📤 非跳轉，自動登出發送完畢");
+  }, 150); // 延遲讓跳轉頁面設置 pageNavigation
 }
 
-// ✅ 自動標記跳轉
-function markNavigation() {
-  sessionStorage.setItem("pageNavigation", "true");
-}
+// ✅ 自動登出觸發點
+window.addEventListener("pagehide", triggerAutoLogout);
+window.addEventListener("beforeunload", triggerAutoLogout);
 
 document.addEventListener("DOMContentLoaded", () => {
   document.querySelectorAll("a, button").forEach(el => {
-    el.addEventListener("click", markNavigation);
+    el.addEventListener("click", () => sessionStorage.setItem("pageNavigation", "true"));
   });
-  markNavigation(); // 初次載入也視為跳轉
+  sessionStorage.setItem("pageNavigation", "true");
 });
 
 window.addEventListener("pageshow", (e) => {
   if (e.persisted || performance.getEntriesByType("navigation")[0]?.type === "back_forward") {
-    markNavigation();
+    sessionStorage.setItem("pageNavigation", "true");
   }
 });
 
-// ✅ 關閉頁面事件
-window.addEventListener("pagehide", triggerAutoLogout);
-window.addEventListener("beforeunload", triggerAutoLogout);
-
-// ✅ 手機用 visibilitychange 輔助（避免 App 直接關閉無事件）
-let hiddenTimer;
-document.addEventListener("visibilitychange", () => {
-  if (document.visibilityState === "hidden") {
-    hiddenTimer = setTimeout(() => {
-      triggerAutoLogout();
-    }, 1000);
-  } else {
-    clearTimeout(hiddenTimer);
-  }
-});
-
-// ✅ onDisconnect 強化（Firebase 原生）僅執行一次
-const username = localStorage.getItem("loggedInUser");
-if (username) {
-  const userRef = ref(db, `users/${username}`);
-  onDisconnect(userRef).update({ isLoggedIn: false, sessionToken: "" });
-}
-
-// ✅ 自動登出倒數
+// ✅ 自動登出倒數邏輯（pdf-select / pdf-viewer）
 if (window.location.pathname.includes("pdf-select") || window.location.pathname.includes("pdf-viewer")) {
   validateSession().then(valid => {
     if (!valid) {
