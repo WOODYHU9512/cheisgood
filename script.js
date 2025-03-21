@@ -1,4 +1,3 @@
-// ✅ script.js
 console.log("🔥 script.js loaded");
 
 import { initializeApp } from "https://www.gstatic.com/firebasejs/9.6.1/firebase-app.js";
@@ -66,7 +65,7 @@ async function validateSession() {
     const snapshot = await get(userRef);
     const valid = snapshot.exists() && snapshot.val().sessionToken === sessionToken;
     if (valid) {
-      await setupOnDisconnect(username); // 👈 加入 onDisconnect
+      await setupOnDisconnect(username);
     }
     return valid;
   } catch (err) {
@@ -75,11 +74,15 @@ async function validateSession() {
   }
 }
 
-// ✅ 自動登出邏輯
 function triggerAutoLogout() {
   const isNavigating = sessionStorage.getItem("pageNavigation");
+  const navigationType = performance.getEntriesByType("navigation")[0]?.type;
   sessionStorage.removeItem("pageNavigation");
-  if (isNavigating) return;
+
+  if (isNavigating || navigationType === "navigate") {
+    console.log("🛑 偵測到跳轉，略過自動登出");
+    return;
+  }
 
   const username = localStorage.getItem("loggedInUser");
   if (!username) return;
@@ -94,7 +97,6 @@ function triggerAutoLogout() {
   console.log("📤 自動登出已發送（非跳轉）");
 }
 
-// ✅ 離開視窗偵測
 let hiddenTimer;
 document.addEventListener("visibilitychange", () => {
   if (document.visibilityState === "hidden") {
@@ -108,7 +110,6 @@ document.addEventListener("visibilitychange", () => {
 window.addEventListener("pagehide", triggerAutoLogout);
 window.addEventListener("beforeunload", triggerAutoLogout);
 
-// ✅ 所有跳轉標記
 function markNavigation() {
   sessionStorage.setItem("pageNavigation", "true");
 }
@@ -117,7 +118,7 @@ document.addEventListener("DOMContentLoaded", () => {
   document.querySelectorAll("a, button").forEach(el => {
     el.addEventListener("click", markNavigation);
   });
-  markNavigation(); // 初始也標記
+  markNavigation();
 });
 
 window.addEventListener("pageshow", (e) => {
@@ -126,7 +127,6 @@ window.addEventListener("pageshow", (e) => {
   }
 });
 
-// ✅ 自動登出倒數
 if (window.location.pathname.includes("pdf-select") || window.location.pathname.includes("pdf-viewer")) {
   validateSession().then(valid => {
     if (!valid) {
