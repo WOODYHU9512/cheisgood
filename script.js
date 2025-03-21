@@ -1,7 +1,7 @@
 console.log("🔥 script.js loaded");
 
 import { initializeApp } from "https://www.gstatic.com/firebasejs/9.6.1/firebase-app.js";
-import { getDatabase, ref, get, update, onDisconnect } from "https://www.gstatic.com/firebasejs/9.6.1/firebase-database.js";
+import { getDatabase, ref, get, update } from "https://www.gstatic.com/firebasejs/9.6.1/firebase-database.js";
 
 const firebaseConfig = {
   databaseURL: "https://access-7a3c3-default-rtdb.firebaseio.com/"
@@ -9,7 +9,6 @@ const firebaseConfig = {
 const app = initializeApp(firebaseConfig);
 const db = getDatabase(app);
 
-// ✅ 登出 function
 async function logoutUser(showLog = true) {
   const username = localStorage.getItem("loggedInUser");
   const sessionToken = localStorage.getItem("sessionToken");
@@ -37,7 +36,6 @@ window.logout = async function () {
   window.location.href = "index.html";
 };
 
-// ✅ 驗證 session
 async function validateSession() {
   const username = localStorage.getItem("loggedInUser");
   const sessionToken = localStorage.getItem("sessionToken");
@@ -46,21 +44,29 @@ async function validateSession() {
   try {
     const userRef = ref(db, `users/${username}`);
     const snapshot = await get(userRef);
-    const valid = snapshot.exists() && snapshot.val().sessionToken === sessionToken;
-    if (valid) await onDisconnect(userRef).update({ isLoggedIn: false, sessionToken: "" });
-    return valid;
+    return snapshot.exists() && snapshot.val().sessionToken === sessionToken;
   } catch (err) {
     console.error("❌ 驗證登入失敗：", err);
     return false;
   }
 }
 
-// ✅ 自動登出邏輯
+// ✅ 標記跳轉
+function markNavigation() {
+  sessionStorage.setItem("pageNavigation", "true");
+}
+
+// ✅ 自動登出邏輯（加入延遲判斷）
 function triggerAutoLogout() {
-  const isNavigating = sessionStorage.getItem("pageNavigation");
+  const shouldIgnore = sessionStorage.getItem("pageNavigation");
   sessionStorage.removeItem("pageNavigation");
-  if (isNavigating) {
-    console.log("🛑 跳轉行為，略過登出");
+
+  const navType = performance.getEntriesByType("navigation")[0]?.type;
+  const isReload = navType === "reload";
+  const isNavigate = navType === "navigate";
+
+  if (shouldIgnore || isReload || isNavigate) {
+    console.log("⏩ 跳轉或重新整理，略過登出");
     return;
   }
 
@@ -77,40 +83,40 @@ function triggerAutoLogout() {
   console.log("📤 自動登出已發送（非跳轉）");
 }
 
-// ✅ 可見性變化判斷（手機瀏覽器觸發較頻繁）
+// ✅ 可見性監聽
 let hiddenTimer;
 document.addEventListener("visibilitychange", () => {
   if (document.visibilityState === "hidden") {
-    hiddenTimer = setTimeout(triggerAutoLogout, 500);
+    hiddenTimer = setTimeout(triggerAutoLogout, 300);
   } else {
     clearTimeout(hiddenTimer);
   }
 });
 
-// ✅ pagehide / beforeunload（跳轉或關閉皆觸發）
-window.addEventListener("pagehide", () => setTimeout(triggerAutoLogout, 50));
-window.addEventListener("beforeunload", () => setTimeout(triggerAutoLogout, 50));
+window.addEventListener("beforeunload", () => {
+  setTimeout(triggerAutoLogout, 100); // 保留一點時間讓跳轉有機會標記
+});
+window.addEventListener("pagehide", () => {
+  setTimeout(triggerAutoLogout, 100);
+});
 
-// ✅ 所有跳轉標記
-function markNavigation() {
-  sessionStorage.setItem("pageNavigation", "true");
-}
-
-// ✅ 頁面初始化時就標記（防止重新整理被登出）
-sessionStorage.setItem("pageNavigation", "true");
-window.addEventListener("DOMContentLoaded", () => {
-  setTimeout(() => sessionStorage.setItem("pageNavigation", "true"), 0);
+// ✅ DOM 載入標記跳轉
+document.addEventListener("DOMContentLoaded", () => {
+  markNavigation();
   document.querySelectorAll("a, button").forEach(el => {
     el.addEventListener("click", markNavigation);
   });
 });
+
+// ✅ pageshow（Safari Back/Forward）
 window.addEventListener("pageshow", (e) => {
-  if (e.persisted || performance.getEntriesByType("navigation")[0]?.type === "back_forward") {
-    sessionStorage.setItem("pageNavigation", "true");
+  const navType = performance.getEntriesByType("navigation")[0]?.type;
+  if (e.persisted || navType === "back_forward") {
+    markNavigation();
   }
 });
 
-// ✅ 登入驗證 + 自動登出倒數
+// ✅ 自動登出倒數邏輯
 if (window.location.pathname.includes("pdf-select") || window.location.pathname.includes("pdf-viewer")) {
   validateSession().then(valid => {
     if (!valid) {
