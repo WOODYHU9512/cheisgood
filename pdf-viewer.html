@@ -1,6 +1,10 @@
 <!DOCTYPE html>
 <html lang="zh-TW">
 <head>
+  <script type="module">
+    // ✅ 一載入就標記跳轉，防止誤判登出（特別是手機 Safari）
+    sessionStorage.setItem("pageNavigation", "true");
+  </script>
   <script type="module" src="script.js"></script>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
@@ -89,19 +93,20 @@
         window.location.href = "pdf-select.html";
         return;
       }
+
       document.getElementById("pdfTitle").innerText = `📖 ${fileName}`;
       const pdfUrl = `https://drive.google.com/file/d/${fileId}/preview?embedded=true`;
       document.getElementById("pdfFrame").src = pdfUrl;
     }
 
+    // ✅ 標記跳轉或歷史返回
     function markNavigation() {
-      sessionStorage.setItem("navigationState", "done");
+      sessionStorage.setItem("pageNavigation", "true");
     }
 
     window.addEventListener("DOMContentLoaded", () => {
-      // ✅ 確保 viewer 一進來就標記為跳轉來源
-      sessionStorage.setItem("navigationState", "done");
-      setTimeout(markNavigation, 50); // 防止 iOS/Safari 判定過慢
+      markNavigation();
+      setTimeout(markNavigation, 50); // 再標記一次防止 race condition
       loadPDF();
     });
 
@@ -114,10 +119,12 @@
       }
     });
 
+    // ✅ 登出
     document.getElementById("logout-btn").addEventListener("click", () => {
       window.logout();
     });
 
+    // ✅ 禁用右鍵與開發者快捷鍵
     document.addEventListener("contextmenu", e => e.preventDefault());
     document.addEventListener("keydown", e => {
       if (
