@@ -1,138 +1,183 @@
-console.log("🔥 `script.js` 已載入");
-
-import { initializeApp } from "https://www.gstatic.com/firebasejs/9.6.1/firebase-app.js";
-import { getDatabase, ref, get, update, child } from "https://www.gstatic.com/firebasejs/9.6.1/firebase-database.js";
-
-const firebaseConfig = {
-    databaseURL: "https://access-7a3c3-default-rtdb.firebaseio.com/"
-};
-const app = initializeApp(firebaseConfig);
-const db = getDatabase(app);
-
-// ✅ 取得 Firebase 使用者參照
-async function getUserRef() {
-    const username = localStorage.getItem('loggedInUser');
-    if (!username) return null;
-    return ref(db, `users/${username}`);
-}
-
-// ✅ 驗證登入狀態
-function checkLoginStatus() {
-    const username = localStorage.getItem('loggedInUser');
-    const token = localStorage.getItem('sessionToken');
-    if (!username || !token) {
-        console.log("⛔ 未登入，跳轉登入頁");
-        window.location.href = 'index.html';
+<!DOCTYPE html>
+<html lang="zh-TW">
+<head>
+  <script type="module" src="script.js"></script>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>選擇學校與科目</title>
+  <style>
+    body {
+      font-family: Arial, sans-serif;
+      text-align: center;
+      margin: 20px;
     }
-}
+    select, button {
+      margin: 10px;
+      padding: 10px;
+      font-size: 16px;
+    }
+    #countdown {
+      position: fixed;
+      top: 10px;
+      left: 10px;
+      font-size: 18px;
+      background: rgba(255, 0, 0, 0.8);
+      color: white;
+      padding: 10px 15px;
+      border-radius: 10px;
+      font-weight: bold;
+    }
+    #logout-warning {
+      position: fixed;
+      bottom: 5px;
+      left: 50%;
+      transform: translateX(-50%);
+      background-color: rgba(255, 0, 0, 0.8);
+      color: white;
+      padding: 5px 15px;
+      font-size: 14px;
+      font-weight: bold;
+      border-radius: 5px;
+      z-index: 1000;
+      box-shadow: 0px 2px 5px rgba(0, 0, 0, 0.2);
+    }
+    #logout-btn {
+      position: fixed;
+      top: 10px;
+      right: 10px;
+      padding: 10px 15px;
+      background-color: red;
+      color: white;
+      border: none;
+      cursor: pointer;
+      font-size: 16px;
+    }
+  </style>
+</head>
+<body>
+  <h2>請選擇學校與科目</h2>
+  <div id="countdown">⏳ 自動登出倒數：<span id="timer">30:00</span></div>
+  <label for="schoolSelect">選擇學校：</label>
+  <select id="schoolSelect" onchange="updateSubjects()">
+    <option value="">請選擇學校</option>
+  </select>
+  <label for="subjectSelect">選擇科目：</label>
+  <select id="subjectSelect">
+    <option value="">請先選擇學校</option>
+  </select>
+  <button id="view-btn">觀看 PDF</button>
+  <div id="logout-warning">⚠️ **請務必透過登出鈕登出！**</div>
+  <button id="logout-btn" onclick="logout()">🚪 登出</button>
 
-// ✅ 登出功能
-async function logout() {
-    const username = localStorage.getItem('loggedInUser');
-    const token = localStorage.getItem('sessionToken');
-    if (!username || !token) return;
+  <script type="module">
+    import { initializeApp } from "https://www.gstatic.com/firebasejs/9.6.1/firebase-app.js";
+    import { getDatabase, ref, get } from "https://www.gstatic.com/firebasejs/9.6.1/firebase-database.js";
 
-    try {
-        const userRef = await getUserRef();
-        const snapshot = await get(userRef);
-        if (snapshot.exists()) {
-            const user = snapshot.val();
-            if (user.sessionToken === token) {
-                await update(userRef, { isLoggedIn: false, sessionToken: "" });
-                console.log(`✅ 使用者 ${username} 成功登出`);
-            }
-        }
-    } catch (err) {
-        console.error("❌ 登出錯誤：", err);
+    const firebaseConfig = {
+      databaseURL: "https://access-7a3c3-default-rtdb.firebaseio.com/"
+    };
+    const app = initializeApp(firebaseConfig);
+    const db = getDatabase(app);
+
+    let authorizedSchools = [];
+
+    const subjects = {
+      "台大": {
+        "106~114 台大單操輸送": "1-8YNZiVw81RjqLPPWmzbC0ng4PAIa53a",
+        "106~114 台大化熱化反": "1V1xIOMRl04VJORV4fdKN9Bot76XRnv7A",
+        "106~114 台大工數": "1twqzBEGA7A3YEzYLRf-kDcLqBkOS4ujD"
+      },
+      "清大": {
+        "106~114 清大單操輸送": "1oDoN0B7hpQEvy9MGDrZvkv7v2ow6NRoj",
+        "106~114 清大化熱化反": "14LTMKQmev5gKYjy84RceAq6b-AK_9hTE"
+      },
+      "成大": {
+        "106-114 成大單操輸送": "1Z6dWhVPKlpjQVQLOMl73QCNmLYod7CtY",
+        "106-114 成大化熱": "1YlWIhNIbxILLLSyU0cH9NL6-6oUeWBpu",
+        "106-114 成大化反": "1DFrKbo-9uD-i4e4ipeh3XbX-tgeVEb1Y"
+      },
+      "中央": {
+        "106~114 中央單操輸送": "1sKb01AvjaKl4z-Ch0TyqXKahVhMUA1iE",
+        "106~114 中央化熱化反": "1yN5N4_0B64YtvTmdobnOuJs1mXASH5Xd"
+      },
+      "台科大": {
+        "106-114 台科大工數與單操輸送": "1dq3RAcKUkR4LvZTjDIE1fMFRJ3Vc4346",
+        "106~114 台科大化熱化反": "1rDYx5rR6an3Xg8FQaWan-zqjhovWsn-H"
+      },
+      "中興": {
+        "106-114 中興工程數學與輸送現象": "1AREZvc7hVtVHGpG7qwoZkRVD96ljlcXt",
+        "106-114 中興化熱化反": "1uYHa87G9aoc9VnyVjeXJPgVnVKPI_ujS"
+      }
+    };
+
+    async function loadUserPermissions() {
+      const username = localStorage.getItem('loggedInUser');
+      if (!username) {
+        alert("❌ 未登入，請重新登入！");
+        window.location.href = "index.html";
+        return;
+      }
+      const userRef = ref(db, `users/${username}/purchased`);
+      const snapshot = await get(userRef);
+      if (snapshot.exists()) {
+        authorizedSchools = Object.keys(snapshot.val());
+      } else {
+        authorizedSchools = [];
+      }
+      populateSchoolOptions();
     }
 
-    localStorage.removeItem('loggedInUser');
-    localStorage.removeItem('sessionToken');
-    localStorage.removeItem('currentPDF');
-    localStorage.removeItem('currentPDFName');
-}
+    function populateSchoolOptions() {
+      const schoolSelect = document.getElementById("schoolSelect");
+      schoolSelect.innerHTML = "<option value=''>請選擇學校</option>";
+      authorizedSchools.forEach(school => {
+        let option = document.createElement("option");
+        option.value = school;
+        option.textContent = school;
+        schoolSelect.appendChild(option);
+      });
+    }
 
-// ✅ 同步登出（pagehide 時用）
-function logoutSync() {
-    const username = localStorage.getItem("loggedInUser");
-    const token = localStorage.getItem("sessionToken");
-    if (!username || !token) return;
+    window.updateSubjects = function () {
+      const school = document.getElementById("schoolSelect").value;
+      const subjectSelect = document.getElementById("subjectSelect");
+      subjectSelect.innerHTML = "<option value=''>請選擇科目</option>";
+      if (!school || !subjects.hasOwnProperty(school)) return;
+      Object.entries(subjects[school]).forEach(([subject, fileId]) => {
+        let option = document.createElement("option");
+        option.value = fileId;
+        option.textContent = subject;
+        subjectSelect.appendChild(option);
+      });
+    };
 
-    const url = `https://access-7a3c3-default-rtdb.firebaseio.com/users/${username}.json`;
-    const payload = JSON.stringify({ isLoggedIn: false, sessionToken: "" });
+    document.getElementById("view-btn").addEventListener("click", function () {
+      const subjectSelect = document.getElementById("subjectSelect");
+      const subjectId = subjectSelect.value;
+      const selectedSubjectText = subjectSelect.options[subjectSelect.selectedIndex].text;
 
-    const blob = new Blob([payload], { type: 'application/json' });
-    navigator.sendBeacon(url, blob);
+      if (!subjectId) {
+        alert("❌ 請選擇科目！");
+        return;
+      }
 
-    localStorage.removeItem("loggedInUser");
-    localStorage.removeItem("sessionToken");
-    localStorage.removeItem("currentPDF");
-    localStorage.removeItem("currentPDFName");
-}
-
-// ✅ 登出函式供 HTML 使用
-window.logout = async function () {
-    await logout();
-    window.location.href = 'index.html';
-};
-
-// ✅ 標記點擊跳轉，避免 pagehide 誤判
-window.addEventListener("DOMContentLoaded", () => {
-    const allLinks = document.querySelectorAll("a, button");
-    allLinks.forEach(el => {
-        el.addEventListener("click", () => {
-            sessionStorage.setItem("pageNavigation", "true");
-        });
+      sessionStorage.setItem("pageNavigation", "true"); // ✅ 跳轉標記
+      localStorage.setItem("currentPDF", subjectId);
+      localStorage.setItem("currentPDFName", selectedSubjectText);
+      window.location.href = "pdf-viewer.html";
     });
-});
 
-// ✅ pagehide：若不是跳轉，觸發同步登出
-window.addEventListener("pagehide", () => {
-    const navigating = sessionStorage.getItem("pageNavigation");
-    if (navigating) {
-        sessionStorage.removeItem("pageNavigation");
-    } else {
-        console.log("👋 離開頁面，自動登出");
-        logoutSync();
-    }
-});
+    // ✅ 標記點擊行為避免 pagehide 誤判
+    document.addEventListener("DOMContentLoaded", function () {
+      const links = document.querySelectorAll("a, button");
+      links.forEach(link => {
+        link.addEventListener("click", function () {
+          sessionStorage.setItem("pageNavigation", "true");
+        });
+      });
+    });
 
-// ✅ 閒置登出邏輯（pdf-select / pdf-viewer）
-if (window.location.pathname.includes("pdf-select") || window.location.pathname.includes("pdf-viewer")) {
-    checkLoginStatus();
-
-    let idleTimeout;
-    let timeLeft = 30 * 60; // 30 分鐘
-    const timerDisplay = document.getElementById("timer");
-
-    function updateTimer() {
-        if (timerDisplay) {
-            const min = Math.floor(timeLeft / 60);
-            const sec = timeLeft % 60;
-            timerDisplay.innerText = `${min}:${sec < 10 ? "0" : ""}${sec}`;
-        }
-    }
-
-    function startIdleTimer() {
-        clearInterval(idleTimeout);
-        timeLeft = 30 * 60;
-        updateTimer();
-
-        idleTimeout = setInterval(async () => {
-            timeLeft--;
-            updateTimer();
-
-            if (timeLeft <= 0) {
-                clearInterval(idleTimeout);
-                console.log("⏰ 閒置時間到，強制登出");
-                await logout();
-                window.location.href = 'index.html';
-            }
-        }, 1000);
-    }
-
-    document.addEventListener("mousemove", startIdleTimer);
-    document.addEventListener("keydown", startIdleTimer);
-    document.addEventListener("touchstart", startIdleTimer);
-    startIdleTimer();
-}
+    loadUserPermissions();
+  </script>
+</body>
+</html>
