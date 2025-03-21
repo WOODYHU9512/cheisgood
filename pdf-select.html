@@ -74,6 +74,9 @@
   <button id="logout-btn">🚪 登出</button>
 
   <script type="module">
+    // ✅ 最早標記跳轉，避免 pagehide 誤判
+    sessionStorage.setItem("pageNavigation", "true");
+
     import { initializeApp } from "https://www.gstatic.com/firebasejs/9.6.1/firebase-app.js";
     import { getDatabase, ref, get } from "https://www.gstatic.com/firebasejs/9.6.1/firebase-database.js";
 
@@ -161,7 +164,7 @@
       }
       localStorage.setItem("currentPDF", subjectId);
       localStorage.setItem("currentPDFName", subjectText);
-      sessionStorage.setItem("pageNavigation", "true"); // ✅ 正確標記跳轉
+      sessionStorage.setItem("pageNavigation", "true"); // ✅ 跳轉標記
       window.location.href = "pdf-viewer.html";
     });
 
@@ -169,13 +172,10 @@
       window.logout();
     });
 
-    // ✅ 初次載入 + DOM 完成 時標記跳轉
     window.addEventListener("DOMContentLoaded", () => {
-      sessionStorage.setItem("pageNavigation", "true");
       loadUserPermissions();
     });
 
-    // ✅ 回到歷史記錄也補標記
     window.addEventListener("pageshow", (e) => {
       if (e.persisted || performance.getEntriesByType("navigation")[0].type === "back_forward") {
         sessionStorage.setItem("pageNavigation", "true");
