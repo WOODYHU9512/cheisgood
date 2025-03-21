@@ -1,11 +1,10 @@
 <!DOCTYPE html>
 <html lang="zh-TW">
 <head>
-  <script type="module" src="script.js"></script>
+  <script type="module" src="script.js"></script> <!-- ✅ 只保留這一個 -->
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>PDF 觀看</title>
-
   <style>
     body {
       margin: 0;
@@ -78,22 +77,19 @@
 
   <h2 id="pdfTitle">📖 PDF 觀看</h2>
   <div id="countdown">⏳ 自動登出倒數：<span id="timer">30:00</span></div>
-
   <div class="pdf-container">
     <iframe id="pdfFrame"></iframe>
     <div class="overlay"></div>
   </div>
-
   <div id="logout-warning">
     ⚠️ **請務必透過登出鈕登出！**
   </div>
-
   <button id="logout-btn" onclick="logout()">🚪 登出</button>
 
-  <script type="module">
-    function loadPDF() {
-      const fileId = localStorage.getItem("currentPDF");
-      const fileName = localStorage.getItem("currentPDFName");
+  <script>
+    window.onload = function loadPDF() {
+      let fileId = localStorage.getItem("currentPDF");
+      let fileName = localStorage.getItem("currentPDFName");
 
       if (!fileId) {
         alert("❌ 無法載入 PDF，請重新選擇科目！");
@@ -102,26 +98,10 @@
       }
 
       document.getElementById("pdfTitle").innerText = `📖 ${fileName}`;
-      const pdfUrl = `https://drive.google.com/file/d/${fileId}/preview?embedded=true`;
+      let pdfUrl = `https://drive.google.com/file/d/${fileId}/preview?embedded=true`;
       document.getElementById("pdfFrame").src = pdfUrl;
-    }
-
-    window.onload = () => {
-      loadPDF();
     };
-
-    // ✅ 禁止下載 / 開發者工具
-    document.addEventListener("contextmenu", event => event.preventDefault());
-    document.addEventListener("keydown", function(event) {
-      if (
-        event.keyCode == 123 ||
-        (event.ctrlKey && event.shiftKey && (event.keyCode == 73 || event.keyCode == 74)) ||
-        (event.ctrlKey && event.keyCode == 85) ||
-        (event.ctrlKey && event.keyCode == 83)
-      ) {
-        event.preventDefault();
-      }
-    });
   </script>
+
 </body>
 </html>
