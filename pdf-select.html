@@ -159,15 +159,9 @@
         alert("❌ 請選擇科目！");
         return;
       }
-
-      // ✅ 設定跳轉用的值
       localStorage.setItem("currentPDF", subjectId);
       localStorage.setItem("currentPDFName", subjectText);
-
-      // ✅ 立即標記跳轉，交由 script.js 判斷處理
       sessionStorage.setItem("pageNavigation", "true");
-
-      // ✅ 立即跳轉（不延遲）
       window.location.href = "pdf-viewer.html";
     });
 
@@ -175,10 +169,16 @@
       window.logout();
     });
 
-    // ✅ 初始載入就標記跳轉，避免刷新被誤判
     window.addEventListener("DOMContentLoaded", () => {
       sessionStorage.setItem("pageNavigation", "true");
+      setTimeout(() => sessionStorage.setItem("pageNavigation", "true"), 50); // 📌 多一次強化保險
       loadUserPermissions();
+    });
+
+    window.addEventListener("pageshow", (e) => {
+      if (e.persisted || performance.getEntriesByType("navigation")[0]?.type === "back_forward") {
+        sessionStorage.setItem("pageNavigation", "true");
+      }
     });
   </script>
 </body>
