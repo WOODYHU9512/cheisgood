@@ -84,34 +84,44 @@
     function loadPDF() {
       const fileId = localStorage.getItem("currentPDF");
       const fileName = localStorage.getItem("currentPDFName");
-
       if (!fileId) {
         alert("❌ 無法載入 PDF，請重新選擇科目！");
         window.location.href = "pdf-select.html";
         return;
       }
-
       document.getElementById("pdfTitle").innerText = `📖 ${fileName}`;
       const pdfUrl = `https://drive.google.com/file/d/${fileId}/preview?embedded=true`;
       document.getElementById("pdfFrame").src = pdfUrl;
     }
 
-    // 初始化 PDF 載入
-    window.addEventListener("load", loadPDF);
+    function markNavigation() {
+      sessionStorage.setItem("pageNavigation", "true");
+    }
 
-    // 登出按鈕
+    window.addEventListener("load", () => {
+      // 提前標記，確保 script.js 不誤判
+      sessionStorage.setItem("pageNavigation", "true");
+      setTimeout(() => markNavigation(), 0);
+      loadPDF();
+    });
+
+    window.addEventListener("pageshow", (e) => {
+      if (e.persisted || performance.getEntriesByType("navigation")[0]?.type === "back_forward") {
+        markNavigation();
+      }
+    });
+
     document.getElementById("logout-btn").addEventListener("click", () => {
       window.logout();
     });
 
-    // 禁用右鍵與開發工具
     document.addEventListener("contextmenu", e => e.preventDefault());
     document.addEventListener("keydown", e => {
       if (
-        e.keyCode === 123 || // F12
-        (e.ctrlKey && e.shiftKey && (e.keyCode === 73 || e.keyCode === 74)) || // Ctrl+Shift+I/J
-        (e.ctrlKey && e.keyCode === 85) || // Ctrl+U
-        (e.ctrlKey && e.keyCode === 83) // Ctrl+S
+        e.keyCode === 123 ||
+        (e.ctrlKey && e.shiftKey && (e.keyCode === 73 || e.keyCode === 74)) ||
+        (e.ctrlKey && e.keyCode === 85) ||
+        (e.ctrlKey && e.keyCode === 83)
       ) {
         e.preventDefault();
       }
