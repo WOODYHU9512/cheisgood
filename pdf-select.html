@@ -161,35 +161,29 @@
       }
       localStorage.setItem("currentPDF", subjectId);
       localStorage.setItem("currentPDFName", subjectText);
-      sessionStorage.setItem("pageNavigation", "true"); // ✅ 正確標記跳轉
+      sessionStorage.setItem("pageNavigation", "true");
       window.location.href = "pdf-viewer.html";
     });
 
     logoutBtn.addEventListener("click", () => {
-      window.logout(); // ✅ 呼叫 script.js 中的 logoutUser()
+      window.logout();
     });
 
-    // ✅ 初始載入：標記為跳轉
+    // ✅ 自動標記跳轉
     window.addEventListener("load", () => {
-      sessionStorage.setItem("pageNavigation", "true");
+      setTimeout(() => sessionStorage.setItem("pageNavigation", "true"), 0);
       loadUserPermissions();
     });
 
-    // ✅ 返回上一頁時也補標記跳轉
     window.addEventListener("pageshow", (e) => {
       if (e.persisted || performance.getEntriesByType("navigation")[0].type === "back_forward") {
         sessionStorage.setItem("pageNavigation", "true");
       }
     });
 
-    // ✅ 若隱藏畫面超過 300ms，就取消 pageNavigation
     document.addEventListener("visibilitychange", () => {
       if (document.visibilityState === "hidden") {
-        setTimeout(() => {
-          if (document.visibilityState === "hidden") {
-            sessionStorage.removeItem("pageNavigation");
-          }
-        }, 300);
+        sessionStorage.removeItem("pageNavigation");
       }
     });
   </script>
