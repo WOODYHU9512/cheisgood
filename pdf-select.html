@@ -57,20 +57,18 @@
 <body>
   <h2>請選擇學校與科目</h2>
   <div id="countdown">⏳ 自動登出倒數：<span id="timer">30:00</span></div>
-
   <label for="schoolSelect">選擇學校：</label>
-  <select id="schoolSelect">
+  <select id="schoolSelect" onchange="updateSubjects()">
     <option value="">請選擇學校</option>
   </select>
-
   <label for="subjectSelect">選擇科目：</label>
   <select id="subjectSelect">
     <option value="">請先選擇學校</option>
   </select>
-
-  <button id="viewPDF">觀看 PDF</button>
-
-  <div id="logout-warning">⚠️ **請務必透過登出鈕登出！**</div>
+  <button onclick="viewPDF()">觀看 PDF</button>
+  <div id="logout-warning">
+    ⚠️ **請務必透過登出鈕登出！**
+  </div>
   <button id="logout-btn" onclick="logout()">🚪 登出</button>
 
   <script type="module">
@@ -82,6 +80,8 @@
     };
     const app = initializeApp(firebaseConfig);
     const db = getDatabase(app);
+
+    let authorizedSchools = [];
 
     const subjects = {
       "台大": {
@@ -112,8 +112,6 @@
       }
     };
 
-    let authorizedSchools = [];
-
     async function loadUserPermissions() {
       const username = localStorage.getItem('loggedInUser');
       if (!username) {
@@ -124,50 +122,58 @@
 
       const userRef = ref(db, `users/${username}/purchased`);
       const snapshot = await get(userRef);
-      if (snapshot.exists() && snapshot.val()) {
+
+      if (snapshot.exists()) {
         authorizedSchools = Object.keys(snapshot.val());
+      } else {
+        authorizedSchools = [];
       }
+
       populateSchoolOptions();
     }
 
     function populateSchoolOptions() {
       const schoolSelect = document.getElementById("schoolSelect");
       schoolSelect.innerHTML = "<option value=''>請選擇學校</option>";
+
       authorizedSchools.forEach(school => {
-        const option = document.createElement("option");
+        let option = document.createElement("option");
         option.value = school;
         option.textContent = school;
         schoolSelect.appendChild(option);
       });
     }
 
-    document.getElementById("schoolSelect").addEventListener("change", () => {
+    window.updateSubjects = function () {
       const school = document.getElementById("schoolSelect").value;
       const subjectSelect = document.getElementById("subjectSelect");
+
       subjectSelect.innerHTML = "<option value=''>請選擇科目</option>";
 
-      if (!school || !subjects[school]) return;
+      if (!school || !subjects.hasOwnProperty(school)) return;
+
       Object.entries(subjects[school]).forEach(([subject, fileId]) => {
-        const option = document.createElement("option");
+        let option = document.createElement("option");
         option.value = fileId;
         option.textContent = subject;
         subjectSelect.appendChild(option);
       });
-    });
+    };
 
-    document.getElementById("viewPDF").addEventListener("click", () => {
+    window.viewPDF = function () {
       const subjectSelect = document.getElementById("subjectSelect");
       const subjectId = subjectSelect.value;
-      const subjectText = subjectSelect.options[subjectSelect.selectedIndex]?.text;
+      const selectedSubjectText = subjectSelect.options[subjectSelect.selectedIndex].text;
+
       if (!subjectId) {
         alert("❌ 請選擇科目！");
         return;
       }
-      sessionStorage.setItem("pageNavigation", "true");
+
       localStorage.setItem("currentPDF", subjectId);
-      localStorage.setItem("currentPDFName", subjectText);
+      localStorage.setItem("currentPDFName", selectedSubjectText);
       window.location.href = "pdf-viewer.html";
-    });
+    };
 
     loadUserPermissions();
   </script>
