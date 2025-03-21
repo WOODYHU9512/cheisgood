@@ -106,7 +106,15 @@
       logBox.scrollTop = logBox.scrollHeight;
     };
 
-    window.onload = function loadPDF() {
+    window.onload = function () {
+      const username = localStorage.getItem('loggedInUser');
+      const token = localStorage.getItem('sessionToken');
+      if (!username || !token) {
+        log("⛔ 無登入資訊，跳轉首頁");
+        window.location.href = 'index.html';
+        return;
+      }
+
       log("🔥 viewer loaded & loadPDF()");
       let fileId = localStorage.getItem("currentPDF");
       let fileName = localStorage.getItem("currentPDFName");
@@ -120,7 +128,6 @@
       document.getElementById("pdfTitle").innerText = `📖 ${fileName}`;
       let pdfUrl = `https://drive.google.com/file/d/${fileId}/preview?embedded=true`;
       document.getElementById("pdfFrame").src = pdfUrl;
-
       log("✅ PDF 載入完成");
     };
   </script>
@@ -135,33 +142,35 @@
     const app = initializeApp(firebaseConfig);
     const db = getDatabase(app);
 
-    window.addEventListener("beforeunload", async function () {
-      const username = localStorage.getItem('loggedInUser');
-      const storedToken = localStorage.getItem('sessionToken');
-      if (!username || !storedToken) return;
+    window.addEventListener("visibilitychange", async function () {
+      if (document.visibilityState === "hidden") {
+        const username = localStorage.getItem('loggedInUser');
+        const storedToken = localStorage.getItem('sessionToken');
+        if (!username || !storedToken) return;
 
-      try {
-        const userRef = ref(db, "users/" + username);
-        const snapshot = await get(userRef);
+        try {
+          const userRef = ref(db, "users/" + username);
+          const snapshot = await get(userRef);
 
-        if (snapshot.exists()) {
-          const user = snapshot.val();
-          if (user.sessionToken === storedToken) {
-            await update(userRef, {
-              isLoggedIn: false,
-              sessionToken: ""
-            });
-            window.log("🛑 自動登出成功（viewer）");
+          if (snapshot.exists()) {
+            const user = snapshot.val();
+            if (user.sessionToken === storedToken) {
+              await update(userRef, {
+                isLoggedIn: false,
+                sessionToken: ""
+              });
+              window.log("🛑 自動登出成功（viewer hidden）");
+            }
           }
+        } catch (error) {
+          window.log("❌ 自動登出失敗（viewer hidden）: " + error);
         }
-      } catch (error) {
-        window.log("❌ 自動登出失敗（viewer）: " + error);
-      }
 
-      localStorage.removeItem('loggedInUser');
-      localStorage.removeItem('sessionToken');
-      localStorage.removeItem('currentPDF');
-      localStorage.removeItem('currentPDFName');
+        localStorage.removeItem('loggedInUser');
+        localStorage.removeItem('sessionToken');
+        localStorage.removeItem('currentPDF');
+        localStorage.removeItem('currentPDFName');
+      }
     });
   </script>
 </body>
