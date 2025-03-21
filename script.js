@@ -1,3 +1,4 @@
+// ✅ script.js
 console.log("🔥 script.js loaded");
 
 import { initializeApp } from "https://www.gstatic.com/firebasejs/9.6.1/firebase-app.js";
@@ -9,7 +10,6 @@ const firebaseConfig = {
 const app = initializeApp(firebaseConfig);
 const db = getDatabase(app);
 
-// ✅ 登出功能
 async function logoutUser(showLog = true) {
   const username = localStorage.getItem("loggedInUser");
   const sessionToken = localStorage.getItem("sessionToken");
@@ -21,7 +21,10 @@ async function logoutUser(showLog = true) {
     if (snapshot.exists()) {
       const user = snapshot.val();
       if (user.sessionToken === sessionToken) {
-        await update(userRef, { isLoggedIn: false, sessionToken: "" });
+        await update(userRef, {
+          isLoggedIn: false,
+          sessionToken: ""
+        });
         if (showLog) console.log(`✅ ${username} 已從 Firebase 登出`);
       }
     }
@@ -40,7 +43,6 @@ window.logout = async function () {
   window.location.href = "index.html";
 };
 
-// ✅ 驗證 session 有效性
 async function validateSession() {
   const username = localStorage.getItem("loggedInUser");
   const sessionToken = localStorage.getItem("sessionToken");
@@ -56,7 +58,6 @@ async function validateSession() {
   }
 }
 
-// ✅ 自動登出邏輯（fetch + keepalive）
 function autoLogoutIfClosed() {
   const isNavigating = sessionStorage.getItem("pageNavigation");
   if (isNavigating) return;
@@ -71,38 +72,33 @@ function autoLogoutIfClosed() {
     keepalive: true
   });
 
-  console.log("📤 送出自動登出 (fetch + keepalive)");
+  console.log("📤 自動登出 (keepalive) 已送出");
 }
 
-// ✅ 綁定 pagehide / beforeunload
 window.addEventListener("pagehide", () => {
   setTimeout(autoLogoutIfClosed, 0);
 });
+
 window.addEventListener("beforeunload", () => {
   setTimeout(autoLogoutIfClosed, 0);
 });
 
-// ✅ 所有跳轉都標記 pageNavigation
-function markPageNavigation() {
-  sessionStorage.setItem("pageNavigation", "true");
-}
-
 document.addEventListener("DOMContentLoaded", () => {
   document.querySelectorAll("a, button").forEach(el => {
-    el.addEventListener("click", markPageNavigation);
+    el.addEventListener("click", () => {
+      sessionStorage.setItem("pageNavigation", "true");
+    });
   });
 
-  // 初次進入頁面標記
-  markPageNavigation();
+  sessionStorage.setItem("pageNavigation", "true");
 });
 
 window.addEventListener("pageshow", (e) => {
   if (e.persisted || performance.getEntriesByType("navigation")[0].type === "back_forward") {
-    markPageNavigation();
+    sessionStorage.setItem("pageNavigation", "true");
   }
 });
 
-// ✅ 自動登出計時器
 if (window.location.pathname.includes("pdf-select") || window.location.pathname.includes("pdf-viewer")) {
   validateSession().then(valid => {
     if (!valid) {
