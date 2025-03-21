@@ -84,13 +84,11 @@
     function loadPDF() {
       const fileId = localStorage.getItem("currentPDF");
       const fileName = localStorage.getItem("currentPDFName");
-
-      if (!fileId || !fileName) {
+      if (!fileId) {
         alert("❌ 無法載入 PDF，請重新選擇科目！");
         window.location.href = "pdf-select.html";
         return;
       }
-
       document.getElementById("pdfTitle").innerText = `📖 ${fileName}`;
       const pdfUrl = `https://drive.google.com/file/d/${fileId}/preview?embedded=true`;
       document.getElementById("pdfFrame").src = pdfUrl;
@@ -100,10 +98,9 @@
       sessionStorage.setItem("pageNavigation", "true");
     }
 
-    // ✅ 載入時設置跳轉標記（避免 reload / 切換頁被誤判為離開）
     window.addEventListener("DOMContentLoaded", () => {
-      markNavigation();
-      setTimeout(() => markNavigation(), 50); // 強化手機支援
+      sessionStorage.setItem("pageNavigation", "true");
+      setTimeout(() => markNavigation(), 0);
       loadPDF();
     });
 
@@ -120,7 +117,7 @@
       window.logout();
     });
 
-    // 禁用右鍵與常見開發者工具
+    // 禁用右鍵和常見開發工具鍵
     document.addEventListener("contextmenu", e => e.preventDefault());
     document.addEventListener("keydown", e => {
       if (
