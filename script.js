@@ -60,33 +60,32 @@ async function validateSession() {
 
 // ✅ 關閉頁面自動登出（非跳轉）
 function autoLogoutIfNotNavigating() {
-  const isNavigating = sessionStorage.getItem("pageNavigation");
-  sessionStorage.removeItem("pageNavigation");
-  if (isNavigating) return;
+  // ⏳ 等待 100ms 確保新頁面能標記 pageNavigation
+  setTimeout(() => {
+    const isNavigating = sessionStorage.getItem("pageNavigation");
+    sessionStorage.removeItem("pageNavigation");
+    if (isNavigating) return;
 
-  const username = localStorage.getItem("loggedInUser");
-  if (!username) return;
+    const username = localStorage.getItem("loggedInUser");
+    if (!username) return;
 
-  fetch(`https://access-7a3c3-default-rtdb.firebaseio.com/users/${username}.json`, {
-    method: "PATCH",
-    headers: { "Content-Type": "application/json" },
-    body: JSON.stringify({
-      isLoggedIn: false,
-      sessionToken: ""
-    }),
-    keepalive: true
-  });
+    fetch(`https://access-7a3c3-default-rtdb.firebaseio.com/users/${username}.json`, {
+      method: "PATCH",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({
+        isLoggedIn: false,
+        sessionToken: ""
+      }),
+      keepalive: true
+    });
 
-  console.log("📤 fetch + keepalive 自動登出已發送");
+    console.log("📤 fetch + keepalive 自動登出已發送");
+  }, 100); // ⏰ 延遲 100ms 再判斷跳轉標記
 }
 
 // ✅ 註冊自動登出事件
-window.addEventListener("pagehide", () => {
-  setTimeout(autoLogoutIfNotNavigating, 0);
-});
-window.addEventListener("beforeunload", () => {
-  setTimeout(autoLogoutIfNotNavigating, 0);
-});
+window.addEventListener("pagehide", autoLogoutIfNotNavigating);
+window.addEventListener("beforeunload", autoLogoutIfNotNavigating);
 
 // ✅ 點擊按鈕與連結時標記跳轉
 document.addEventListener("DOMContentLoaded", () => {
