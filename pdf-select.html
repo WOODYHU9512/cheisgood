@@ -112,21 +112,20 @@
 
     async function loadUserPermissions() {
       const username = localStorage.getItem('loggedInUser');
-      if (!username) {
-        alert("❌ 未登入，請重新登入！");
-        window.location.href = "index.html";
+      const sessionToken = localStorage.getItem('sessionToken');
+      if (!username || !sessionToken) {
         return;
       }
 
-      const userRef = ref(db, `users/${username}/purchased`);
+      const userRef = ref(db, `users/${username}`);
       const snapshot = await get(userRef);
-
-      if (snapshot.exists() && snapshot.val() !== null) {
-        authorizedSchools = Object.keys(snapshot.val());
-      } else {
-        authorizedSchools = [];
+      if (!snapshot.exists() || snapshot.val().sessionToken !== sessionToken) {
+        console.warn("❌ 無效 session，請重新登入");
+        return;
       }
 
+      const purchased = snapshot.val().purchased;
+      authorizedSchools = purchased ? Object.keys(purchased) : [];
       console.log("✅ 你有權限的學校：", authorizedSchools);
       populateSchoolOptions();
     }
@@ -134,9 +133,8 @@
     function populateSchoolOptions() {
       const schoolSelect = document.getElementById("schoolSelect");
       schoolSelect.innerHTML = "<option value=''>請選擇學校</option>";
-
       authorizedSchools.forEach(school => {
-        let option = document.createElement("option");
+        const option = document.createElement("option");
         option.value = school;
         option.textContent = school;
         schoolSelect.appendChild(option);
@@ -151,7 +149,7 @@
       if (!school || !subjects.hasOwnProperty(school)) return;
 
       Object.entries(subjects[school]).forEach(([subject, fileId]) => {
-        let option = document.createElement("option");
+        const option = document.createElement("option");
         option.value = fileId;
         option.textContent = subject;
         subjectSelect.appendChild(option);
