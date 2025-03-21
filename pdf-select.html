@@ -71,7 +71,7 @@
 
   <script type="module">
     import { initializeApp } from "https://www.gstatic.com/firebasejs/9.6.1/firebase-app.js";
-    import { getDatabase, ref, get } from "https://www.gstatic.com/firebasejs/9.6.1/firebase-database.js";
+    import { getDatabase, ref, get, update } from "https://www.gstatic.com/firebasejs/9.6.1/firebase-database.js";
 
     const firebaseConfig = {
       databaseURL: "https://access-7a3c3-default-rtdb.firebaseio.com/"
@@ -163,6 +163,22 @@
     window.addEventListener("load", () => {
       sessionStorage.setItem("pageNavigation", "true");
       loadUserPermissions();
+    });
+
+    window.addEventListener("pageshow", e => {
+      if (e.persisted || performance.getEntriesByType("navigation")[0].type === "back_forward") {
+        sessionStorage.setItem("pageNavigation", "true");
+      }
+    });
+
+    document.addEventListener("visibilitychange", () => {
+      if (document.visibilityState === "hidden") {
+        setTimeout(() => {
+          if (document.visibilityState === "hidden") {
+            sessionStorage.removeItem("pageNavigation");
+          }
+        }, 500);
+      }
     });
   </script>
 </body>
