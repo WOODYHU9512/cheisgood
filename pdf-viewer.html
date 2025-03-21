@@ -83,7 +83,12 @@
   <button id="logout-btn">🚪 登出</button>
 
   <script type="module">
-    function loadPDF() {
+    // ✅ 提前設定跳轉標記（保證進入 viewer 不被誤判為關閉）
+    window.addEventListener("DOMContentLoaded", () => {
+      sessionStorage.setItem("pageNavigation", "true");
+    });
+
+    window.addEventListener("load", () => {
       const fileId = localStorage.getItem("currentPDF");
       const fileName = localStorage.getItem("currentPDFName");
       if (!fileId) {
@@ -94,40 +99,39 @@
       document.getElementById("pdfTitle").innerText = `📖 ${fileName}`;
       const pdfUrl = `https://drive.google.com/file/d/${fileId}/preview?embedded=true`;
       document.getElementById("pdfFrame").src = pdfUrl;
-    }
-
-    // ✅ 初始進入 / 回上一頁都標記跳轉
-    window.addEventListener("load", () => {
-      setTimeout(() => sessionStorage.setItem("pageNavigation", "true"), 0);
-      loadPDF();
     });
 
+    // ✅ 重新返回此頁時仍標記為跳轉
     window.addEventListener("pageshow", (e) => {
       if (e.persisted || performance.getEntriesByType("navigation")[0].type === "back_forward") {
         sessionStorage.setItem("pageNavigation", "true");
       }
     });
 
-    // ✅ 若使用者隱藏頁面，標記為可能關閉
+    // ✅ 隱藏頁面超過 300ms 時，才移除 pageNavigation 標記（更穩）
     document.addEventListener("visibilitychange", () => {
       if (document.visibilityState === "hidden") {
-        sessionStorage.removeItem("pageNavigation");
+        setTimeout(() => {
+          if (document.visibilityState === "hidden") {
+            sessionStorage.removeItem("pageNavigation");
+          }
+        }, 300);
       }
     });
 
-    // ✅ 登出按鈕呼叫 script.js 的 logoutUser()
+    // ✅ 登出按鈕
     document.getElementById("logout-btn").addEventListener("click", () => {
       window.logout();
     });
 
-    // ✅ 禁用右鍵與 F12 開發工具
+    // ✅ 禁用右鍵下載與 F12
     document.addEventListener("contextmenu", e => e.preventDefault());
     document.addEventListener("keydown", e => {
       if (
-        e.keyCode === 123 ||
-        (e.ctrlKey && e.shiftKey && (e.keyCode === 73 || e.keyCode === 74)) ||
-        (e.ctrlKey && e.keyCode === 85) ||
-        (e.ctrlKey && e.keyCode === 83)
+        e.keyCode === 123 || // F12
+        (e.ctrlKey && e.shiftKey && (e.keyCode === 73 || e.keyCode === 74)) || // Ctrl+Shift+I/J
+        (e.ctrlKey && e.keyCode === 85) || // Ctrl+U
+        (e.ctrlKey && e.keyCode === 83) // Ctrl+S
       ) {
         e.preventDefault();
       }
