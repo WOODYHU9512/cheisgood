@@ -24,7 +24,36 @@ function checkLoginStatus() {
     }
 }
 
-// 🚀 登出功能（支援 sendBeacon 以便 beforeunload 時使用）
+// ✅ 同步版登出函式（for beforeunload）
+function logoutSync() {
+    const username = localStorage.getItem('loggedInUser');
+    if (!username) return;
+
+    const sessionToken = localStorage.getItem('sessionToken');
+    if (!sessionToken) return;
+
+    const url = `https://access-7a3c3-default-rtdb.firebaseio.com/users/${username}.json`;
+    const payload = {
+        isLoggedIn: false,
+        sessionToken: ""
+    };
+
+    fetch(url, {
+        method: "PATCH",
+        headers: {
+            "Content-Type": "application/json"
+        },
+        body: JSON.stringify(payload),
+        keepalive: true
+    });
+
+    localStorage.removeItem('loggedInUser');
+    localStorage.removeItem('sessionToken');
+    localStorage.removeItem('currentPDF');
+    localStorage.removeItem('currentPDFName');
+}
+
+// ✅ 登出功能（一般 async）
 async function logout(preserveNavigation = false) {
     const username = localStorage.getItem('loggedInUser');
     if (!username) return;
@@ -35,17 +64,17 @@ async function logout(preserveNavigation = false) {
         if (snapshot.exists()) {
             const userData = snapshot.val();
 
-            // 使用 sendBeacon 以確保在 beforeunload 可送出
-            const logoutData = {
-                isLoggedIn: false,
-                sessionToken: "",
-                password: userData.password
-            };
-
-            navigator.sendBeacon(
-                `https://access-7a3c3-default-rtdb.firebaseio.com/users/${username}.json`,
-                new Blob([JSON.stringify(logoutData)], { type: 'application/json' })
-            );
+            await fetch(`https://access-7a3c3-default-rtdb.firebaseio.com/users/${username}.json`, {
+                method: "PATCH",
+                headers: {
+                    "Content-Type": "application/json"
+                },
+                body: JSON.stringify({
+                    isLoggedIn: false,
+                    sessionToken: "",
+                    password: userData.password
+                })
+            });
         }
     } catch (error) {
         console.error("❌ 登出錯誤：", error);
@@ -66,10 +95,10 @@ window.logout = async function () {
     await logout();
 };
 
-// ✅ beforeunload：判斷是否頁面跳轉
-window.addEventListener("beforeunload", function () {
+// ✅ beforeunload：關閉頁面時同步登出
+window.addEventListener("beforeunload", () => {
     if (!sessionStorage.getItem("pageNavigation")) {
-        logout(true); // 頁面即將關閉時登出（不跳轉）
+        logoutSync();
     } else {
         sessionStorage.removeItem("pageNavigation");
     }
@@ -90,7 +119,7 @@ if (window.location.pathname.includes("pdf-select") || window.location.pathname.
     checkLoginStatus();
 
     let idleTimeout;
-    let timeLeft = 30 * 60; // 30 分鐘 = 1800 秒
+    let timeLeft = 30 * 60; // 30 分鐘
     const timerDisplay = document.getElementById("timer");
 
     function updateTimer() {
