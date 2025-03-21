@@ -1,11 +1,10 @@
 <!DOCTYPE html>
 <html lang="zh-TW">
 <head>
-  <script type="module" src="script.js"></script>  <!-- ✅ 確保登出 & 計時器功能 -->
+  <script type="module" src="script.js"></script>  <!-- 確保登出 & 計時器功能 -->
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>PDF 觀看</title>
-
   <style>
     body {
       margin: 0;
@@ -13,16 +12,14 @@
       color: white;
       text-align: center;
     }
-
-    /* ✅ PDF Viewer 容器 */
+    /* PDF Viewer 容器 */
     .pdf-container {
       width: 90vw;
       height: 90vh;
       position: relative;
       margin: 20px auto;
     }
-
-    /* ✅ 內嵌 PDF */
+    /* 內嵌 PDF */
     iframe {
       width: 100%;
       height: 100%;
@@ -31,8 +28,7 @@
       seamless;
       allowfullscreen;
     }
-
-    /* ✅ 透明遮罩（防止點擊 Google Drive 下載按鈕） */
+    /* 透明遮罩（防止點擊 Google Drive 下載按鈕） */
     .overlay {
       width: 100px;
       height: 100px;
@@ -42,8 +38,7 @@
       top: 0px;
       z-index: 10;
     }
-
-    /* ✅ 計時器顯示 */
+    /* 計時器顯示 */
     #countdown {
       position: fixed;
       top: 10px;
@@ -55,8 +50,7 @@
       border-radius: 10px;
       font-weight: bold;
     }
-
-    /* ✅ 登出提醒 */
+    /* 登出提醒 */
     #logout-warning {
       position: fixed;
       bottom: 5px;
@@ -71,8 +65,7 @@
       z-index: 1000;
       box-shadow: 0px 2px 5px rgba(0, 0, 0, 0.2);
     }
-
-    /* ✅ 登出按鈕 */
+    /* 登出按鈕 */
     #logout-btn {
       position: fixed;
       top: 10px;
@@ -87,31 +80,26 @@
   </style>
 </head>
 <body>
-
   <h2 id="pdfTitle">📖 PDF 觀看</h2>
-
-  <!-- ✅ 顯示計時器 -->
+  <!-- 顯示計時器 -->
   <div id="countdown">⏳ 自動登出倒數：<span id="timer">30:00</span></div>
-
-  <!-- ✅ PDF Viewer -->
+  <!-- PDF Viewer -->
   <div class="pdf-container">
     <iframe id="pdfFrame"></iframe>
-    <div class="overlay"></div> <!-- ✅ 透明遮罩，防止下載 -->
+    <div class="overlay"></div> <!-- 透明遮罩，防止下載 -->
   </div>
-
-  <!-- ✅ 登出提醒 -->
+  <!-- 登出提醒 -->
   <div id="logout-warning">
     ⚠️ **請務必透過登出鈕登出！**
   </div>
-
-  <!-- ✅ 登出按鈕 -->
+  <!-- 登出按鈕 -->
   <button id="logout-btn" onclick="logout()">🚪 登出</button>
 
   <script type="module">
     import { initializeApp } from "https://www.gstatic.com/firebasejs/9.6.1/firebase-app.js";
     import { getDatabase, ref, get, update } from "https://www.gstatic.com/firebasejs/9.6.1/firebase-database.js";
 
-    // ✅ 初始化 Firebase
+    // 初始化 Firebase
     const firebaseConfig = {
       databaseURL: "https://access-7a3c3-default-rtdb.firebaseio.com/"
     };
@@ -136,29 +124,25 @@
     function loadPDF() {
       let fileId = localStorage.getItem("currentPDF");
       let fileName = localStorage.getItem("currentPDFName");
-
       if (!fileId) {
         alert("❌ 無法載入 PDF，請重新選擇科目！");
         window.location.href = "pdf-select.html";
         return;
       }
-
-      // ✅ 設定標題顯示 PDF 名稱
+      // 設定標題顯示 PDF 名稱
       document.getElementById("pdfTitle").innerText = `📖 ${fileName}`;
-
-      // ✅ Google Drive 預覽連結格式
+      // Google Drive 預覽連結格式
       let pdfUrl = `https://drive.google.com/file/d/${fileId}/preview?embedded=true`;
       document.getElementById("pdfFrame").src = pdfUrl;
     }
 
-    // ✅ 設定計時器（30 分鐘倒數）
+    // 設定計時器（30 分鐘倒數）
     let idleTime = 30 * 60;
     let countdownTimer = setInterval(() => {
       idleTime--;
       let minutes = Math.floor(idleTime / 60);
       let seconds = idleTime % 60;
       document.getElementById("timer").innerText = `${minutes}:${seconds < 10 ? '0' : ''}${seconds}`;
-
       if (idleTime <= 0) {
         clearInterval(countdownTimer);
         alert("⏰ 已超過 30 分鐘未操作，自動登出！");
@@ -166,7 +150,7 @@
       }
     }, 1000);
 
-    // ✅ 監聽使用者活動，重置計時器
+    // 監聽使用者活動，重置計時器
     function resetTimer() {
       idleTime = 30 * 60;
     }
@@ -174,17 +158,14 @@
     document.addEventListener("keydown", resetTimer);
     document.addEventListener("touchstart", resetTimer);
 
-    // ✅ 登出功能
+    // 登出功能
     async function logout() {
       const username = localStorage.getItem('loggedInUser');
       const storedToken = localStorage.getItem('sessionToken');
-
       if (!username) return;
-
       try {
         const userRef = ref(db, `users/${username}`);
         const snapshot = await get(userRef);
-
         if (snapshot.exists()) {
           const user = snapshot.val();
           if (user.sessionToken === storedToken) {
@@ -198,7 +179,6 @@
       } catch (error) {
         console.error("❌ 登出錯誤：", error);
       }
-
       localStorage.removeItem('loggedInUser');
       localStorage.removeItem('sessionToken');
       localStorage.removeItem('currentPDF');
@@ -206,9 +186,9 @@
       window.location.href = 'index.html';
     }
 
-    // 當非內部跳轉時，beforeunload 事件自動登出
+    // beforeunload：若非內部跳轉時執行 logout
     window.addEventListener("beforeunload", (event) => {
-      if (!isInternalNavigation) {
+      if (!isInternalNavigation && typeof logout === "function") {
         logout();
       }
     });
@@ -216,16 +196,15 @@
     // 禁止下載 / 禁止開發者工具
     document.addEventListener("contextmenu", event => event.preventDefault());
     document.addEventListener("keydown", function(event) {
-      if (event.keyCode == 123 ||  // F12
-          (event.ctrlKey && event.shiftKey && (event.keyCode == 73 || event.keyCode == 74)) || // Ctrl+Shift+I / J
-          (event.ctrlKey && event.keyCode == 85) || // Ctrl+U
-          (event.ctrlKey && event.keyCode == 83)) { // Ctrl+S
+      if (event.keyCode == 123 ||
+          (event.ctrlKey && event.shiftKey && (event.keyCode == 73 || event.keyCode == 74)) ||
+          (event.ctrlKey && event.keyCode == 85) ||
+          (event.ctrlKey && event.keyCode == 83)) {
         event.preventDefault();
       }
     });
 
     window.onload = loadPDF;
   </script>
-
 </body>
 </html>
