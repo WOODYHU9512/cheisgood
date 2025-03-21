@@ -84,44 +84,53 @@
     function loadPDF() {
       const fileId = localStorage.getItem("currentPDF");
       const fileName = localStorage.getItem("currentPDFName");
-      if (!fileId) {
+
+      if (!fileId || !fileName) {
         alert("❌ 無法載入 PDF，請重新選擇科目！");
         window.location.href = "pdf-select.html";
         return;
       }
+
       document.getElementById("pdfTitle").innerText = `📖 ${fileName}`;
       const pdfUrl = `https://drive.google.com/file/d/${fileId}/preview?embedded=true`;
       document.getElementById("pdfFrame").src = pdfUrl;
     }
 
-    function markNavigation() {
+    // ✅ 頁面載入標記為跳轉（避免誤登出）
+    window.addEventListener("DOMContentLoaded", () => {
       sessionStorage.setItem("pageNavigation", "true");
-    }
 
-    window.addEventListener("load", () => {
-      // 提前標記，確保 script.js 不誤判
-      sessionStorage.setItem("pageNavigation", "true");
-      setTimeout(() => markNavigation(), 0);
+      // 兼容 iOS/Safari 等載入慢的情況
+      setTimeout(() => {
+        sessionStorage.setItem("pageNavigation", "true");
+      }, 100);
+
       loadPDF();
     });
 
+    // ✅ 歷史返回補標記
     window.addEventListener("pageshow", (e) => {
-      if (e.persisted || performance.getEntriesByType("navigation")[0]?.type === "back_forward") {
-        markNavigation();
+      if (
+        e.persisted ||
+        performance.getEntriesByType("navigation")[0]?.type === "back_forward"
+      ) {
+        sessionStorage.setItem("pageNavigation", "true");
       }
     });
 
+    // ✅ 登出按鈕邏輯
     document.getElementById("logout-btn").addEventListener("click", () => {
       window.logout();
     });
 
+    // ✅ 禁用右鍵與常見快捷鍵（防偷存 PDF）
     document.addEventListener("contextmenu", e => e.preventDefault());
     document.addEventListener("keydown", e => {
       if (
-        e.keyCode === 123 ||
-        (e.ctrlKey && e.shiftKey && (e.keyCode === 73 || e.keyCode === 74)) ||
-        (e.ctrlKey && e.keyCode === 85) ||
-        (e.ctrlKey && e.keyCode === 83)
+        e.keyCode === 123 || // F12
+        (e.ctrlKey && e.shiftKey && (e.keyCode === 73 || e.keyCode === 74)) || // Ctrl+Shift+I/J
+        (e.ctrlKey && e.keyCode === 85) || // Ctrl+U
+        (e.ctrlKey && e.keyCode === 83)    // Ctrl+S
       ) {
         e.preventDefault();
       }
