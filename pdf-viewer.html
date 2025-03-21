@@ -85,7 +85,7 @@
       const fileId = localStorage.getItem("currentPDF");
       const fileName = localStorage.getItem("currentPDFName");
 
-      if (!fileId) {
+      if (!fileId || !fileName) {
         alert("❌ 無法載入 PDF，請重新選擇科目！");
         window.location.href = "pdf-select.html";
         return;
@@ -96,27 +96,25 @@
       document.getElementById("pdfFrame").src = pdfUrl;
     }
 
-    function markNavigation() {
+    // ✅ 第一時間標記跳轉，避免誤登出
+    window.addEventListener("DOMContentLoaded", () => {
       sessionStorage.setItem("pageNavigation", "true");
-    }
-
-    window.addEventListener("load", () => {
-      sessionStorage.setItem("pageNavigation", "true"); // ✅ 防止誤判跳轉
-      setTimeout(() => markNavigation(), 0);
       loadPDF();
     });
 
+    // ✅ 如果是從歷史返回，也補標記
     window.addEventListener("pageshow", (e) => {
       if (e.persisted || performance.getEntriesByType("navigation")[0]?.type === "back_forward") {
-        markNavigation();
+        sessionStorage.setItem("pageNavigation", "true");
       }
     });
 
+    // ✅ 登出按鈕
     document.getElementById("logout-btn").addEventListener("click", () => {
       window.logout();
     });
 
-    // ✅ 禁用右鍵與常見開發者工具快速鍵
+    // ✅ 禁用右鍵與常見開發者工具快捷鍵
     document.addEventListener("contextmenu", e => e.preventDefault());
     document.addEventListener("keydown", e => {
       if (
