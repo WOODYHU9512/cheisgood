@@ -15,7 +15,7 @@ const firebaseConfig = {
 const app = initializeApp(firebaseConfig);
 const db = getDatabase(app);
 
-// ✅ 登出 function
+// ✅ 登出函式
 async function logoutUser(showLog = true) {
   const username = localStorage.getItem("loggedInUser");
   const sessionToken = localStorage.getItem("sessionToken");
@@ -43,19 +43,7 @@ window.logout = async function () {
   window.location.href = "index.html";
 };
 
-async function setupOnDisconnect(username) {
-  const userRef = ref(db, `users/${username}`);
-  try {
-    await onDisconnect(userRef).update({
-      isLoggedIn: false,
-      sessionToken: ""
-    });
-    console.log("📡 onDisconnect 設定完成");
-  } catch (err) {
-    console.error("❌ 設定 onDisconnect 失敗：", err);
-  }
-}
-
+// ✅ session 驗證與 onDisconnect
 async function validateSession() {
   const username = localStorage.getItem("loggedInUser");
   const sessionToken = localStorage.getItem("sessionToken");
@@ -66,7 +54,11 @@ async function validateSession() {
     const snapshot = await get(userRef);
     const valid = snapshot.exists() && snapshot.val().sessionToken === sessionToken;
     if (valid) {
-      await setupOnDisconnect(username);
+      await onDisconnect(userRef).update({
+        isLoggedIn: false,
+        sessionToken: ""
+      });
+      console.log("📡 onDisconnect 設定完成");
     }
     return valid;
   } catch (err) {
@@ -75,18 +67,14 @@ async function validateSession() {
   }
 }
 
-// ✅ 自動登出邏輯
+// ✅ 自動登出判斷邏輯
 function triggerAutoLogout() {
   const isNavigating = sessionStorage.getItem("pageNavigation");
-  const navigationType = performance.getEntriesByType("navigation")[0]?.type;
+  const navType = performance.getEntriesByType("navigation")[0]?.type;
   sessionStorage.removeItem("pageNavigation");
 
-  if (
-    isNavigating ||
-    navigationType === "navigate" ||
-    navigationType === "reload"
-  ) {
-    console.log("🛑 偵測到跳轉或重新整理，略過自動登出");
+  if (isNavigating || navType === "reload" || navType === "navigate") {
+    console.log("🛑 偵測到跳轉或重新整理，略過登出");
     return;
   }
 
@@ -103,22 +91,21 @@ function triggerAutoLogout() {
   console.log("📤 自動登出已發送（非跳轉）");
 }
 
+// ✅ 加入延遲觸發以避免 pageNavigation 還沒設就執行
 function delayedAutoLogout() {
-  setTimeout(triggerAutoLogout, 150);
+  setTimeout(() => {
+    triggerAutoLogout();
+  }, 150);
 }
 
-// ✅ 延遲綁定登出事件（給頁面設好 pageNavigation 時間）
-setTimeout(() => {
-  window.addEventListener("beforeunload", delayedAutoLogout);
-  window.addEventListener("pagehide", delayedAutoLogout);
-}, 300);
+// ✅ 綁定登出行為
+window.addEventListener("beforeunload", delayedAutoLogout);
+window.addEventListener("pagehide", delayedAutoLogout);
 
-let hiddenTimer;
+let hiddenTimer = null;
 document.addEventListener("visibilitychange", () => {
   if (document.visibilityState === "hidden") {
-    hiddenTimer = setTimeout(() => {
-      triggerAutoLogout();
-    }, 500);
+    hiddenTimer = setTimeout(triggerAutoLogout, 400);
   } else {
     clearTimeout(hiddenTimer);
   }
@@ -129,21 +116,24 @@ function markNavigation() {
   sessionStorage.setItem("pageNavigation", "true");
 }
 
-// ✅ DOM 初始化
+// ✅ 初始設定：綁定所有可能跳轉行為
 document.addEventListener("DOMContentLoaded", () => {
   document.querySelectorAll("a, button").forEach(el => {
     el.addEventListener("click", markNavigation);
   });
+  // ⚠️ 預設也先標記，避免 reload 誤判
   markNavigation();
 });
 
+// ✅ 從歷史返回時也補標記
 window.addEventListener("pageshow", (e) => {
-  if (e.persisted || performance.getEntriesByType("navigation")[0]?.type === "back_forward") {
+  const navType = performance.getEntriesByType("navigation")[0]?.type;
+  if (e.persisted || navType === "back_forward") {
     markNavigation();
   }
 });
 
-// ✅ 登入驗證與倒數登出邏輯
+// ✅ 自動登出倒數
 if (window.location.pathname.includes("pdf-select") || window.location.pathname.includes("pdf-viewer")) {
   validateSession().then(valid => {
     if (!valid) {
