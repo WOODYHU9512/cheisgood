@@ -6,23 +6,51 @@
   <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
   <title>選擇學校與科目</title>
   <style>
-    body { font-family: Arial, sans-serif; text-align: center; margin: 20px; }
-    select, button { margin: 10px; padding: 10px; font-size: 16px; }
+    body {
+      font-family: Arial, sans-serif;
+      text-align: center;
+      margin: 20px;
+    }
+    select, button {
+      margin: 10px;
+      padding: 10px;
+      font-size: 16px;
+    }
     #countdown {
-      position: fixed; top: 10px; left: 10px; font-size: 18px;
-      background: rgba(255, 0, 0, 0.8); color: white;
-      padding: 10px 15px; border-radius: 10px; font-weight: bold;
+      position: fixed;
+      top: 10px;
+      left: 10px;
+      font-size: 18px;
+      background: rgba(255, 0, 0, 0.8);
+      color: white;
+      padding: 10px 15px;
+      border-radius: 10px;
+      font-weight: bold;
     }
     #logout-warning {
-      position: fixed; bottom: 5px; left: 50%;
-      transform: translateX(-50%); background-color: rgba(255, 0, 0, 0.8);
-      color: white; padding: 5px 15px; font-size: 14px; font-weight: bold;
-      border-radius: 5px; z-index: 1000; box-shadow: 0px 2px 5px rgba(0,0,0,0.2);
+      position: fixed;
+      bottom: 5px;
+      left: 50%;
+      transform: translateX(-50%);
+      background-color: rgba(255, 0, 0, 0.8);
+      color: white;
+      padding: 5px 15px;
+      font-size: 14px;
+      font-weight: bold;
+      border-radius: 5px;
+      z-index: 1000;
+      box-shadow: 0px 2px 5px rgba(0, 0, 0, 0.2);
     }
     #logout-btn {
-      position: fixed; top: 10px; right: 10px;
-      padding: 10px 15px; background-color: red; color: white;
-      border: none; cursor: pointer; font-size: 16px;
+      position: fixed;
+      top: 10px;
+      right: 10px;
+      padding: 10px 15px;
+      background-color: red;
+      color: white;
+      border: none;
+      cursor: pointer;
+      font-size: 16px;
     }
   </style>
 </head>
@@ -92,7 +120,7 @@
     let authorizedSchools = [];
 
     async function loadUserPermissions() {
-      const username = localStorage.getItem("loggedInUser");
+      const username = localStorage.getItem('loggedInUser');
       if (!username) return;
       const snapshot = await get(ref(db, `users/${username}/purchased`));
       if (snapshot.exists()) {
@@ -131,29 +159,28 @@
         alert("❌ 請選擇科目！");
         return;
       }
+
       localStorage.setItem("currentPDF", subjectId);
       localStorage.setItem("currentPDFName", subjectText);
+
       sessionStorage.setItem("pageNavigation", "true");
-      window.location.href = "pdf-viewer.html";
+      setTimeout(() => {
+        window.location.href = "pdf-viewer.html";
+      }, 50); // 給 script.js 一點時間先完成判斷
     });
 
     logoutBtn.addEventListener("click", () => {
       window.logout();
     });
 
-    // ✅ DOM 載入時延遲設定跳轉標記，保證 pagehide 判斷正確
+    // ✅ 防止重新整理誤登出
     window.addEventListener("DOMContentLoaded", () => {
-      setTimeout(() => {
-        sessionStorage.setItem("pageNavigation", "true");
-      }, 50); // 延遲一點點，讓跳轉標記先完成
+      sessionStorage.setItem("pageNavigation", "true");
       loadUserPermissions();
     });
 
-    // ✅ 從歷史紀錄返回也補標記
-    window.addEventListener("pageshow", (e) => {
-      if (e.persisted || performance.getEntriesByType("navigation")[0]?.type === "back_forward") {
-        sessionStorage.setItem("pageNavigation", "true");
-      }
+    window.addEventListener("pageshow", () => {
+      sessionStorage.setItem("pageNavigation", "true");
     });
   </script>
 </body>
