@@ -2,7 +2,13 @@
 console.log("🔥 script.js loaded");
 
 import { initializeApp } from "https://www.gstatic.com/firebasejs/9.6.1/firebase-app.js";
-import { getDatabase, ref, get, update } from "https://www.gstatic.com/firebasejs/9.6.1/firebase-database.js";
+import {
+  getDatabase,
+  ref,
+  get,
+  update,
+  onDisconnect
+} from "https://www.gstatic.com/firebasejs/9.6.1/firebase-database.js";
 
 const firebaseConfig = {
   databaseURL: "https://access-7a3c3-default-rtdb.firebaseio.com/"
@@ -37,6 +43,19 @@ window.logout = async function () {
   window.location.href = "index.html";
 };
 
+async function setupOnDisconnect(username) {
+  const userRef = ref(db, `users/${username}`);
+  try {
+    await onDisconnect(userRef).update({
+      isLoggedIn: false,
+      sessionToken: ""
+    });
+    console.log("📡 onDisconnect 設定完成");
+  } catch (err) {
+    console.error("❌ 設定 onDisconnect 失敗：", err);
+  }
+}
+
 async function validateSession() {
   const username = localStorage.getItem("loggedInUser");
   const sessionToken = localStorage.getItem("sessionToken");
@@ -45,7 +64,11 @@ async function validateSession() {
   try {
     const userRef = ref(db, `users/${username}`);
     const snapshot = await get(userRef);
-    return snapshot.exists() && snapshot.val().sessionToken === sessionToken;
+    const valid = snapshot.exists() && snapshot.val().sessionToken === sessionToken;
+    if (valid) {
+      await setupOnDisconnect(username); // 👈 加入 onDisconnect
+    }
+    return valid;
   } catch (err) {
     console.error("❌ 驗證登入失敗：", err);
     return false;
@@ -71,7 +94,7 @@ function triggerAutoLogout() {
   console.log("📤 自動登出已發送（非跳轉）");
 }
 
-// ✅ 綁定 visibilitychange，當視窗被隱藏（但非跳轉）時處理
+// ✅ 離開視窗偵測
 let hiddenTimer;
 document.addEventListener("visibilitychange", () => {
   if (document.visibilityState === "hidden") {
@@ -82,8 +105,6 @@ document.addEventListener("visibilitychange", () => {
     clearTimeout(hiddenTimer);
   }
 });
-
-// ✅ 註冊 pagehide 和 beforeunload（兼容 Safari）
 window.addEventListener("pagehide", triggerAutoLogout);
 window.addEventListener("beforeunload", triggerAutoLogout);
 
@@ -96,7 +117,7 @@ document.addEventListener("DOMContentLoaded", () => {
   document.querySelectorAll("a, button").forEach(el => {
     el.addEventListener("click", markNavigation);
   });
-  markNavigation(); // 初始載入也標記
+  markNavigation(); // 初始也標記
 });
 
 window.addEventListener("pageshow", (e) => {
