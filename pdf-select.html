@@ -74,11 +74,11 @@
   <button id="logout-btn">🚪 登出</button>
 
   <script type="module">
-    // ✅ 最早標記跳轉，避免 pagehide 誤判
-    sessionStorage.setItem("pageNavigation", "true");
-
     import { initializeApp } from "https://www.gstatic.com/firebasejs/9.6.1/firebase-app.js";
     import { getDatabase, ref, get } from "https://www.gstatic.com/firebasejs/9.6.1/firebase-database.js";
+
+    // ✅ 確保載入第一刻即標記跳轉（避免 pagehide 誤判）
+    sessionStorage.setItem("pageNavigation", "true");
 
     const firebaseConfig = {
       databaseURL: "https://access-7a3c3-default-rtdb.firebaseio.com/"
@@ -164,7 +164,7 @@
       }
       localStorage.setItem("currentPDF", subjectId);
       localStorage.setItem("currentPDFName", subjectText);
-      sessionStorage.setItem("pageNavigation", "true"); // ✅ 跳轉標記
+      sessionStorage.setItem("pageNavigation", "true");
       window.location.href = "pdf-viewer.html";
     });
 
@@ -177,7 +177,7 @@
     });
 
     window.addEventListener("pageshow", (e) => {
-      if (e.persisted || performance.getEntriesByType("navigation")[0].type === "back_forward") {
+      if (e.persisted || performance.getEntriesByType("navigation")[0]?.type === "back_forward") {
         sessionStorage.setItem("pageNavigation", "true");
       }
     });
