@@ -73,22 +73,16 @@
 <body>
   <h2 id="pdfTitle">📖 PDF 觀看</h2>
   <div id="countdown">⏳ 自動登出倒數：<span id="timer">30:00</span></div>
-
   <div class="pdf-container">
     <iframe id="pdfFrame"></iframe>
     <div class="overlay"></div>
   </div>
-
   <div id="logout-warning">⚠️ **請務必透過登出鈕登出！**</div>
   <button id="logout-btn">🚪 登出</button>
 
   <script type="module">
-    // ✅ 提前設定跳轉標記（保證進入 viewer 不被誤判為關閉）
-    window.addEventListener("DOMContentLoaded", () => {
-      sessionStorage.setItem("pageNavigation", "true");
-    });
-
-    window.addEventListener("load", () => {
+    // 載入 PDF
+    function loadPDF() {
       const fileId = localStorage.getItem("currentPDF");
       const fileName = localStorage.getItem("currentPDFName");
       if (!fileId) {
@@ -99,39 +93,44 @@
       document.getElementById("pdfTitle").innerText = `📖 ${fileName}`;
       const pdfUrl = `https://drive.google.com/file/d/${fileId}/preview?embedded=true`;
       document.getElementById("pdfFrame").src = pdfUrl;
+    }
+
+    // 加載時標記跳轉，保障 pagehide 不解釋
+    window.addEventListener("load", () => {
+      setTimeout(() => {
+        sessionStorage.setItem("pageNavigation", "true");
+      }, 0);
+      loadPDF();
     });
 
-    // ✅ 重新返回此頁時仍標記為跳轉
+    // 跳回歷史時也要正確標記
     window.addEventListener("pageshow", (e) => {
       if (e.persisted || performance.getEntriesByType("navigation")[0].type === "back_forward") {
         sessionStorage.setItem("pageNavigation", "true");
       }
     });
 
-    // ✅ 隱藏頁面超過 300ms 時，才移除 pageNavigation 標記（更穩）
+    // 保護 sessionStorage 不要被誤消除
     document.addEventListener("visibilitychange", () => {
       if (document.visibilityState === "hidden") {
-        setTimeout(() => {
-          if (document.visibilityState === "hidden") {
-            sessionStorage.removeItem("pageNavigation");
-          }
-        }, 300);
+        // 不再自動移除，改成讓 script.js 判斷
+        // 因為有時看起來是移離，其實是已打開 viewer
       }
     });
 
-    // ✅ 登出按鈕
+    // 登出按鈕
     document.getElementById("logout-btn").addEventListener("click", () => {
       window.logout();
     });
 
-    // ✅ 禁用右鍵下載與 F12
+    // 禁用下載和 F12
     document.addEventListener("contextmenu", e => e.preventDefault());
     document.addEventListener("keydown", e => {
       if (
-        e.keyCode === 123 || // F12
-        (e.ctrlKey && e.shiftKey && (e.keyCode === 73 || e.keyCode === 74)) || // Ctrl+Shift+I/J
-        (e.ctrlKey && e.keyCode === 85) || // Ctrl+U
-        (e.ctrlKey && e.keyCode === 83) // Ctrl+S
+        e.keyCode === 123 ||
+        (e.ctrlKey && e.shiftKey && (e.keyCode === 73 || e.keyCode === 74)) ||
+        (e.ctrlKey && e.keyCode === 85) ||
+        (e.ctrlKey && e.keyCode === 83)
       ) {
         e.preventDefault();
       }
