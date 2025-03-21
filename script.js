@@ -1,4 +1,3 @@
-// ✅ script.js
 console.log("🔥 script.js loaded");
 
 import { initializeApp } from "https://www.gstatic.com/firebasejs/9.6.1/firebase-app.js";
@@ -10,7 +9,7 @@ const firebaseConfig = {
 const app = initializeApp(firebaseConfig);
 const db = getDatabase(app);
 
-// ✅ 登出核心功能
+// ✅ 登出核心功能（按鈕或計時器使用）
 async function logoutUser(showLog = true) {
   const username = localStorage.getItem("loggedInUser");
   const sessionToken = localStorage.getItem("sessionToken");
@@ -39,13 +38,13 @@ async function logoutUser(showLog = true) {
   localStorage.removeItem("currentPDFName");
 }
 
-// ✅ 手動點擊登出按鈕
+// ✅ 手動登出按鈕
 window.logout = async function () {
   await logoutUser();
   window.location.href = "index.html";
 };
 
-// ✅ session 驗證（供 select / viewer 檢查）
+// ✅ 驗證 sessionToken 是否仍有效
 async function validateSession() {
   const username = localStorage.getItem("loggedInUser");
   const sessionToken = localStorage.getItem("sessionToken");
@@ -65,30 +64,29 @@ async function validateSession() {
   return false;
 }
 
-// ✅ 自動登出 on pagehide（支援 GitHub Pages）
-window.addEventListener("pagehide", (e) => {
+// ✅ 頁面關閉時登出（非跳轉才觸發）
+window.addEventListener("pagehide", function () {
   const isNavigating = sessionStorage.getItem("pageNavigation");
   sessionStorage.removeItem("pageNavigation");
   if (isNavigating) return;
 
   const username = localStorage.getItem("loggedInUser");
-  const token = localStorage.getItem("sessionToken");
-  if (!username || !token) return;
+  if (!username) return;
 
-  const payload = { isLoggedIn: false, sessionToken: "" };
+  const data = JSON.stringify({ isLoggedIn: false, sessionToken: "" });
 
   fetch(`https://access-7a3c3-default-rtdb.firebaseio.com/users/${username}.json`, {
     method: "PATCH",
     headers: { "Content-Type": "application/json" },
-    body: JSON.stringify(payload),
-    keepalive: true,
-  })
-    .then(() => console.log("📤 自動登出成功 (fetch+keepalive)"))
-    .catch((err) => console.error("❌ 自動登出失敗：", err));
+    body: data,
+    keepalive: true
+  });
+
+  console.log("📤 fetch + keepalive 已送出登出請求");
 });
 
-// ✅ 點擊任何頁面內部連結時標記跳轉
-window.addEventListener("DOMContentLoaded", () => {
+// ✅ 點擊按鈕與跳轉連結會標記 pageNavigation
+document.addEventListener("DOMContentLoaded", () => {
   document.querySelectorAll("a, button").forEach(el => {
     el.addEventListener("click", () => {
       sessionStorage.setItem("pageNavigation", "true");
@@ -96,7 +94,7 @@ window.addEventListener("DOMContentLoaded", () => {
   });
 });
 
-// ✅ 自動登出倒數（限 select / viewer 頁面）
+// ✅ 閒置 30 分鐘自動登出（限 select/viewer 頁面）
 if (window.location.pathname.includes("pdf-select") || window.location.pathname.includes("pdf-viewer")) {
   validateSession().then(valid => {
     if (!valid) {
