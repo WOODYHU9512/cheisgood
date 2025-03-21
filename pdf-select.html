@@ -120,7 +120,7 @@
     let authorizedSchools = [];
 
     async function loadUserPermissions() {
-      const username = localStorage.getItem('loggedInUser');
+      const username = localStorage.getItem("loggedInUser");
       if (!username) return;
       const snapshot = await get(ref(db, `users/${username}/purchased`));
       if (snapshot.exists()) {
@@ -163,20 +163,21 @@
       localStorage.setItem("currentPDF", subjectId);
       localStorage.setItem("currentPDFName", subjectText);
 
-      // ✅ 預防 viewer 誤判登出
       sessionStorage.setItem("pageNavigation", "true");
       setTimeout(() => {
         window.location.href = "pdf-viewer.html";
-      }, 150);
+      }, 200);
     });
 
     logoutBtn.addEventListener("click", () => {
       window.logout();
     });
 
-    // ✅ 頁面載入時即標記避免刷新誤登出
+    // ✅ 修正：延遲設置 pageNavigation，避免 script.js 太快判斷登出
     window.addEventListener("DOMContentLoaded", () => {
-      sessionStorage.setItem("pageNavigation", "true");
+      setTimeout(() => {
+        sessionStorage.setItem("pageNavigation", "true");
+      }, 50);
       loadUserPermissions();
     });
   </script>
