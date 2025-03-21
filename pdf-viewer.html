@@ -98,22 +98,20 @@
     }
 
     window.addEventListener("DOMContentLoaded", () => {
+      sessionStorage.setItem("pageNavigation", "true"); // 補標記
       loadPDF();
     });
 
-    // ✅ 快取回來也補標記
     window.addEventListener("pageshow", (e) => {
       if (e.persisted || performance.getEntriesByType("navigation")[0]?.type === "back_forward") {
         sessionStorage.setItem("pageNavigation", "true");
       }
     });
 
-    // ✅ 登出按鈕
     document.getElementById("logout-btn").addEventListener("click", () => {
       window.logout();
     });
 
-    // ✅ 禁用右鍵與 F12 開發者工具
     document.addEventListener("contextmenu", e => e.preventDefault());
     document.addEventListener("keydown", e => {
       if (
