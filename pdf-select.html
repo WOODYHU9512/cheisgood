@@ -1,3 +1,4 @@
+<!-- ✅ 修正後的 select.html -->
 <!DOCTYPE html>
 <html lang="zh-TW">
 <head>
@@ -159,23 +160,19 @@
         alert("❌ 請選擇科目！");
         return;
       }
-
       localStorage.setItem("currentPDF", subjectId);
       localStorage.setItem("currentPDFName", subjectText);
-
-      sessionStorage.setItem("pageNavigation", "true"); // ✅ 手動跳轉標記
-      setTimeout(() => {
-        window.location.href = "pdf-viewer.html";
-      }, 200); // ✅ 延遲以保證 beforeunload 時已標記
+      sessionStorage.setItem("pageNavigation", "true");
+      window.location.href = "pdf-viewer.html";
     });
 
     logoutBtn.addEventListener("click", () => {
       window.logout();
     });
 
-    // ✅ 頁面載入時就預設為「不應登出」
+    // ✅ 確保第一次載入就設好 pageNavigation（避免被誤判為直接關閉）
     window.addEventListener("DOMContentLoaded", () => {
-      sessionStorage.setItem("pageNavigation", "true"); // 防止重新整理誤登出
+      setTimeout(() => sessionStorage.setItem("pageNavigation", "true"), 0);
       loadUserPermissions();
     });
   </script>
