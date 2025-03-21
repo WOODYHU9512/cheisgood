@@ -1,6 +1,10 @@
 <!DOCTYPE html>
 <html lang="zh-TW">
 <head>
+  <script type="module">
+    // ✅ 一載入就馬上標記 pageNavigation，避免 script.js 還沒來得及判斷
+    sessionStorage.setItem("pageNavigation", "true");
+  </script>
   <script type="module" src="script.js"></script>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
@@ -159,15 +163,12 @@
         alert("❌ 請選擇科目！");
         return;
       }
+
       localStorage.setItem("currentPDF", subjectId);
       localStorage.setItem("currentPDFName", subjectText);
 
-      // ✅ 使用新跳轉標記法
-      sessionStorage.setItem("navigationState", "pending");
-      setTimeout(() => {
-        sessionStorage.setItem("navigationState", "done");
-        window.location.href = "pdf-viewer.html";
-      }, 0);
+      sessionStorage.setItem("pageNavigation", "true"); // ✅ 跳轉標記
+      window.location.href = "pdf-viewer.html";
     });
 
     logoutBtn.addEventListener("click", () => {
@@ -175,7 +176,6 @@
     });
 
     window.addEventListener("DOMContentLoaded", () => {
-      sessionStorage.setItem("navigationState", "done");
       loadUserPermissions();
     });
   </script>
