@@ -81,6 +81,9 @@
   <button id="logout-btn">🚪 登出</button>
 
   <script type="module">
+    // ✅ 頁面一進來就先標記跳轉
+    sessionStorage.setItem("pageNavigation", "true");
+
     function loadPDF() {
       const fileId = localStorage.getItem("currentPDF");
       const fileName = localStorage.getItem("currentPDFName");
@@ -94,36 +97,30 @@
       document.getElementById("pdfFrame").src = pdfUrl;
     }
 
-    function markNavigation() {
-      sessionStorage.setItem("pageNavigation", "true");
-    }
-
-    // ✅ 一進來就標記為跳轉（確保 script.js 不誤判）
     window.addEventListener("DOMContentLoaded", () => {
-      markNavigation();
       loadPDF();
     });
 
-    // ✅ 快取回來的情況也補標記
+    // ✅ 快取回來也補標記
     window.addEventListener("pageshow", (e) => {
       if (e.persisted || performance.getEntriesByType("navigation")[0]?.type === "back_forward") {
-        markNavigation();
+        sessionStorage.setItem("pageNavigation", "true");
       }
     });
 
-    // ✅ 登出按鈕觸發
+    // ✅ 登出按鈕
     document.getElementById("logout-btn").addEventListener("click", () => {
       window.logout();
     });
 
-    // ✅ 禁用右鍵與常見開發者熱鍵（保護 PDF）
+    // ✅ 禁用右鍵與 F12 開發者工具
     document.addEventListener("contextmenu", e => e.preventDefault());
     document.addEventListener("keydown", e => {
       if (
-        e.keyCode === 123 || // F12
-        (e.ctrlKey && e.shiftKey && (e.keyCode === 73 || e.keyCode === 74)) || // Ctrl+Shift+I / J
-        (e.ctrlKey && e.keyCode === 85) || // Ctrl+U
-        (e.ctrlKey && e.keyCode === 83)    // Ctrl+S
+        e.keyCode === 123 ||
+        (e.ctrlKey && e.shiftKey && (e.keyCode === 73 || e.keyCode === 74)) ||
+        (e.ctrlKey && e.keyCode === 85) ||
+        (e.ctrlKey && e.keyCode === 83)
       ) {
         e.preventDefault();
       }
