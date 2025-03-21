@@ -71,7 +71,7 @@
 
   <script type="module">
     import { initializeApp } from "https://www.gstatic.com/firebasejs/9.6.1/firebase-app.js";
-    import { getDatabase, ref, get } from "https://www.gstatic.com/firebasejs/9.6.1/firebase-database.js";
+    import { getDatabase, ref, get, update } from "https://www.gstatic.com/firebasejs/9.6.1/firebase-database.js";
 
     const firebaseConfig = {
       databaseURL: "https://access-7a3c3-default-rtdb.firebaseio.com/"
@@ -113,20 +113,16 @@
     async function loadUserPermissions() {
       const username = localStorage.getItem('loggedInUser');
       const sessionToken = localStorage.getItem('sessionToken');
-      if (!username || !sessionToken) {
-        return;
-      }
+      if (!username || !sessionToken) return;
 
       const userRef = ref(db, `users/${username}`);
       const snapshot = await get(userRef);
-      if (!snapshot.exists() || snapshot.val().sessionToken !== sessionToken) {
-        console.warn("❌ 無效 session，請重新登入");
-        return;
-      }
+      const userData = snapshot.val();
 
-      const purchased = snapshot.val().purchased;
-      authorizedSchools = purchased ? Object.keys(purchased) : [];
-      console.log("✅ 你有權限的學校：", authorizedSchools);
+      if (!userData || userData.sessionToken !== sessionToken) return;
+
+      const purchased = userData.purchased || {};
+      authorizedSchools = Object.keys(purchased);
       populateSchoolOptions();
     }
 
@@ -154,8 +150,6 @@
         option.textContent = subject;
         subjectSelect.appendChild(option);
       });
-
-      console.log(`✅ 選擇學校：${school}，顯示科目數量：${Object.keys(subjects[school]).length}`);
     };
 
     window.viewPDF = function () {
@@ -173,6 +167,12 @@
       localStorage.setItem("currentPDFName", selectedSubjectText);
       window.location.href = "pdf-viewer.html";
     };
+
+    window.addEventListener("pageshow", (e) => {
+      if (e.persisted || performance.getEntriesByType("navigation")[0].type === "back_forward") {
+        sessionStorage.setItem("pageNavigation", "true");
+      }
+    });
 
     loadUserPermissions();
   </script>
