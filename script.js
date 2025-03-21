@@ -44,6 +44,8 @@ async function logout() {
 
     localStorage.removeItem('loggedInUser');
     localStorage.removeItem('sessionToken');
+    localStorage.removeItem('currentPDF');
+    localStorage.removeItem('currentPDFName');
 }
 
 // ✅ **讓 HTML 登出按鈕可以呼叫 logout**
@@ -52,11 +54,10 @@ window.logout = async function() {
     window.location.href = 'index.html';
 };
 
-// 🚀 **監測分頁/瀏覽器關閉，跳出警告**
-window.addEventListener("beforeunload", function(event) {
+// ✅ **監測分頁/瀏覽器關閉，自動登出除非是內部跳轉**
+window.addEventListener("beforeunload", async function(event) {
     if (!sessionStorage.getItem("pageNavigation")) {
-        event.preventDefault();
-        event.returnValue = "⚠️ 請使用「登出」按鈕登出，否則您的帳戶可能無法正確登出！";
+        await logout();
     } else {
         sessionStorage.removeItem("pageNavigation");
     }
@@ -109,7 +110,7 @@ if (window.location.pathname.includes("pdf-select") || window.location.pathname.
     document.addEventListener("keydown", startIdleTimer);
     startIdleTimer();
 
-    // 🚀 **更新 `localStorage` 記錄最後的活動時間**
+    // ✅ 更新 `localStorage` 記錄最後的活動時間
     window.addEventListener("beforeunload", () => {
         localStorage.setItem("lastActivity", Date.now());
     });
