@@ -96,15 +96,24 @@
       document.getElementById("pdfFrame").src = pdfUrl;
     }
 
-    // ✅ 第一時間標記跳轉，避免誤登出
+    // ✅ 頁面載入就標記跳轉（防誤登出）
     window.addEventListener("DOMContentLoaded", () => {
       sessionStorage.setItem("pageNavigation", "true");
+
+      // 🔁 兼容手機或載入過慢的瀏覽器（如 iOS Safari）
+      setTimeout(() => {
+        sessionStorage.setItem("pageNavigation", "true");
+      }, 50);
+
       loadPDF();
     });
 
-    // ✅ 如果是從歷史返回，也補標記
+    // ✅ 從歷史紀錄返回也補標記
     window.addEventListener("pageshow", (e) => {
-      if (e.persisted || performance.getEntriesByType("navigation")[0]?.type === "back_forward") {
+      if (
+        e.persisted ||
+        performance.getEntriesByType("navigation")[0]?.type === "back_forward"
+      ) {
         sessionStorage.setItem("pageNavigation", "true");
       }
     });
