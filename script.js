@@ -1,3 +1,4 @@
+// ✅ script.js
 console.log("🔥 script.js loaded");
 
 import { initializeApp } from "https://www.gstatic.com/firebasejs/9.6.1/firebase-app.js";
@@ -9,6 +10,7 @@ const firebaseConfig = {
 const app = initializeApp(firebaseConfig);
 const db = getDatabase(app);
 
+// ✅ 登出功能
 async function logoutUser(showLog = true) {
   const username = localStorage.getItem("loggedInUser");
   const sessionToken = localStorage.getItem("sessionToken");
@@ -39,6 +41,7 @@ window.logout = async function () {
   window.location.href = "index.html";
 };
 
+// ✅ 驗證登入
 async function validateSession() {
   const username = localStorage.getItem("loggedInUser");
   const sessionToken = localStorage.getItem("sessionToken");
@@ -54,39 +57,57 @@ async function validateSession() {
   }
 }
 
-// ✅ 改良後登出邏輯
-function setupAutoLogoutProtection() {
-  // 判斷是否為跳轉行為
-  let willNavigate = false;
-
-  document.addEventListener("click", (e) => {
-    const target = e.target.closest("a, button");
-    if (target) {
-      willNavigate = true;
-      sessionStorage.setItem("pageNavigation", "true");
-    }
-  });
-
-  window.addEventListener("beforeunload", () => {
-    // 如果不是跳轉 → 自動登出
-    if (!willNavigate && !sessionStorage.getItem("pageNavigation")) {
-      const username = localStorage.getItem("loggedInUser");
-      if (!username) return;
-      fetch(`https://access-7a3c3-default-rtdb.firebaseio.com/users/${username}.json`, {
-        method: "PATCH",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ isLoggedIn: false, sessionToken: "" }),
-        keepalive: true
-      });
-      console.log("📤 已自動登出（非跳轉關閉）");
-    }
+// ✅ 頁面關閉時自動登出（非跳轉）
+function autoLogoutIfNotNavigating() {
+  setTimeout(() => {
+    const isNavigating = sessionStorage.getItem("pageNavigation");
     sessionStorage.removeItem("pageNavigation");
-  });
+    if (isNavigating) return;
+
+    const username = localStorage.getItem("loggedInUser");
+    if (!username) return;
+
+    const data = JSON.stringify({ isLoggedIn: false, sessionToken: "" });
+    navigator.sendBeacon(
+      `https://access-7a3c3-default-rtdb.firebaseio.com/users/${username}.json`,
+      new Blob([data], { type: "application/json" })
+    );
+
+    console.log("📤 自動登出已送出 (sendBeacon)");
+  }, 300); // 延遲 300ms 讓跳轉頁面有時間設置 flag
 }
 
-// ✅ 自動登出倒數邏輯（限 select 與 viewer）
-function setupInactivityLogout() {
-  let timeLeft = 1800; // 30 分鐘
+window.addEventListener("pagehide", autoLogoutIfNotNavigating);
+window.addEventListener("beforeunload", autoLogoutIfNotNavigating);
+
+// ✅ 標記跳轉行為
+function markNavigation() {
+  sessionStorage.setItem("pageNavigation", "true");
+}
+
+document.addEventListener("DOMContentLoaded", () => {
+  document.querySelectorAll("a, button").forEach(el => {
+    el.addEventListener("click", markNavigation);
+  });
+  markNavigation();
+});
+
+window.addEventListener("pageshow", (e) => {
+  if (e.persisted || performance.getEntriesByType("navigation")[0]?.type === "back_forward") {
+    markNavigation();
+  }
+});
+
+// ✅ 30 分鐘倒數自動登出
+if (window.location.pathname.includes("pdf-select") || window.location.pathname.includes("pdf-viewer")) {
+  validateSession().then(valid => {
+    if (!valid) {
+      console.warn("⛔ 無效 session，跳轉登入頁面");
+      window.location.href = "index.html";
+    }
+  });
+
+  let timeLeft = 1800;
   let idleTimer;
   const timerDisplay = document.getElementById("timer");
 
@@ -123,20 +144,3 @@ function setupInactivityLogout() {
   resetTimer();
   startCountdown();
 }
-
-// ✅ 初始化
-document.addEventListener("DOMContentLoaded", () => {
-  // 初始化 session 標記（避免剛載入時誤判為關閉）
-  sessionStorage.setItem("pageNavigation", "true");
-  setupAutoLogoutProtection();
-
-  if (window.location.pathname.includes("pdf-select") || window.location.pathname.includes("pdf-viewer")) {
-    validateSession().then(valid => {
-      if (!valid) {
-        console.warn("⛔ 無效 session，跳轉登入頁面");
-        window.location.href = "index.html";
-      }
-    });
-    setupInactivityLogout();
-  }
-});
