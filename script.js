@@ -1,8 +1,7 @@
-// ✅ script.js（最終整合版）
 console.log("🔥 script.js loaded");
 
 import { initializeApp } from "https://www.gstatic.com/firebasejs/9.6.1/firebase-app.js";
-import { getDatabase, ref, get, update } from "https://www.gstatic.com/firebasejs/9.6.1/firebase-database.js";
+import { getDatabase, ref, get, update, onDisconnect } from "https://www.gstatic.com/firebasejs/9.6.1/firebase-database.js";
 
 const firebaseConfig = {
   databaseURL: "https://access-7a3c3-default-rtdb.firebaseio.com/"
@@ -10,6 +9,7 @@ const firebaseConfig = {
 const app = initializeApp(firebaseConfig);
 const db = getDatabase(app);
 
+// ✅ 登出功能
 async function logoutUser(showLog = true) {
   const username = localStorage.getItem("loggedInUser");
   const sessionToken = localStorage.getItem("sessionToken");
@@ -37,6 +37,7 @@ window.logout = async function () {
   window.location.href = "index.html";
 };
 
+// ✅ session 驗證
 async function validateSession() {
   const username = localStorage.getItem("loggedInUser");
   const sessionToken = localStorage.getItem("sessionToken");
@@ -52,7 +53,7 @@ async function validateSession() {
   }
 }
 
-// ✅ 自動登出（非跳轉關閉）
+// ✅ 自動登出觸發（限非跳轉）
 function triggerAutoLogout() {
   setTimeout(() => {
     const isNavigating = sessionStorage.getItem("pageNavigation");
@@ -70,26 +71,10 @@ function triggerAutoLogout() {
     });
 
     console.log("📤 自動登出已發送（非跳轉）");
-  }, 100); // 等 100ms 確保下一頁標記成功
+  }, 200); // 加入延遲確保 sessionStorage 被新頁面覆蓋前判斷
 }
 
-// ✅ 綁定關閉事件
-window.addEventListener("pagehide", triggerAutoLogout);
-window.addEventListener("beforeunload", triggerAutoLogout);
-
-// ✅ visibilitychange — 手機補強版
-let hiddenTimer;
-document.addEventListener("visibilitychange", () => {
-  if (document.visibilityState === "hidden") {
-    hiddenTimer = setTimeout(() => {
-      triggerAutoLogout();
-    }, 800); // 稍微拉長時間，讓 pageNavigation 有時間被標記
-  } else {
-    clearTimeout(hiddenTimer);
-  }
-});
-
-// ✅ 標記跳轉
+// ✅ 自動標記跳轉
 function markNavigation() {
   sessionStorage.setItem("pageNavigation", "true");
 }
@@ -98,7 +83,7 @@ document.addEventListener("DOMContentLoaded", () => {
   document.querySelectorAll("a, button").forEach(el => {
     el.addEventListener("click", markNavigation);
   });
-  markNavigation();
+  markNavigation(); // 初次載入也視為跳轉
 });
 
 window.addEventListener("pageshow", (e) => {
@@ -107,7 +92,30 @@ window.addEventListener("pageshow", (e) => {
   }
 });
 
-// ✅ 閒置 30 分鐘自動登出
+// ✅ 關閉頁面事件
+window.addEventListener("pagehide", triggerAutoLogout);
+window.addEventListener("beforeunload", triggerAutoLogout);
+
+// ✅ 手機用 visibilitychange 輔助（避免 App 直接關閉無事件）
+let hiddenTimer;
+document.addEventListener("visibilitychange", () => {
+  if (document.visibilityState === "hidden") {
+    hiddenTimer = setTimeout(() => {
+      triggerAutoLogout();
+    }, 1000);
+  } else {
+    clearTimeout(hiddenTimer);
+  }
+});
+
+// ✅ onDisconnect 強化（Firebase 原生）僅執行一次
+const username = localStorage.getItem("loggedInUser");
+if (username) {
+  const userRef = ref(db, `users/${username}`);
+  onDisconnect(userRef).update({ isLoggedIn: false, sessionToken: "" });
+}
+
+// ✅ 自動登出倒數
 if (window.location.pathname.includes("pdf-select") || window.location.pathname.includes("pdf-viewer")) {
   validateSession().then(valid => {
     if (!valid) {
