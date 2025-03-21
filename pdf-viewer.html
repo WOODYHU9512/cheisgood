@@ -96,18 +96,23 @@
       document.getElementById("pdfFrame").src = pdfUrl;
     }
 
-    // ✅ 初次進入、返回瀏覽器歷史設定跳轉標記，避免誤判 pagehide
-    window.addEventListener("load", () => {
+    // ✅ 初次載入與歷史返回都標記為跳轉，避免誤判登出
+    function markNavigationSafe() {
       sessionStorage.setItem("pageNavigation", "true");
+    }
+
+    window.addEventListener("load", () => {
+      markNavigationSafe();
       loadPDF();
     });
 
     window.addEventListener("pageshow", (e) => {
       if (e.persisted || performance.getEntriesByType("navigation")[0].type === "back_forward") {
-        sessionStorage.setItem("pageNavigation", "true");
+        markNavigationSafe();
       }
     });
 
+    // ✅ 可見狀態改變時延遲清除 pageNavigation
     document.addEventListener("visibilitychange", () => {
       if (document.visibilityState === "hidden") {
         setTimeout(() => {
@@ -118,12 +123,12 @@
       }
     });
 
-    // ✅ 登出按鈕觸發 script.js 的登出功能
+    // ✅ 登出按鈕綁定 script.js 的全域 logout 方法
     document.getElementById("logout-btn").addEventListener("click", () => {
       window.logout();
     });
 
-    // ✅ 禁用下載與 F12 工具
+    // ✅ 禁止 F12 與常見開發者工具快捷鍵
     document.addEventListener("contextmenu", e => e.preventDefault());
     document.addEventListener("keydown", e => {
       if (
