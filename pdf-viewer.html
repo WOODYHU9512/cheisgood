@@ -1,7 +1,7 @@
 <!DOCTYPE html>
 <html lang="zh-TW">
 <head>
-  <script type="module" src="script.js"></script> <!-- ✅ 整合登出邏輯 -->
+  <script type="module" src="script.js"></script>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>PDF 觀看</title>
@@ -80,7 +80,7 @@
   </div>
 
   <div id="logout-warning">⚠️ **請務必透過登出鈕登出！**</div>
-  <button id="logout-btn" onclick="logout()">🚪 登出</button>
+  <button id="logout-btn">🚪 登出</button>
 
   <script type="module">
     import { initializeApp } from "https://www.gstatic.com/firebasejs/9.6.1/firebase-app.js";
@@ -95,41 +95,47 @@
     function loadPDF() {
       const fileId = localStorage.getItem("currentPDF");
       const fileName = localStorage.getItem("currentPDFName");
-
       if (!fileId) {
         alert("❌ 無法載入 PDF，請重新選擇科目！");
         window.location.href = "pdf-select.html";
         return;
       }
-
       document.getElementById("pdfTitle").innerText = `📖 ${fileName}`;
       const pdfUrl = `https://drive.google.com/file/d/${fileId}/preview?embedded=true`;
       document.getElementById("pdfFrame").src = pdfUrl;
     }
 
-    // ✅ 標記頁面跳轉狀態，避免誤判為關閉
+    // ✅ 初始化標記，避免關閉時誤登出
     window.addEventListener("load", () => {
       sessionStorage.setItem("pageNavigation", "true");
       loadPDF();
     });
 
+    // ✅ 返回上一頁也標記
     window.addEventListener("pageshow", e => {
       if (e.persisted || performance.getEntriesByType("navigation")[0].type === "back_forward") {
         sessionStorage.setItem("pageNavigation", "true");
       }
     });
 
+    // ✅ 防止 visibility 判錯
     document.addEventListener("visibilitychange", () => {
       if (document.visibilityState === "hidden") {
         setTimeout(() => {
           if (document.visibilityState === "hidden") {
             sessionStorage.removeItem("pageNavigation");
           }
-        }, 500);
+        }, 300);
       }
     });
 
-    // ✅ 禁止下載與開發者工具
+    // ✅ 登出按鈕功能
+    const logoutBtn = document.getElementById("logout-btn");
+    logoutBtn.addEventListener("click", () => {
+      window.logout(); // 呼叫 script.js 的登出
+    });
+
+    // ✅ 禁止開發者工具
     document.addEventListener("contextmenu", e => e.preventDefault());
     document.addEventListener("keydown", e => {
       if (
