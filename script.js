@@ -79,8 +79,13 @@ function triggerAutoLogout() {
   const navigationType = performance.getEntriesByType("navigation")[0]?.type;
   sessionStorage.removeItem("pageNavigation");
 
-  if (isNavigating || navigationType === "navigate") {
-    console.log("🛑 偵測到跳轉，略過自動登出");
+  // 🧠 判斷「跳轉或重新整理」都不登出
+  if (
+    isNavigating ||
+    navigationType === "navigate" ||
+    navigationType === "reload"
+  ) {
+    console.log("🛑 偵測到跳轉或重新整理，略過自動登出");
     return;
   }
 
@@ -97,6 +102,7 @@ function triggerAutoLogout() {
   console.log("📤 自動登出已發送（非跳轉）");
 }
 
+// ✅ 離開頁面偵測
 let hiddenTimer;
 document.addEventListener("visibilitychange", () => {
   if (document.visibilityState === "hidden") {
@@ -110,6 +116,7 @@ document.addEventListener("visibilitychange", () => {
 window.addEventListener("pagehide", triggerAutoLogout);
 window.addEventListener("beforeunload", triggerAutoLogout);
 
+// ✅ 手動跳轉標記
 function markNavigation() {
   sessionStorage.setItem("pageNavigation", "true");
 }
@@ -118,7 +125,7 @@ document.addEventListener("DOMContentLoaded", () => {
   document.querySelectorAll("a, button").forEach(el => {
     el.addEventListener("click", markNavigation);
   });
-  markNavigation();
+  markNavigation(); // 初始也標記一次
 });
 
 window.addEventListener("pageshow", (e) => {
@@ -127,6 +134,7 @@ window.addEventListener("pageshow", (e) => {
   }
 });
 
+// ✅ 自動登出倒數邏輯
 if (window.location.pathname.includes("pdf-select") || window.location.pathname.includes("pdf-viewer")) {
   validateSession().then(valid => {
     if (!valid) {
