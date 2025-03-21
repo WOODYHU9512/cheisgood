@@ -1,4 +1,4 @@
-// ✅ script.js - 修正版：避免跳轉時被誤判為關閉分頁
+// ✅ script.js - 最終修正版：避開跳轉誤判並確保關閉分頁會登出
 console.log("🔥 script.js loaded");
 
 import { initializeApp } from "https://www.gstatic.com/firebasejs/9.6.1/firebase-app.js";
@@ -38,7 +38,6 @@ window.logout = async function () {
   window.location.href = "index.html";
 };
 
-// ✅ session 驗證
 async function validateSession() {
   const username = localStorage.getItem("loggedInUser");
   const sessionToken = localStorage.getItem("sessionToken");
@@ -54,7 +53,7 @@ async function validateSession() {
   }
 }
 
-// ✅ 自動登出邏輯（考慮跳轉延遲）
+// ✅ 自動登出邏輯（考慮跳轉延遲 + 手機瀏覽器）
 function triggerAutoLogout() {
   setTimeout(() => {
     const isNavigating = sessionStorage.getItem("pageNavigation");
@@ -75,18 +74,27 @@ function triggerAutoLogout() {
     });
 
     console.log("📤 非跳轉，自動登出發送完畢");
-  }, 150); // 延遲讓跳轉頁面設置 pageNavigation
+  }, 150);
 }
 
 // ✅ 自動登出觸發點
 window.addEventListener("pagehide", triggerAutoLogout);
 window.addEventListener("beforeunload", triggerAutoLogout);
 
+let hiddenTimer;
+document.addEventListener("visibilitychange", () => {
+  if (document.visibilityState === "hidden") {
+    hiddenTimer = setTimeout(triggerAutoLogout, 500);
+  } else {
+    clearTimeout(hiddenTimer);
+  }
+});
+
+// ✅ 標記跳轉的操作（只在互動時）
 document.addEventListener("DOMContentLoaded", () => {
   document.querySelectorAll("a, button").forEach(el => {
     el.addEventListener("click", () => sessionStorage.setItem("pageNavigation", "true"));
   });
-  sessionStorage.setItem("pageNavigation", "true");
 });
 
 window.addEventListener("pageshow", (e) => {
