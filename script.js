@@ -64,14 +64,15 @@ async function validateSession() {
   return false;
 }
 
-// ✅ 自動登出（pagehide）處理
-window.addEventListener("pagehide", function (event) {
+// ✅ 自動登出（關閉分頁 / 關瀏覽器）
+window.addEventListener("pagehide", function () {
   const isNavigating = sessionStorage.getItem("pageNavigation");
   sessionStorage.removeItem("pageNavigation");
   if (isNavigating) return;
 
   const username = localStorage.getItem("loggedInUser");
-  if (!username) return;
+  const sessionToken = localStorage.getItem("sessionToken");
+  if (!username || !sessionToken) return;
 
   const data = JSON.stringify({
     isLoggedIn: false,
@@ -83,9 +84,9 @@ window.addEventListener("pagehide", function (event) {
   console.log("📤 自動登出已發送 (sendBeacon)");
 });
 
-// ✅ 點擊所有超連結與按鈕都視為頁面跳轉
+// ✅ 合法跳轉識別（點擊按鈕或跳轉）
 document.addEventListener("DOMContentLoaded", function () {
-  const links = document.querySelectorAll("a, button");
+  const links = document.querySelectorAll("a, button, [data-keep-session]");
   links.forEach(link => {
     link.addEventListener("click", () => {
       sessionStorage.setItem("pageNavigation", "true");
@@ -93,7 +94,7 @@ document.addEventListener("DOMContentLoaded", function () {
   });
 });
 
-// ✅ 自動登出倒數（僅限 select / viewer 頁面）
+// ✅ 自動登出倒數邏輯（select / viewer）
 if (window.location.pathname.includes("pdf-select") || window.location.pathname.includes("pdf-viewer")) {
   validateSession().then(valid => {
     if (!valid) {
@@ -104,8 +105,8 @@ if (window.location.pathname.includes("pdf-select") || window.location.pathname.
 
   let timeLeft = 30 * 60;
   let idleTimer;
-
   const timerDisplay = document.getElementById("timer");
+
   function updateTimer() {
     if (!timerDisplay) return;
     const m = Math.floor(timeLeft / 60);
@@ -139,3 +140,15 @@ if (window.location.pathname.includes("pdf-select") || window.location.pathname.
   resetTimer();
   startIdleCountdown();
 }
+
+// ✅ 多重保險：可見性改變後，若長時間不切回頁面，清除跳轉識別
+let hiddenTimeout;
+document.addEventListener("visibilitychange", () => {
+  if (document.visibilityState === "hidden") {
+    hiddenTimeout = setTimeout(() => {
+      sessionStorage.removeItem("pageNavigation");
+    }, 1000);
+  } else {
+    clearTimeout(hiddenTimeout);
+  }
+});
