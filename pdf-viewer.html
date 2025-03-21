@@ -98,30 +98,32 @@
       sessionStorage.setItem("pageNavigation", "true");
     }
 
-    window.addEventListener("load", () => {
-      // 提前標記，確保 script.js 不誤判
-      sessionStorage.setItem("pageNavigation", "true");
-      setTimeout(() => markNavigation(), 0);
+    // ✅ 一進來就標記為跳轉（確保 script.js 不誤判）
+    window.addEventListener("DOMContentLoaded", () => {
+      markNavigation();
       loadPDF();
     });
 
+    // ✅ 快取回來的情況也補標記
     window.addEventListener("pageshow", (e) => {
       if (e.persisted || performance.getEntriesByType("navigation")[0]?.type === "back_forward") {
         markNavigation();
       }
     });
 
+    // ✅ 登出按鈕觸發
     document.getElementById("logout-btn").addEventListener("click", () => {
       window.logout();
     });
 
+    // ✅ 禁用右鍵與常見開發者熱鍵（保護 PDF）
     document.addEventListener("contextmenu", e => e.preventDefault());
     document.addEventListener("keydown", e => {
       if (
-        e.keyCode === 123 ||
-        (e.ctrlKey && e.shiftKey && (e.keyCode === 73 || e.keyCode === 74)) ||
-        (e.ctrlKey && e.keyCode === 85) ||
-        (e.ctrlKey && e.keyCode === 83)
+        e.keyCode === 123 || // F12
+        (e.ctrlKey && e.shiftKey && (e.keyCode === 73 || e.keyCode === 74)) || // Ctrl+Shift+I / J
+        (e.ctrlKey && e.keyCode === 85) || // Ctrl+U
+        (e.ctrlKey && e.keyCode === 83)    // Ctrl+S
       ) {
         e.preventDefault();
       }
