@@ -1,10 +1,6 @@
 <!DOCTYPE html>
 <html lang="zh-TW">
 <head>
-  <script type="module">
-    // ✅ 一載入就標記跳轉，防止誤判登出（特別是手機 Safari）
-    sessionStorage.setItem("pageNavigation", "true");
-  </script>
   <script type="module" src="script.js"></script>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
@@ -88,6 +84,7 @@
     function loadPDF() {
       const fileId = localStorage.getItem("currentPDF");
       const fileName = localStorage.getItem("currentPDFName");
+
       if (!fileId || !fileName) {
         alert("❌ 無法載入 PDF，請重新選擇科目！");
         window.location.href = "pdf-select.html";
@@ -99,32 +96,34 @@
       document.getElementById("pdfFrame").src = pdfUrl;
     }
 
-    // ✅ 標記跳轉或歷史返回
-    function markNavigation() {
-      sessionStorage.setItem("pageNavigation", "true");
-    }
-
+    // ✅ 頁面載入時標記 pageNavigation，避免被 script.js 誤登出
     window.addEventListener("DOMContentLoaded", () => {
-      markNavigation();
-      setTimeout(markNavigation, 50); // 再標記一次防止 race condition
+      sessionStorage.setItem("pageNavigation", "true");
+
+      // ✅ 延遲保險標記一次，兼容手機與慢速載入
+      setTimeout(() => {
+        sessionStorage.setItem("pageNavigation", "true");
+      }, 100);
+
       loadPDF();
     });
 
+    // ✅ 從歷史紀錄返回也補標記
     window.addEventListener("pageshow", (e) => {
       if (
         e.persisted ||
         performance.getEntriesByType("navigation")[0]?.type === "back_forward"
       ) {
-        markNavigation();
+        sessionStorage.setItem("pageNavigation", "true");
       }
     });
 
-    // ✅ 登出
+    // ✅ 登出按鈕
     document.getElementById("logout-btn").addEventListener("click", () => {
       window.logout();
     });
 
-    // ✅ 禁用右鍵與開發者快捷鍵
+    // ✅ 禁用右鍵與常見開發者工具快捷鍵
     document.addEventListener("contextmenu", e => e.preventDefault());
     document.addEventListener("keydown", e => {
       if (
