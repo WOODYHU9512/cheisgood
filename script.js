@@ -15,6 +15,7 @@ const firebaseConfig = {
 const app = initializeApp(firebaseConfig);
 const db = getDatabase(app);
 
+// ✅ 登出 function
 async function logoutUser(showLog = true) {
   const username = localStorage.getItem("loggedInUser");
   const sessionToken = localStorage.getItem("sessionToken");
@@ -42,6 +43,7 @@ window.logout = async function () {
   window.location.href = "index.html";
 };
 
+// ✅ onDisconnect 設定
 async function setupOnDisconnect(username) {
   const userRef = ref(db, `users/${username}`);
   try {
@@ -55,6 +57,7 @@ async function setupOnDisconnect(username) {
   }
 }
 
+// ✅ 驗證 session
 async function validateSession() {
   const username = localStorage.getItem("loggedInUser");
   const sessionToken = localStorage.getItem("sessionToken");
@@ -74,12 +77,12 @@ async function validateSession() {
   }
 }
 
+// ✅ 自動登出邏輯（延遲觸發）
 function triggerAutoLogout() {
   const isNavigating = sessionStorage.getItem("pageNavigation");
   const navigationType = performance.getEntriesByType("navigation")[0]?.type;
   sessionStorage.removeItem("pageNavigation");
 
-  // 🧠 判斷「跳轉或重新整理」都不登出
   if (
     isNavigating ||
     navigationType === "navigate" ||
@@ -102,7 +105,12 @@ function triggerAutoLogout() {
   console.log("📤 自動登出已發送（非跳轉）");
 }
 
-// ✅ 離開頁面偵測
+// ✅ 延遲版本的登出觸發（避免來不及設置跳轉標記）
+function delayedAutoLogout() {
+  setTimeout(triggerAutoLogout, 150); // 保留 150ms 等待 pageNavigation 被設置
+}
+
+// ✅ 綁定可見性／關閉行為
 let hiddenTimer;
 document.addEventListener("visibilitychange", () => {
   if (document.visibilityState === "hidden") {
@@ -113,28 +121,30 @@ document.addEventListener("visibilitychange", () => {
     clearTimeout(hiddenTimer);
   }
 });
-window.addEventListener("pagehide", triggerAutoLogout);
-window.addEventListener("beforeunload", triggerAutoLogout);
+window.addEventListener("pagehide", delayedAutoLogout);
+window.addEventListener("beforeunload", delayedAutoLogout);
 
-// ✅ 手動跳轉標記
+// ✅ 標記跳轉
 function markNavigation() {
   sessionStorage.setItem("pageNavigation", "true");
 }
 
+// ✅ 頁面初始化時標記一次（預防重新整理也誤判）
 document.addEventListener("DOMContentLoaded", () => {
   document.querySelectorAll("a, button").forEach(el => {
     el.addEventListener("click", markNavigation);
   });
-  markNavigation(); // 初始也標記一次
+  markNavigation();
 });
 
+// ✅ 從歷史返回時補標記
 window.addEventListener("pageshow", (e) => {
   if (e.persisted || performance.getEntriesByType("navigation")[0]?.type === "back_forward") {
     markNavigation();
   }
 });
 
-// ✅ 自動登出倒數邏輯
+// ✅ select / viewer 頁面自動驗證登入、倒數登出
 if (window.location.pathname.includes("pdf-select") || window.location.pathname.includes("pdf-viewer")) {
   validateSession().then(valid => {
     if (!valid) {
