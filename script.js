@@ -2,7 +2,14 @@
 console.log("🔥 script.js loaded");
 
 import { initializeApp } from "https://www.gstatic.com/firebasejs/9.6.1/firebase-app.js";
-import { getDatabase, ref, get, update } from "https://www.gstatic.com/firebasejs/9.6.1/firebase-database.js";
+import {
+  getDatabase,
+  ref,
+  get,
+  update,
+  onValue,
+  onDisconnect
+} from "https://www.gstatic.com/firebasejs/9.6.1/firebase-database.js";
 
 const firebaseConfig = {
   databaseURL: "https://access-7a3c3-default-rtdb.firebaseio.com/"
@@ -10,6 +17,7 @@ const firebaseConfig = {
 const app = initializeApp(firebaseConfig);
 const db = getDatabase(app);
 
+// ✅ 登出功能（用於按鈕與自動登出）
 async function logoutUser(showLog = true) {
   const username = localStorage.getItem("loggedInUser");
   const sessionToken = localStorage.getItem("sessionToken");
@@ -52,6 +60,29 @@ async function validateSession() {
   }
 }
 
+// ✅ Firebase 连線不在時自動登出 (FB/Safari/APP 軟體關閉)
+function setupFirebaseDisconnect(username) {
+  const userRef = ref(db, `users/${username}`);
+  const connectedRef = ref(db, ".info/connected");
+
+  onValue(connectedRef, (snap) => {
+    if (snap.val() === true) {
+      onDisconnect(userRef).update({
+        isLoggedIn: false,
+        sessionToken: ""
+      }).then(() => {
+        console.log("🔌 Firebase onDisconnect 登出已設定");
+      });
+    }
+  });
+}
+
+// ✅ 啟用时如果有登入用戶則啟用 onDisconnect
+const currentUser = localStorage.getItem("loggedInUser");
+if (currentUser) {
+  setupFirebaseDisconnect(currentUser);
+}
+
 // ✅ 自動登出邏輯
 function triggerAutoLogout() {
   const isNavigating = sessionStorage.getItem("pageNavigation");
@@ -71,7 +102,7 @@ function triggerAutoLogout() {
   console.log("📤 自動登出已發送（非跳轉）");
 }
 
-// ✅ 綁定 visibilitychange，當視窗被隱藏（但非跳轉）時處理
+// ✅ visibilitychange 管理 (iOS Edge/FB...)
 let hiddenTimer;
 document.addEventListener("visibilitychange", () => {
   if (document.visibilityState === "hidden") {
@@ -83,11 +114,11 @@ document.addEventListener("visibilitychange", () => {
   }
 });
 
-// ✅ 註冊 pagehide 和 beforeunload（兼容 Safari）
+// ✅ pagehide + beforeunload
 window.addEventListener("pagehide", triggerAutoLogout);
 window.addEventListener("beforeunload", triggerAutoLogout);
 
-// ✅ 所有跳轉標記
+// ✅ 按鈕/連結跳轉標記
 function markNavigation() {
   sessionStorage.setItem("pageNavigation", "true");
 }
@@ -96,7 +127,7 @@ document.addEventListener("DOMContentLoaded", () => {
   document.querySelectorAll("a, button").forEach(el => {
     el.addEventListener("click", markNavigation);
   });
-  markNavigation(); // 初始載入也標記
+  markNavigation();
 });
 
 window.addEventListener("pageshow", (e) => {
@@ -109,7 +140,7 @@ window.addEventListener("pageshow", (e) => {
 if (window.location.pathname.includes("pdf-select") || window.location.pathname.includes("pdf-viewer")) {
   validateSession().then(valid => {
     if (!valid) {
-      console.warn("⛔ 無效 session，跳轉登入頁面");
+      console.warn("⛔️ 無效 session，跳轉登入頁面");
       window.location.href = "index.html";
     }
   });
@@ -137,7 +168,7 @@ if (window.location.pathname.includes("pdf-select") || window.location.pathname.
       updateTimer();
       if (timeLeft <= 0) {
         clearInterval(idleTimer);
-        alert("⏰ 閒置超過 30 分鐘，自動登出！");
+        alert("⏰ 閑置超過 30 分鐘，自動登出！");
         await logoutUser();
         window.location.href = "index.html";
       }
