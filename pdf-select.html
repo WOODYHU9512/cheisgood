@@ -1,3 +1,4 @@
+<!-- ✅ 修正後的 select.html -->
 <!DOCTYPE html>
 <html lang="zh-TW">
 <head>
@@ -76,9 +77,6 @@
   <script type="module">
     import { initializeApp } from "https://www.gstatic.com/firebasejs/9.6.1/firebase-app.js";
     import { getDatabase, ref, get } from "https://www.gstatic.com/firebasejs/9.6.1/firebase-database.js";
-
-    // ✅ 確保載入第一刻即標記跳轉（避免 pagehide 誤判）
-    sessionStorage.setItem("pageNavigation", "true");
 
     const firebaseConfig = {
       databaseURL: "https://access-7a3c3-default-rtdb.firebaseio.com/"
@@ -172,14 +170,10 @@
       window.logout();
     });
 
+    // ✅ 確保第一次載入就設好 pageNavigation（避免被誤判為直接關閉）
     window.addEventListener("DOMContentLoaded", () => {
+      setTimeout(() => sessionStorage.setItem("pageNavigation", "true"), 0);
       loadUserPermissions();
-    });
-
-    window.addEventListener("pageshow", (e) => {
-      if (e.persisted || performance.getEntriesByType("navigation")[0]?.type === "back_forward") {
-        sessionStorage.setItem("pageNavigation", "true");
-      }
     });
   </script>
 </body>
