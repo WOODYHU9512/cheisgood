@@ -1,7 +1,7 @@
 <!DOCTYPE html>
 <html lang="zh-TW">
 <head>
-  <script type="module" src="script.js"></script>  <!-- 確保登出 & 計時器功能 -->
+  <script type="module" src="script.js"></script>  <!-- ✅ 確保登出 & 計時器功能 -->
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>選擇學校與科目</title>
@@ -11,12 +11,14 @@
       text-align: center;
       margin: 20px;
     }
+
     select, button {
       margin: 10px;
       padding: 10px;
       font-size: 16px;
     }
-    /* 計時器 */
+
+    /* ✅ 計時器 */
     #countdown {
       position: fixed;
       top: 10px;
@@ -28,7 +30,8 @@
       border-radius: 10px;
       font-weight: bold;
     }
-    /* 登出提醒 */
+
+    /* ✅ 登出提醒 */
     #logout-warning {
       position: fixed;
       bottom: 5px;
@@ -43,7 +46,8 @@
       z-index: 1000;
       box-shadow: 0px 2px 5px rgba(0, 0, 0, 0.2);
     }
-    /* 登出按鈕 */
+
+    /* ✅ 登出按鈕 */
     #logout-btn {
       position: fixed;
       top: 10px;
@@ -58,56 +62,48 @@
   </style>
 </head>
 <body>
+
   <h2>請選擇學校與科目</h2>
-  <!-- 顯示計時器 -->
+
+  <!-- ✅ 顯示計時器 -->
   <div id="countdown">⏳ 自動登出倒數：<span id="timer">30:00</span></div>
-  <!-- 學校選擇 -->
+
+  <!-- ✅ 學校選擇 -->
   <label for="schoolSelect">選擇學校：</label>
   <select id="schoolSelect" onchange="updateSubjects()">
     <option value="">請選擇學校</option>
   </select>
-  <!-- 科目選擇 -->
+
+  <!-- ✅ 科目選擇 -->
   <label for="subjectSelect">選擇科目：</label>
   <select id="subjectSelect">
     <option value="">請先選擇學校</option>
   </select>
+
   <button onclick="viewPDF()">觀看 PDF</button>
-  <!-- 登出提醒 -->
+
+  <!-- ✅ 登出提醒 -->
   <div id="logout-warning">
     ⚠️ **請務必透過登出鈕登出！**
   </div>
-  <!-- 登出按鈕 -->
+
+  <!-- ✅ 登出按鈕 -->
   <button id="logout-btn" onclick="logout()">🚪 登出</button>
 
   <script type="module">
     import { initializeApp } from "https://www.gstatic.com/firebasejs/9.6.1/firebase-app.js";
     import { getDatabase, ref, get } from "https://www.gstatic.com/firebasejs/9.6.1/firebase-database.js";
 
-    // 初始化 Firebase
+    // ✅ 初始化 Firebase
     const firebaseConfig = {
       databaseURL: "https://access-7a3c3-default-rtdb.firebaseio.com/"
     };
     const app = initializeApp(firebaseConfig);
     const db = getDatabase(app);
 
-    // 全域內部導航旗標：判斷是否為內部跳轉
-    let isInternalNavigation = false;
-
-    // 設定 Firebase onDisconnect：斷線時自動更新後端狀態
-    function setupOnDisconnect() {
-      const username = localStorage.getItem('loggedInUser');
-      if (!username) return;
-      const userRef = ref(db, `users/${username}`);
-      userRef.onDisconnect().update({
-        isLoggedIn: false,
-        sessionToken: ""
-      });
-    }
-    setupOnDisconnect();
-
     let authorizedSchools = [];
 
-    // 學校對應的科目與 Google Drive PDF File ID
+    // ✅ 學校對應的科目與 Google Drive PDF File ID
     const subjects = {
       "台大": {
         "106~114 台大單操輸送": "1-8YNZiVw81RjqLPPWmzbC0ng4PAIa53a",
@@ -134,6 +130,7 @@
       "中興": {
         "106-114 中興工程數學與輸送現象": "1AREZvc7hVtVHGpG7qwoZkRVD96ljlcXt",
         "106-114 中興化熱化反": "1uYHa87G9aoc9VnyVjeXJPgVnVKPI_ujS"
+
       }
     };
 
@@ -144,13 +141,16 @@
         window.location.href = "index.html";
         return;
       }
+
       const userRef = ref(db, `users/${username}/purchased`);
       const snapshot = await get(userRef);
+
       if (snapshot.exists() && snapshot.val() !== null) {
         authorizedSchools = Object.keys(snapshot.val());
       } else {
         authorizedSchools = [];
       }
+
       console.log("✅ 你有權限的學校：", authorizedSchools);
       populateSchoolOptions();
     }
@@ -158,6 +158,7 @@
     function populateSchoolOptions() {
       const schoolSelect = document.getElementById("schoolSelect");
       schoolSelect.innerHTML = "<option value=''>請選擇學校</option>";
+
       authorizedSchools.forEach(school => {
         let option = document.createElement("option");
         option.value = school;
@@ -169,38 +170,36 @@
     window.updateSubjects = function() {
       const school = document.getElementById("schoolSelect").value;
       const subjectSelect = document.getElementById("subjectSelect");
+
       subjectSelect.innerHTML = "<option value=''>請選擇科目</option>";
+
       if (!school || !subjects.hasOwnProperty(school)) return;
+
       Object.entries(subjects[school]).forEach(([subject, fileId]) => {
         let option = document.createElement("option");
         option.value = fileId;
         option.textContent = subject;
         subjectSelect.appendChild(option);
       });
+
       console.log(`✅ 選擇學校：${school}，顯示科目數量：${Object.keys(subjects[school]).length}`);
     };
 
-    // viewPDF：內部跳轉前先設定旗標，避免 beforeunload 誤執行 logout
+    // ✅ 修正 viewPDF 使其可被 <button onclick="viewPDF()"> 呼叫
     window.viewPDF = function() {
       const subjectSelect = document.getElementById("subjectSelect");
       const subjectId = subjectSelect.value;
       const selectedSubjectText = subjectSelect.options[subjectSelect.selectedIndex].text;
+
       if (!subjectId) {
         alert("❌ 請選擇科目！");
         return;
       }
-      isInternalNavigation = true;  // 內部跳轉，不觸發自動登出
+
       localStorage.setItem("currentPDF", subjectId);
       localStorage.setItem("currentPDFName", selectedSubjectText);
       window.location.href = "pdf-viewer.html";
     };
-
-    // beforeunload：若非內部跳轉（如關閉分頁或瀏覽器），則呼叫 logout
-    window.addEventListener("beforeunload", (event) => {
-      if (!isInternalNavigation && typeof logout === "function") {
-        logout();
-      }
-    });
 
     loadUserPermissions();
   </script>
