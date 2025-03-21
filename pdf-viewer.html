@@ -96,39 +96,31 @@
       document.getElementById("pdfFrame").src = pdfUrl;
     }
 
-    // ✅ 初次載入與歷史返回都標記為跳轉，避免誤判登出
-    function markNavigationSafe() {
-      sessionStorage.setItem("pageNavigation", "true");
-    }
-
+    // ✅ 初始進入 / 回上一頁都標記跳轉
     window.addEventListener("load", () => {
-      markNavigationSafe();
+      setTimeout(() => sessionStorage.setItem("pageNavigation", "true"), 0);
       loadPDF();
     });
 
     window.addEventListener("pageshow", (e) => {
       if (e.persisted || performance.getEntriesByType("navigation")[0].type === "back_forward") {
-        markNavigationSafe();
+        sessionStorage.setItem("pageNavigation", "true");
       }
     });
 
-    // ✅ 可見狀態改變時延遲清除 pageNavigation
+    // ✅ 若使用者隱藏頁面，標記為可能關閉
     document.addEventListener("visibilitychange", () => {
       if (document.visibilityState === "hidden") {
-        setTimeout(() => {
-          if (document.visibilityState === "hidden") {
-            sessionStorage.removeItem("pageNavigation");
-          }
-        }, 300);
+        sessionStorage.removeItem("pageNavigation");
       }
     });
 
-    // ✅ 登出按鈕綁定 script.js 的全域 logout 方法
+    // ✅ 登出按鈕呼叫 script.js 的 logoutUser()
     document.getElementById("logout-btn").addEventListener("click", () => {
       window.logout();
     });
 
-    // ✅ 禁止 F12 與常見開發者工具快捷鍵
+    // ✅ 禁用右鍵與 F12 開發工具
     document.addEventListener("contextmenu", e => e.preventDefault());
     document.addEventListener("keydown", e => {
       if (
