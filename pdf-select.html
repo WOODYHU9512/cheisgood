@@ -65,7 +65,7 @@
   <select id="subjectSelect">
     <option value="">請先選擇學校</option>
   </select>
-  <button id="view-btn">觀看 PDF</button>
+  <button onclick="viewPDF()">觀看 PDF</button>
   <div id="logout-warning">⚠️ **請務必透過登出鈕登出！**</div>
   <button id="logout-btn" onclick="logout()">🚪 登出</button>
 
@@ -117,19 +117,24 @@
         window.location.href = "index.html";
         return;
       }
+
       const userRef = ref(db, `users/${username}/purchased`);
       const snapshot = await get(userRef);
-      if (snapshot.exists()) {
+
+      if (snapshot.exists() && snapshot.val() !== null) {
         authorizedSchools = Object.keys(snapshot.val());
       } else {
         authorizedSchools = [];
       }
+
+      console.log("✅ 你有權限的學校：", authorizedSchools);
       populateSchoolOptions();
     }
 
     function populateSchoolOptions() {
       const schoolSelect = document.getElementById("schoolSelect");
       schoolSelect.innerHTML = "<option value=''>請選擇學校</option>";
+
       authorizedSchools.forEach(school => {
         let option = document.createElement("option");
         option.value = school;
@@ -142,16 +147,20 @@
       const school = document.getElementById("schoolSelect").value;
       const subjectSelect = document.getElementById("subjectSelect");
       subjectSelect.innerHTML = "<option value=''>請選擇科目</option>";
+
       if (!school || !subjects.hasOwnProperty(school)) return;
+
       Object.entries(subjects[school]).forEach(([subject, fileId]) => {
         let option = document.createElement("option");
         option.value = fileId;
         option.textContent = subject;
         subjectSelect.appendChild(option);
       });
+
+      console.log(`✅ 選擇學校：${school}，顯示科目數量：${Object.keys(subjects[school]).length}`);
     };
 
-    document.getElementById("view-btn").addEventListener("click", function () {
+    window.viewPDF = function () {
       const subjectSelect = document.getElementById("subjectSelect");
       const subjectId = subjectSelect.value;
       const selectedSubjectText = subjectSelect.options[subjectSelect.selectedIndex].text;
@@ -161,21 +170,11 @@
         return;
       }
 
-      sessionStorage.setItem("pageNavigation", "true"); // ✅ 跳轉標記
+      sessionStorage.setItem("pageNavigation", "true");
       localStorage.setItem("currentPDF", subjectId);
       localStorage.setItem("currentPDFName", selectedSubjectText);
       window.location.href = "pdf-viewer.html";
-    });
-
-    // ✅ 標記點擊行為避免 pagehide 誤判
-    document.addEventListener("DOMContentLoaded", function () {
-      const links = document.querySelectorAll("a, button");
-      links.forEach(link => {
-        link.addEventListener("click", function () {
-          sessionStorage.setItem("pageNavigation", "true");
-        });
-      });
-    });
+    };
 
     loadUserPermissions();
   </script>
