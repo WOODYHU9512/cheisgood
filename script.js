@@ -1,4 +1,4 @@
-// ✅ script.js - 最終修正版：避開跳轉誤判並確保關閉分頁會登出
+// ✅ script.js
 console.log("🔥 script.js loaded");
 
 import { initializeApp } from "https://www.gstatic.com/firebasejs/9.6.1/firebase-app.js";
@@ -10,7 +10,6 @@ const firebaseConfig = {
 const app = initializeApp(firebaseConfig);
 const db = getDatabase(app);
 
-// ✅ 登出功能
 async function logoutUser(showLog = true) {
   const username = localStorage.getItem("loggedInUser");
   const sessionToken = localStorage.getItem("sessionToken");
@@ -53,57 +52,60 @@ async function validateSession() {
   }
 }
 
-// ✅ 自動登出邏輯（考慮跳轉延遲 + 手機瀏覽器）
+// ✅ 自動登出邏輯
 function triggerAutoLogout() {
-  setTimeout(() => {
-    const isNavigating = sessionStorage.getItem("pageNavigation");
-    sessionStorage.removeItem("pageNavigation");
-    if (isNavigating) {
-      console.log("➡️ 偵測到跳轉，不自動登出");
-      return;
-    }
+  const isNavigating = sessionStorage.getItem("pageNavigation");
+  sessionStorage.removeItem("pageNavigation");
+  if (isNavigating) return;
 
-    const username = localStorage.getItem("loggedInUser");
-    if (!username) return;
+  const username = localStorage.getItem("loggedInUser");
+  if (!username) return;
 
-    fetch(`https://access-7a3c3-default-rtdb.firebaseio.com/users/${username}.json`, {
-      method: "PATCH",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ isLoggedIn: false, sessionToken: "" }),
-      keepalive: true
-    });
+  fetch(`https://access-7a3c3-default-rtdb.firebaseio.com/users/${username}.json`, {
+    method: "PATCH",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify({ isLoggedIn: false, sessionToken: "" }),
+    keepalive: true
+  });
 
-    console.log("📤 非跳轉，自動登出發送完畢");
-  }, 150);
+  console.log("📤 自動登出已發送（非跳轉）");
 }
 
-// ✅ 自動登出觸發點
-window.addEventListener("pagehide", triggerAutoLogout);
-window.addEventListener("beforeunload", triggerAutoLogout);
-
+// ✅ 綁定 visibilitychange，當視窗被隱藏（但非跳轉）時處理
 let hiddenTimer;
 document.addEventListener("visibilitychange", () => {
   if (document.visibilityState === "hidden") {
-    hiddenTimer = setTimeout(triggerAutoLogout, 500);
+    hiddenTimer = setTimeout(() => {
+      triggerAutoLogout();
+    }, 500);
   } else {
     clearTimeout(hiddenTimer);
   }
 });
 
-// ✅ 標記跳轉的操作（只在互動時）
+// ✅ 註冊 pagehide 和 beforeunload（兼容 Safari）
+window.addEventListener("pagehide", triggerAutoLogout);
+window.addEventListener("beforeunload", triggerAutoLogout);
+
+// ✅ 所有跳轉標記
+function markNavigation() {
+  sessionStorage.setItem("pageNavigation", "true");
+}
+
 document.addEventListener("DOMContentLoaded", () => {
   document.querySelectorAll("a, button").forEach(el => {
-    el.addEventListener("click", () => sessionStorage.setItem("pageNavigation", "true"));
+    el.addEventListener("click", markNavigation);
   });
+  markNavigation(); // 初始載入也標記
 });
 
 window.addEventListener("pageshow", (e) => {
   if (e.persisted || performance.getEntriesByType("navigation")[0]?.type === "back_forward") {
-    sessionStorage.setItem("pageNavigation", "true");
+    markNavigation();
   }
 });
 
-// ✅ 自動登出倒數邏輯（pdf-select / pdf-viewer）
+// ✅ 自動登出倒數
 if (window.location.pathname.includes("pdf-select") || window.location.pathname.includes("pdf-viewer")) {
   validateSession().then(valid => {
     if (!valid) {
