@@ -1,7 +1,13 @@
 console.log("🔥 script.js loaded");
 
 import { initializeApp } from "https://www.gstatic.com/firebasejs/9.6.1/firebase-app.js";
-import { getDatabase, ref, get, update } from "https://www.gstatic.com/firebasejs/9.6.1/firebase-database.js";
+import {
+  getDatabase,
+  ref,
+  get,
+  update,
+  onDisconnect
+} from "https://www.gstatic.com/firebasejs/9.6.1/firebase-database.js";
 
 const firebaseConfig = {
   databaseURL: "https://access-7a3c3-default-rtdb.firebaseio.com/"
@@ -36,6 +42,16 @@ window.logout = async function () {
   window.location.href = "index.html";
 };
 
+async function setupOnDisconnect(username) {
+  try {
+    const userRef = ref(db, `users/${username}`);
+    await onDisconnect(userRef).update({ isLoggedIn: false, sessionToken: "" });
+    console.log("📡 onDisconnect 設定完成");
+  } catch (err) {
+    console.error("❌ 設定 onDisconnect 失敗：", err);
+  }
+}
+
 async function validateSession() {
   const username = localStorage.getItem("loggedInUser");
   const sessionToken = localStorage.getItem("sessionToken");
@@ -44,29 +60,26 @@ async function validateSession() {
   try {
     const userRef = ref(db, `users/${username}`);
     const snapshot = await get(userRef);
-    return snapshot.exists() && snapshot.val().sessionToken === sessionToken;
+    const valid = snapshot.exists() && snapshot.val().sessionToken === sessionToken;
+    if (valid) await setupOnDisconnect(username);
+    return valid;
   } catch (err) {
     console.error("❌ 驗證登入失敗：", err);
     return false;
   }
 }
 
-// ✅ 標記跳轉
-function markNavigation() {
-  sessionStorage.setItem("pageNavigation", "true");
-}
-
-// ✅ 自動登出邏輯（加入延遲判斷）
-function triggerAutoLogout() {
-  const shouldIgnore = sessionStorage.getItem("pageNavigation");
+function isRealClose() {
+  const navFlag = sessionStorage.getItem("pageNavigation");
   sessionStorage.removeItem("pageNavigation");
 
   const navType = performance.getEntriesByType("navigation")[0]?.type;
-  const isReload = navType === "reload";
-  const isNavigate = navType === "navigate";
+  return !navFlag && navType !== "navigate" && navType !== "reload" && navType !== "back_forward";
+}
 
-  if (shouldIgnore || isReload || isNavigate) {
-    console.log("⏩ 跳轉或重新整理，略過登出");
+function triggerAutoLogout() {
+  if (!isRealClose()) {
+    console.log("🛑 跳轉／重整，不執行自動登出");
     return;
   }
 
@@ -79,12 +92,31 @@ function triggerAutoLogout() {
     body: JSON.stringify({ isLoggedIn: false, sessionToken: "" }),
     keepalive: true
   });
-
-  console.log("📤 自動登出已發送（非跳轉）");
+  console.log("📤 自動登出已送出");
 }
 
-// ✅ 可見性監聽
-let hiddenTimer;
+// ✅ 標記跳轉
+function markNavigation() {
+  sessionStorage.setItem("pageNavigation", "true");
+}
+
+// ✅ 初始化綁定
+document.addEventListener("DOMContentLoaded", () => {
+  document.querySelectorAll("a, button").forEach(el => {
+    el.addEventListener("click", markNavigation);
+  });
+  markNavigation();
+});
+
+window.addEventListener("pageshow", (e) => {
+  if (e.persisted || performance.getEntriesByType("navigation")[0]?.type === "back_forward") {
+    markNavigation();
+  }
+});
+
+// ✅ 自動登出判定（pagehide 比 beforeunload 可靠）
+let hiddenTimer = null;
+
 document.addEventListener("visibilitychange", () => {
   if (document.visibilityState === "hidden") {
     hiddenTimer = setTimeout(triggerAutoLogout, 300);
@@ -92,31 +124,10 @@ document.addEventListener("visibilitychange", () => {
     clearTimeout(hiddenTimer);
   }
 });
+window.addEventListener("pagehide", triggerAutoLogout);
+window.addEventListener("beforeunload", triggerAutoLogout);
 
-window.addEventListener("beforeunload", () => {
-  setTimeout(triggerAutoLogout, 100); // 保留一點時間讓跳轉有機會標記
-});
-window.addEventListener("pagehide", () => {
-  setTimeout(triggerAutoLogout, 100);
-});
-
-// ✅ DOM 載入標記跳轉
-document.addEventListener("DOMContentLoaded", () => {
-  markNavigation();
-  document.querySelectorAll("a, button").forEach(el => {
-    el.addEventListener("click", markNavigation);
-  });
-});
-
-// ✅ pageshow（Safari Back/Forward）
-window.addEventListener("pageshow", (e) => {
-  const navType = performance.getEntriesByType("navigation")[0]?.type;
-  if (e.persisted || navType === "back_forward") {
-    markNavigation();
-  }
-});
-
-// ✅ 自動登出倒數邏輯
+// ✅ 自動倒數登出
 if (window.location.pathname.includes("pdf-select") || window.location.pathname.includes("pdf-viewer")) {
   validateSession().then(valid => {
     if (!valid) {
