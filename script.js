@@ -1,15 +1,8 @@
-// ✅ script.js
+// ✅ script.js（最終整合版）
 console.log("🔥 script.js loaded");
 
 import { initializeApp } from "https://www.gstatic.com/firebasejs/9.6.1/firebase-app.js";
-import {
-  getDatabase,
-  ref,
-  get,
-  update,
-  onValue,
-  onDisconnect
-} from "https://www.gstatic.com/firebasejs/9.6.1/firebase-database.js";
+import { getDatabase, ref, get, update } from "https://www.gstatic.com/firebasejs/9.6.1/firebase-database.js";
 
 const firebaseConfig = {
   databaseURL: "https://access-7a3c3-default-rtdb.firebaseio.com/"
@@ -17,7 +10,6 @@ const firebaseConfig = {
 const app = initializeApp(firebaseConfig);
 const db = getDatabase(app);
 
-// ✅ 登出功能（用於按鈕與自動登出）
 async function logoutUser(showLog = true) {
   const username = localStorage.getItem("loggedInUser");
   const sessionToken = localStorage.getItem("sessionToken");
@@ -60,65 +52,44 @@ async function validateSession() {
   }
 }
 
-// ✅ Firebase 连線不在時自動登出 (FB/Safari/APP 軟體關閉)
-function setupFirebaseDisconnect(username) {
-  const userRef = ref(db, `users/${username}`);
-  const connectedRef = ref(db, ".info/connected");
-
-  onValue(connectedRef, (snap) => {
-    if (snap.val() === true) {
-      onDisconnect(userRef).update({
-        isLoggedIn: false,
-        sessionToken: ""
-      }).then(() => {
-        console.log("🔌 Firebase onDisconnect 登出已設定");
-      });
-    }
-  });
-}
-
-// ✅ 啟用时如果有登入用戶則啟用 onDisconnect
-const currentUser = localStorage.getItem("loggedInUser");
-if (currentUser) {
-  setupFirebaseDisconnect(currentUser);
-}
-
-// ✅ 自動登出邏輯
+// ✅ 自動登出（非跳轉關閉）
 function triggerAutoLogout() {
-  const isNavigating = sessionStorage.getItem("pageNavigation");
-  sessionStorage.removeItem("pageNavigation");
-  if (isNavigating) return;
+  setTimeout(() => {
+    const isNavigating = sessionStorage.getItem("pageNavigation");
+    sessionStorage.removeItem("pageNavigation");
+    if (isNavigating) return;
 
-  const username = localStorage.getItem("loggedInUser");
-  if (!username) return;
+    const username = localStorage.getItem("loggedInUser");
+    if (!username) return;
 
-  fetch(`https://access-7a3c3-default-rtdb.firebaseio.com/users/${username}.json`, {
-    method: "PATCH",
-    headers: { "Content-Type": "application/json" },
-    body: JSON.stringify({ isLoggedIn: false, sessionToken: "" }),
-    keepalive: true
-  });
+    fetch(`https://access-7a3c3-default-rtdb.firebaseio.com/users/${username}.json`, {
+      method: "PATCH",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ isLoggedIn: false, sessionToken: "" }),
+      keepalive: true
+    });
 
-  console.log("📤 自動登出已發送（非跳轉）");
+    console.log("📤 自動登出已發送（非跳轉）");
+  }, 100); // 等 100ms 確保下一頁標記成功
 }
 
-// ✅ visibilitychange 管理 (iOS Edge/FB...)
+// ✅ 綁定關閉事件
+window.addEventListener("pagehide", triggerAutoLogout);
+window.addEventListener("beforeunload", triggerAutoLogout);
+
+// ✅ visibilitychange — 手機補強版
 let hiddenTimer;
 document.addEventListener("visibilitychange", () => {
   if (document.visibilityState === "hidden") {
     hiddenTimer = setTimeout(() => {
       triggerAutoLogout();
-    }, 500);
+    }, 800); // 稍微拉長時間，讓 pageNavigation 有時間被標記
   } else {
     clearTimeout(hiddenTimer);
   }
 });
 
-// ✅ pagehide + beforeunload
-window.addEventListener("pagehide", triggerAutoLogout);
-window.addEventListener("beforeunload", triggerAutoLogout);
-
-// ✅ 按鈕/連結跳轉標記
+// ✅ 標記跳轉
 function markNavigation() {
   sessionStorage.setItem("pageNavigation", "true");
 }
@@ -136,11 +107,11 @@ window.addEventListener("pageshow", (e) => {
   }
 });
 
-// ✅ 自動登出倒數
+// ✅ 閒置 30 分鐘自動登出
 if (window.location.pathname.includes("pdf-select") || window.location.pathname.includes("pdf-viewer")) {
   validateSession().then(valid => {
     if (!valid) {
-      console.warn("⛔️ 無效 session，跳轉登入頁面");
+      console.warn("⛔ 無效 session，跳轉登入頁面");
       window.location.href = "index.html";
     }
   });
@@ -168,7 +139,7 @@ if (window.location.pathname.includes("pdf-select") || window.location.pathname.
       updateTimer();
       if (timeLeft <= 0) {
         clearInterval(idleTimer);
-        alert("⏰ 閑置超過 30 分鐘，自動登出！");
+        alert("⏰ 閒置超過 30 分鐘，自動登出！");
         await logoutUser();
         window.location.href = "index.html";
       }
