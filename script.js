@@ -1,15 +1,16 @@
-// ✅ script.js
 console.log("🔥 script.js loaded");
 
 import { initializeApp } from "https://www.gstatic.com/firebasejs/9.6.1/firebase-app.js";
 import { getDatabase, ref, get, update } from "https://www.gstatic.com/firebasejs/9.6.1/firebase-database.js";
 
+// ✅ Firebase 初始化
 const firebaseConfig = {
   databaseURL: "https://access-7a3c3-default-rtdb.firebaseio.com/"
 };
 const app = initializeApp(firebaseConfig);
 const db = getDatabase(app);
 
+// ✅ 登出功能（用於按鈕與自動登出）
 async function logoutUser(showLog = true) {
   const username = localStorage.getItem("loggedInUser");
   const sessionToken = localStorage.getItem("sessionToken");
@@ -18,15 +19,12 @@ async function logoutUser(showLog = true) {
   try {
     const userRef = ref(db, `users/${username}`);
     const snapshot = await get(userRef);
-    if (snapshot.exists()) {
-      const user = snapshot.val();
-      if (user.sessionToken === sessionToken) {
-        await update(userRef, {
-          isLoggedIn: false,
-          sessionToken: ""
-        });
-        if (showLog) console.log(`✅ ${username} 已從 Firebase 登出`);
-      }
+    if (snapshot.exists() && snapshot.val().sessionToken === sessionToken) {
+      await update(userRef, {
+        isLoggedIn: false,
+        sessionToken: ""
+      });
+      if (showLog) console.log(`✅ ${username} 已從 Firebase 登出`);
     }
   } catch (err) {
     console.error("❌ 自動登出失敗：", err);
@@ -38,11 +36,13 @@ async function logoutUser(showLog = true) {
   localStorage.removeItem("currentPDFName");
 }
 
+// ✅ 登出按鈕會觸發這裡
 window.logout = async function () {
   await logoutUser();
   window.location.href = "index.html";
 };
 
+// ✅ 驗證登入狀態
 async function validateSession() {
   const username = localStorage.getItem("loggedInUser");
   const sessionToken = localStorage.getItem("sessionToken");
@@ -58,8 +58,10 @@ async function validateSession() {
   }
 }
 
-function autoLogoutIfClosed() {
+// ✅ 關閉頁面自動登出（非跳轉）
+function autoLogoutIfNotNavigating() {
   const isNavigating = sessionStorage.getItem("pageNavigation");
+  sessionStorage.removeItem("pageNavigation");
   if (isNavigating) return;
 
   const username = localStorage.getItem("loggedInUser");
@@ -68,21 +70,25 @@ function autoLogoutIfClosed() {
   fetch(`https://access-7a3c3-default-rtdb.firebaseio.com/users/${username}.json`, {
     method: "PATCH",
     headers: { "Content-Type": "application/json" },
-    body: JSON.stringify({ isLoggedIn: false, sessionToken: "" }),
+    body: JSON.stringify({
+      isLoggedIn: false,
+      sessionToken: ""
+    }),
     keepalive: true
   });
 
-  console.log("📤 自動登出 (keepalive) 已送出");
+  console.log("📤 fetch + keepalive 自動登出已發送");
 }
 
+// ✅ 註冊自動登出事件
 window.addEventListener("pagehide", () => {
-  setTimeout(autoLogoutIfClosed, 0);
+  setTimeout(autoLogoutIfNotNavigating, 0);
 });
-
 window.addEventListener("beforeunload", () => {
-  setTimeout(autoLogoutIfClosed, 0);
+  setTimeout(autoLogoutIfNotNavigating, 0);
 });
 
+// ✅ 點擊按鈕與連結時標記跳轉
 document.addEventListener("DOMContentLoaded", () => {
   document.querySelectorAll("a, button").forEach(el => {
     el.addEventListener("click", () => {
@@ -90,15 +96,18 @@ document.addEventListener("DOMContentLoaded", () => {
     });
   });
 
+  // ✅ 初次載入也視為跳轉（避免載入時立即判定關閉）
   sessionStorage.setItem("pageNavigation", "true");
 });
 
+// ✅ 返回上一頁也補標記
 window.addEventListener("pageshow", (e) => {
-  if (e.persisted || performance.getEntriesByType("navigation")[0].type === "back_forward") {
+  if (e.persisted || performance.getEntriesByType("navigation")[0]?.type === "back_forward") {
     sessionStorage.setItem("pageNavigation", "true");
   }
 });
 
+// ✅ 自動登出倒數邏輯（限 select 與 viewer）
 if (window.location.pathname.includes("pdf-select") || window.location.pathname.includes("pdf-viewer")) {
   validateSession().then(valid => {
     if (!valid) {
@@ -107,7 +116,7 @@ if (window.location.pathname.includes("pdf-select") || window.location.pathname.
     }
   });
 
-  let timeLeft = 1800;
+  let timeLeft = 1800; // 30 分鐘
   let idleTimer;
   const timerDisplay = document.getElementById("timer");
 
