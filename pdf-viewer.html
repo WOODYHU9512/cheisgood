@@ -1,7 +1,7 @@
 <!DOCTYPE html>
 <html lang="zh-TW">
 <head>
-  <script type="module" src="script.js"></script>
+  <script type="module" src="script.js"></script> <!-- ✅ 整合登出邏輯 -->
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>PDF 觀看</title>
@@ -73,10 +73,12 @@
 <body>
   <h2 id="pdfTitle">📖 PDF 觀看</h2>
   <div id="countdown">⏳ 自動登出倒數：<span id="timer">30:00</span></div>
+
   <div class="pdf-container">
     <iframe id="pdfFrame"></iframe>
     <div class="overlay"></div>
   </div>
+
   <div id="logout-warning">⚠️ **請務必透過登出鈕登出！**</div>
   <button id="logout-btn" onclick="logout()">🚪 登出</button>
 
@@ -93,30 +95,30 @@
     function loadPDF() {
       const fileId = localStorage.getItem("currentPDF");
       const fileName = localStorage.getItem("currentPDFName");
+
       if (!fileId) {
         alert("❌ 無法載入 PDF，請重新選擇科目！");
         window.location.href = "pdf-select.html";
         return;
       }
+
       document.getElementById("pdfTitle").innerText = `📖 ${fileName}`;
       const pdfUrl = `https://drive.google.com/file/d/${fileId}/preview?embedded=true`;
       document.getElementById("pdfFrame").src = pdfUrl;
     }
 
-    // ✅ 設定首次進入標記
+    // ✅ 標記頁面跳轉狀態，避免誤判為關閉
     window.addEventListener("load", () => {
       sessionStorage.setItem("pageNavigation", "true");
       loadPDF();
     });
 
-    // ✅ 返回歷史紀錄時也設為跳轉
     window.addEventListener("pageshow", e => {
       if (e.persisted || performance.getEntriesByType("navigation")[0].type === "back_forward") {
         sessionStorage.setItem("pageNavigation", "true");
       }
     });
 
-    // ✅ visibilityChange 進一步防呆
     document.addEventListener("visibilitychange", () => {
       if (document.visibilityState === "hidden") {
         setTimeout(() => {
