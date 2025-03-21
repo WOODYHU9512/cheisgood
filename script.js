@@ -1,4 +1,3 @@
-// 🔥 script.js loaded
 console.log("🔥 script.js loaded");
 
 import { initializeApp } from "https://www.gstatic.com/firebasejs/9.6.1/firebase-app.js";
@@ -16,7 +15,7 @@ const firebaseConfig = {
 const app = initializeApp(firebaseConfig);
 const db = getDatabase(app);
 
-// ✅ 登出邏輯
+// ✅ 登出 function
 async function logoutUser(showLog = true) {
   const username = localStorage.getItem("loggedInUser");
   const sessionToken = localStorage.getItem("sessionToken");
@@ -30,7 +29,7 @@ async function logoutUser(showLog = true) {
       if (showLog) console.log(`✅ ${username} 已從 Firebase 登出`);
     }
   } catch (err) {
-    console.error("❌ 登出錯誤：", err);
+    console.error("❌ 自動登出失敗：", err);
   }
 
   localStorage.removeItem("loggedInUser");
@@ -44,7 +43,6 @@ window.logout = async function () {
   window.location.href = "index.html";
 };
 
-// ✅ onDisconnect 設定
 async function setupOnDisconnect(username) {
   const userRef = ref(db, `users/${username}`);
   try {
@@ -54,11 +52,10 @@ async function setupOnDisconnect(username) {
     });
     console.log("📡 onDisconnect 設定完成");
   } catch (err) {
-    console.error("❌ onDisconnect 設定失敗：", err);
+    console.error("❌ 設定 onDisconnect 失敗：", err);
   }
 }
 
-// ✅ session 驗證
 async function validateSession() {
   const username = localStorage.getItem("loggedInUser");
   const sessionToken = localStorage.getItem("sessionToken");
@@ -73,19 +70,23 @@ async function validateSession() {
     }
     return valid;
   } catch (err) {
-    console.error("❌ 驗證失敗：", err);
+    console.error("❌ 驗證登入失敗：", err);
     return false;
   }
 }
 
-// ✅ 自動登出（真正離開頁面時觸發）
+// ✅ 自動登出邏輯
 function triggerAutoLogout() {
-  const navFlag = sessionStorage.getItem("pageNavigation");
-  const navType = performance.getEntriesByType("navigation")[0]?.type;
+  const isNavigating = sessionStorage.getItem("pageNavigation");
+  const navigationType = performance.getEntriesByType("navigation")[0]?.type;
   sessionStorage.removeItem("pageNavigation");
 
-  if (navFlag || navType === "navigate" || navType === "reload") {
-    console.log("🛑 偵測跳轉或刷新，跳過登出");
+  if (
+    isNavigating ||
+    navigationType === "navigate" ||
+    navigationType === "reload"
+  ) {
+    console.log("🛑 偵測到跳轉或重新整理，略過自動登出");
     return;
   }
 
@@ -99,15 +100,19 @@ function triggerAutoLogout() {
     keepalive: true
   });
 
-  console.log("📤 發送自動登出（非跳轉）");
+  console.log("📤 自動登出已發送（非跳轉）");
 }
 
-// ✅ 延遲觸發自動登出（保險用）
 function delayedAutoLogout() {
   setTimeout(triggerAutoLogout, 150);
 }
 
-// ✅ 離開時觸發判斷
+// ✅ 延遲綁定登出事件（給頁面設好 pageNavigation 時間）
+setTimeout(() => {
+  window.addEventListener("beforeunload", delayedAutoLogout);
+  window.addEventListener("pagehide", delayedAutoLogout);
+}, 300);
+
 let hiddenTimer;
 document.addEventListener("visibilitychange", () => {
   if (document.visibilityState === "hidden") {
@@ -118,20 +123,18 @@ document.addEventListener("visibilitychange", () => {
     clearTimeout(hiddenTimer);
   }
 });
-window.addEventListener("pagehide", delayedAutoLogout);
-window.addEventListener("beforeunload", delayedAutoLogout);
 
-// ✅ 標記跳轉狀態
+// ✅ 標記跳轉
 function markNavigation() {
   sessionStorage.setItem("pageNavigation", "true");
 }
 
-// ✅ 初始化綁定
+// ✅ DOM 初始化
 document.addEventListener("DOMContentLoaded", () => {
   document.querySelectorAll("a, button").forEach(el => {
     el.addEventListener("click", markNavigation);
   });
-  markNavigation(); // 預防重新整理誤判
+  markNavigation();
 });
 
 window.addEventListener("pageshow", (e) => {
@@ -140,11 +143,11 @@ window.addEventListener("pageshow", (e) => {
   }
 });
 
-// ✅ 自動倒數登出
+// ✅ 登入驗證與倒數登出邏輯
 if (window.location.pathname.includes("pdf-select") || window.location.pathname.includes("pdf-viewer")) {
   validateSession().then(valid => {
     if (!valid) {
-      console.warn("⛔ session 無效，跳回登入");
+      console.warn("⛔ 無效 session，跳轉登入頁面");
       window.location.href = "index.html";
     }
   });
