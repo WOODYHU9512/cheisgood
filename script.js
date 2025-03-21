@@ -1,7 +1,7 @@
 console.log("🔥 `script.js` 已載入");
 
 import { initializeApp } from "https://www.gstatic.com/firebasejs/9.6.1/firebase-app.js";
-import { getDatabase, ref, get } from "https://www.gstatic.com/firebasejs/9.6.1/firebase-database.js";
+import { getDatabase, ref, get, update } from "https://www.gstatic.com/firebasejs/9.6.1/firebase-database.js";
 
 const firebaseConfig = {
     databaseURL: "https://access-7a3c3-default-rtdb.firebaseio.com/"
@@ -9,52 +9,25 @@ const firebaseConfig = {
 const app = initializeApp(firebaseConfig);
 const db = getDatabase(app);
 
-// ✅ 取得當前登入使用者的 Firebase 參照
+// ✅ 取得使用者 Firebase 參照
 async function getUserRef() {
     const username = localStorage.getItem('loggedInUser');
     if (!username) return null;
     return ref(db, `users/${username}`);
 }
 
-// ✅ 確保用戶已登入
+// ✅ 確認是否登入
 function checkLoginStatus() {
-    if (!localStorage.getItem('loggedInUser') || !localStorage.getItem('sessionToken')) {
-        console.log("⛔ 未登入，跳轉至登入頁面");
+    const user = localStorage.getItem('loggedInUser');
+    const token = localStorage.getItem('sessionToken');
+    if (!user || !token) {
+        console.log("⛔ 未登入，跳轉登入頁");
         window.location.href = 'index.html';
     }
 }
 
-// ✅ 同步版登出函式（for beforeunload）
-function logoutSync() {
-    const username = localStorage.getItem('loggedInUser');
-    if (!username) return;
-
-    const sessionToken = localStorage.getItem('sessionToken');
-    if (!sessionToken) return;
-
-    const url = `https://access-7a3c3-default-rtdb.firebaseio.com/users/${username}.json`;
-    const payload = {
-        isLoggedIn: false,
-        sessionToken: ""
-    };
-
-    fetch(url, {
-        method: "PATCH",
-        headers: {
-            "Content-Type": "application/json"
-        },
-        body: JSON.stringify(payload),
-        keepalive: true
-    });
-
-    localStorage.removeItem('loggedInUser');
-    localStorage.removeItem('sessionToken');
-    localStorage.removeItem('currentPDF');
-    localStorage.removeItem('currentPDFName');
-}
-
-// ✅ 登出功能（一般 async）
-async function logout(preserveNavigation = false) {
+// ✅ 登出：Firebase 清空、localStorage 清空
+async function logout() {
     const username = localStorage.getItem('loggedInUser');
     if (!username) return;
 
@@ -62,76 +35,80 @@ async function logout(preserveNavigation = false) {
         const userRef = await getUserRef();
         const snapshot = await get(userRef);
         if (snapshot.exists()) {
-            const userData = snapshot.val();
-
-            await fetch(`https://access-7a3c3-default-rtdb.firebaseio.com/users/${username}.json`, {
-                method: "PATCH",
-                headers: {
-                    "Content-Type": "application/json"
-                },
-                body: JSON.stringify({
-                    isLoggedIn: false,
-                    sessionToken: "",
-                    password: userData.password
-                })
-            });
+            const user = snapshot.val();
+            await update(userRef, { isLoggedIn: false, sessionToken: "", password: user.password });
         }
-    } catch (error) {
-        console.error("❌ 登出錯誤：", error);
+    } catch (err) {
+        console.error("❌ 登出錯誤：", err);
     }
 
     localStorage.removeItem('loggedInUser');
     localStorage.removeItem('sessionToken');
     localStorage.removeItem('currentPDF');
     localStorage.removeItem('currentPDFName');
-
-    if (!preserveNavigation) {
-        window.location.href = 'index.html';
-    }
 }
 
-// ✅ 提供 HTML 使用的登出函式
+// ✅ 同步登出，給 pagehide 用
+function logoutSync() {
+    const username = localStorage.getItem("loggedInUser");
+    const token = localStorage.getItem("sessionToken");
+    if (!username || !token) return;
+
+    const url = `https://access-7a3c3-default-rtdb.firebaseio.com/users/${username}.json`;
+    const payload = JSON.stringify({ isLoggedIn: false, sessionToken: "" });
+    navigator.sendBeacon(url, payload);
+
+    localStorage.removeItem("loggedInUser");
+    localStorage.removeItem("sessionToken");
+    localStorage.removeItem("currentPDF");
+    localStorage.removeItem("currentPDFName");
+}
+
+// ✅ 登出可在 HTML 呼叫
 window.logout = async function () {
     await logout();
+    window.location.href = 'index.html';
 };
 
-// ✅ beforeunload：關閉頁面時同步登出
-window.addEventListener("beforeunload", () => {
-    if (!sessionStorage.getItem("pageNavigation")) {
-        logoutSync();
-    } else {
-        sessionStorage.removeItem("pageNavigation");
-    }
-});
-
-// ✅ 點擊連結或按鈕時標記為頁面跳轉
-document.addEventListener("DOMContentLoaded", function () {
-    const links = document.querySelectorAll("a, button");
-    links.forEach(link => {
-        link.addEventListener("click", function () {
+// ✅ 標記點擊跳轉（避免誤判）
+document.addEventListener("DOMContentLoaded", () => {
+    const elements = document.querySelectorAll("a, button");
+    elements.forEach(el => {
+        el.addEventListener("click", () => {
             sessionStorage.setItem("pageNavigation", "true");
         });
     });
 });
 
-// ✅ 閒置 30 分鐘自動登出
+// ✅ 判斷是否跳出頁面（非跳轉行為）→ 自動登出
+window.addEventListener("pagehide", () => {
+    const navigating = sessionStorage.getItem("pageNavigation");
+    sessionStorage.removeItem("pageNavigation");
+
+    if (!navigating) {
+        console.log("🛑 偵測離開頁面，自動登出");
+        logoutSync();
+    }
+});
+
+// ✅ 閒置 30 分鐘登出倒數邏輯
 if (window.location.pathname.includes("pdf-select") || window.location.pathname.includes("pdf-viewer")) {
     checkLoginStatus();
 
     let idleTimeout;
-    let timeLeft = 30 * 60; // 30 分鐘
+    let timeLeft = 30 * 60;
     const timerDisplay = document.getElementById("timer");
 
     function updateTimer() {
         if (timerDisplay) {
-            const minutes = Math.floor(timeLeft / 60);
-            const seconds = timeLeft % 60;
-            timerDisplay.innerText = `${minutes}:${seconds < 10 ? "0" : ""}${seconds}`;
+            const min = Math.floor(timeLeft / 60);
+            const sec = timeLeft % 60;
+            timerDisplay.innerText = `${min}:${sec < 10 ? "0" : ""}${sec}`;
         }
     }
 
-    async function startIdleTimer() {
-        clearTimeout(idleTimeout);
+    function startIdleTimer() {
+        clearInterval(idleTimeout);
         timeLeft = 30 * 60;
         updateTimer();
 
@@ -140,17 +117,16 @@ if (window.location.pathname.includes("pdf-select") || window.location.pathname.
             updateTimer();
 
             if (timeLeft <= 0) {
-                console.log("⏰ 閒置時間已到，執行登出...");
+                clearInterval(idleTimeout);
+                console.log("⏰ 閒置自動登出");
                 await logout();
+                window.location.href = 'index.html';
             }
         }, 1000);
     }
 
     document.addEventListener("mousemove", startIdleTimer);
     document.addEventListener("keydown", startIdleTimer);
+    document.addEventListener("touchstart", startIdleTimer);
     startIdleTimer();
-
-    window.addEventListener("beforeunload", () => {
-        localStorage.setItem("lastActivity", Date.now());
-    });
 }
