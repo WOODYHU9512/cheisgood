@@ -58,14 +58,14 @@
   <h2>請選擇學校與科目</h2>
   <div id="countdown">⏳ 自動登出倒數：<span id="timer">30:00</span></div>
   <label for="schoolSelect">選擇學校：</label>
-  <select id="schoolSelect" onchange="updateSubjects()">
+  <select id="schoolSelect">
     <option value="">請選擇學校</option>
   </select>
   <label for="subjectSelect">選擇科目：</label>
   <select id="subjectSelect">
     <option value="">請先選擇學校</option>
   </select>
-  <button onclick="viewPDF()">觀看 PDF</button>
+  <button id="view-btn">觀看 PDF</button>
   <div id="logout-warning">
     ⚠️ **請務必透過登出鈕登出！**
   </div>
@@ -144,7 +144,7 @@
       });
     }
 
-    window.updateSubjects = function () {
+    function updateSubjects() {
       const school = document.getElementById("schoolSelect").value;
       const subjectSelect = document.getElementById("subjectSelect");
 
@@ -158,9 +158,9 @@
         option.textContent = subject;
         subjectSelect.appendChild(option);
       });
-    };
+    }
 
-    window.viewPDF = function () {
+    function viewPDF() {
       const subjectSelect = document.getElementById("subjectSelect");
       const subjectId = subjectSelect.value;
       const selectedSubjectText = subjectSelect.options[subjectSelect.selectedIndex].text;
@@ -170,10 +170,14 @@
         return;
       }
 
+      sessionStorage.setItem("pageNavigation", "true"); // ✅ 標記是跳轉
       localStorage.setItem("currentPDF", subjectId);
       localStorage.setItem("currentPDFName", selectedSubjectText);
       window.location.href = "pdf-viewer.html";
-    };
+    }
+
+    document.getElementById("schoolSelect").addEventListener("change", updateSubjects);
+    document.getElementById("view-btn").addEventListener("click", viewPDF);
 
     loadUserPermissions();
   </script>
