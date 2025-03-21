@@ -1,9 +1,9 @@
 <!DOCTYPE html>
 <html lang="zh-TW">
 <head>
-  <script type="module" src="script.js"></script> <!-- ✅ 登出與 session 控管 -->
-  <meta charset="UTF-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <script type="module" src="script.js"></script>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
   <title>選擇學校與科目</title>
   <style>
     body {
@@ -56,7 +56,6 @@
 </head>
 <body>
   <h2>請選擇學校與科目</h2>
-
   <div id="countdown">⏳ 自動登出倒數：<span id="timer">30:00</span></div>
 
   <label for="schoolSelect">選擇學校：</label>
@@ -87,6 +86,7 @@
     const schoolSelect = document.getElementById("schoolSelect");
     const subjectSelect = document.getElementById("subjectSelect");
     const viewBtn = document.getElementById("viewBtn");
+    const logoutBtn = document.getElementById("logout-btn");
 
     const subjects = {
       "台大": {
@@ -161,30 +161,32 @@
       }
       localStorage.setItem("currentPDF", subjectId);
       localStorage.setItem("currentPDFName", subjectText);
-      sessionStorage.setItem("pageNavigation", "true"); // ✅ 頁面跳轉標記
+      sessionStorage.setItem("pageNavigation", "true"); // ✅ 防止誤登出
       window.location.href = "pdf-viewer.html";
     });
 
-    // ✅ 避免返回時誤判為離開
+    logoutBtn.addEventListener("click", () => {
+      window.logout(); // ✅ 觸發 script.js 的 logout
+    });
+
     window.addEventListener("load", () => {
-      sessionStorage.setItem("pageNavigation", "true");
+      sessionStorage.setItem("pageNavigation", "true"); // ✅ 初次標記
       loadUserPermissions();
     });
 
-    window.addEventListener("pageshow", (e) => {
+    window.addEventListener("pageshow", e => {
       if (e.persisted || performance.getEntriesByType("navigation")[0].type === "back_forward") {
         sessionStorage.setItem("pageNavigation", "true");
       }
     });
 
-    // ✅ 使用者隱藏分頁超過一段時間時清除 pageNavigation
     document.addEventListener("visibilitychange", () => {
       if (document.visibilityState === "hidden") {
         setTimeout(() => {
           if (document.visibilityState === "hidden") {
             sessionStorage.removeItem("pageNavigation");
           }
-        }, 500);
+        }, 300);
       }
     });
   </script>
