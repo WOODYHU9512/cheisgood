@@ -58,20 +58,20 @@
   <h2>請選擇學校與科目</h2>
   <div id="countdown">⏳ 自動登出倒數：<span id="timer">30:00</span></div>
   <label for="schoolSelect">選擇學校：</label>
-  <select id="schoolSelect" onchange="updateSubjects()">
+  <select id="schoolSelect">
     <option value="">請選擇學校</option>
   </select>
   <label for="subjectSelect">選擇科目：</label>
   <select id="subjectSelect">
     <option value="">請先選擇學校</option>
   </select>
-  <button onclick="viewPDF()">觀看 PDF</button>
+  <button id="viewBtn">觀看 PDF</button>
   <div id="logout-warning">⚠️ **請務必透過登出鈕登出！**</div>
-  <button id="logout-btn" onclick="logout()">🚪 登出</button>
+  <button id="logout-btn">🚪 登出</button>
 
   <script type="module">
     import { initializeApp } from "https://www.gstatic.com/firebasejs/9.6.1/firebase-app.js";
-    import { getDatabase, ref, get, update } from "https://www.gstatic.com/firebasejs/9.6.1/firebase-database.js";
+    import { getDatabase, ref, get } from "https://www.gstatic.com/firebasejs/9.6.1/firebase-database.js";
 
     const firebaseConfig = {
       databaseURL: "https://access-7a3c3-default-rtdb.firebaseio.com/"
@@ -79,9 +79,12 @@
     const app = initializeApp(firebaseConfig);
     const db = getDatabase(app);
 
-    let authorizedSchools = [];
+    const schoolSelect = document.getElementById("schoolSelect");
+    const subjectSelect = document.getElementById("subjectSelect");
+    const viewBtn = document.getElementById("viewBtn");
+    const logoutBtn = document.getElementById("logout-btn");
 
-    const subjects = {
+    let subjects = {
       "台大": {
         "106~114 台大單操輸送": "1-8YNZiVw81RjqLPPWmzbC0ng4PAIa53a",
         "106~114 台大化熱化反": "1V1xIOMRl04VJORV4fdKN9Bot76XRnv7A",
@@ -111,67 +114,52 @@
     };
 
     async function loadUserPermissions() {
-      const username = localStorage.getItem('loggedInUser');
-      const sessionToken = localStorage.getItem('sessionToken');
-      if (!username || !sessionToken) return;
+      const username = localStorage.getItem("loggedInUser");
+      const token = localStorage.getItem("sessionToken");
+      if (!username || !token) return;
 
       const userRef = ref(db, `users/${username}`);
       const snapshot = await get(userRef);
-      const userData = snapshot.val();
+      const user = snapshot.val();
+      if (!user || user.sessionToken !== token) return;
 
-      if (!userData || userData.sessionToken !== sessionToken) return;
+      const purchased = user.purchased || {};
+      const authorizedSchools = Object.keys(purchased);
 
-      const purchased = userData.purchased || {};
-      authorizedSchools = Object.keys(purchased);
-      populateSchoolOptions();
-    }
-
-    function populateSchoolOptions() {
-      const schoolSelect = document.getElementById("schoolSelect");
       schoolSelect.innerHTML = "<option value=''>請選擇學校</option>";
       authorizedSchools.forEach(school => {
-        const option = document.createElement("option");
-        option.value = school;
-        option.textContent = school;
-        schoolSelect.appendChild(option);
+        const opt = document.createElement("option");
+        opt.value = school;
+        opt.textContent = school;
+        schoolSelect.appendChild(opt);
       });
     }
 
-    window.updateSubjects = function () {
-      const school = document.getElementById("schoolSelect").value;
-      const subjectSelect = document.getElementById("subjectSelect");
+    schoolSelect.addEventListener("change", () => {
+      const selected = schoolSelect.value;
       subjectSelect.innerHTML = "<option value=''>請選擇科目</option>";
-
-      if (!school || !subjects.hasOwnProperty(school)) return;
-
-      Object.entries(subjects[school]).forEach(([subject, fileId]) => {
-        const option = document.createElement("option");
-        option.value = fileId;
-        option.textContent = subject;
-        subjectSelect.appendChild(option);
+      if (!subjects[selected]) return;
+      Object.entries(subjects[selected]).forEach(([name, id]) => {
+        const opt = document.createElement("option");
+        opt.value = id;
+        opt.textContent = name;
+        subjectSelect.appendChild(opt);
       });
-    };
+    });
 
-    window.viewPDF = function () {
-      const subjectSelect = document.getElementById("subjectSelect");
-      const subjectId = subjectSelect.value;
-      const selectedSubjectText = subjectSelect.options[subjectSelect.selectedIndex].text;
-
-      if (!subjectId) {
-        alert("❌ 請選擇科目！");
-        return;
-      }
-
+    viewBtn.addEventListener("click", () => {
+      const id = subjectSelect.value;
+      const name = subjectSelect.options[subjectSelect.selectedIndex]?.text;
+      if (!id) return alert("請選擇科目！");
       sessionStorage.setItem("pageNavigation", "true");
-      localStorage.setItem("currentPDF", subjectId);
-      localStorage.setItem("currentPDFName", selectedSubjectText);
+      localStorage.setItem("currentPDF", id);
+      localStorage.setItem("currentPDFName", name);
       window.location.href = "pdf-viewer.html";
-    };
+    });
 
-    window.addEventListener("pageshow", (e) => {
-      if (e.persisted || performance.getEntriesByType("navigation")[0].type === "back_forward") {
-        sessionStorage.setItem("pageNavigation", "true");
-      }
+    logoutBtn.addEventListener("click", async () => {
+      sessionStorage.setItem("pageNavigation", "true");
+      await window.logout();
     });
 
     loadUserPermissions();
