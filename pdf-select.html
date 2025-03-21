@@ -161,7 +161,7 @@
       }
       localStorage.setItem("currentPDF", subjectId);
       localStorage.setItem("currentPDFName", subjectText);
-      sessionStorage.setItem("pageNavigation", "true");
+      // ✅ 點擊後會自動標記 pageNavigation，由 script.js 處理登出判斷
       window.location.href = "pdf-viewer.html";
     });
 
@@ -169,22 +169,9 @@
       window.logout();
     });
 
-    // ✅ 自動標記跳轉
-    window.addEventListener("load", () => {
-      setTimeout(() => sessionStorage.setItem("pageNavigation", "true"), 0);
+    // ✅ 載入使用者權限清單
+    window.addEventListener("DOMContentLoaded", () => {
       loadUserPermissions();
-    });
-
-    window.addEventListener("pageshow", (e) => {
-      if (e.persisted || performance.getEntriesByType("navigation")[0].type === "back_forward") {
-        sessionStorage.setItem("pageNavigation", "true");
-      }
-    });
-
-    document.addEventListener("visibilitychange", () => {
-      if (document.visibilityState === "hidden") {
-        sessionStorage.removeItem("pageNavigation");
-      }
     });
   </script>
 </body>
