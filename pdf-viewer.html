@@ -73,15 +73,17 @@
 <body>
   <h2 id="pdfTitle">📖 PDF 觀看</h2>
   <div id="countdown">⏳ 自動登出倒數：<span id="timer">30:00</span></div>
+
   <div class="pdf-container">
     <iframe id="pdfFrame"></iframe>
     <div class="overlay"></div>
   </div>
+
   <div id="logout-warning">⚠️ **請務必透過登出鈕登出！**</div>
   <button id="logout-btn">🚪 登出</button>
 
   <script type="module">
-    // ✅ PDF 載入
+    // ✅ 顯示 PDF
     function loadPDF() {
       const fileId = localStorage.getItem("currentPDF");
       const fileName = localStorage.getItem("currentPDFName");
@@ -95,31 +97,18 @@
       document.getElementById("pdfFrame").src = pdfUrl;
     }
 
-    // ✅ 初始化
-    window.addEventListener("DOMContentLoaded", () => {
+    // ✅ 標記跳轉避免誤登出
+    window.addEventListener("load", () => {
+      sessionStorage.setItem("pageNavigation", "true");
       loadPDF();
     });
 
-    // ✅ 點擊「登出」按鈕
-    document.getElementById("logout-btn").addEventListener("click", () => {
-      window.logout(); // 呼叫 script.js 的 logout
-    });
-
-    // ✅ 所有跳轉操作都標記 pageNavigation
-    document.querySelectorAll("a, button").forEach(el => {
-      el.addEventListener("click", () => {
-        sessionStorage.setItem("pageNavigation", "true");
-      });
-    });
-
-    // ✅ pageshow 防止 back_forward 誤登出
-    window.addEventListener("pageshow", e => {
+    window.addEventListener("pageshow", (e) => {
       if (e.persisted || performance.getEntriesByType("navigation")[0].type === "back_forward") {
         sessionStorage.setItem("pageNavigation", "true");
       }
     });
 
-    // ✅ visibility 變更時延遲清除 pageNavigation
     document.addEventListener("visibilitychange", () => {
       if (document.visibilityState === "hidden") {
         setTimeout(() => {
@@ -130,7 +119,12 @@
       }
     });
 
-    // ✅ 禁用右鍵與 F12
+    // ✅ 登出按鈕使用 script.js 登出功能
+    document.getElementById("logout-btn").addEventListener("click", () => {
+      window.logout();
+    });
+
+    // ✅ 禁用下載與開發者工具
     document.addEventListener("contextmenu", e => e.preventDefault());
     document.addEventListener("keydown", e => {
       if (
