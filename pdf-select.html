@@ -82,9 +82,8 @@
     const schoolSelect = document.getElementById("schoolSelect");
     const subjectSelect = document.getElementById("subjectSelect");
     const viewBtn = document.getElementById("viewBtn");
-    const logoutBtn = document.getElementById("logout-btn");
 
-    let subjects = {
+    const subjects = {
       "台大": {
         "106~114 台大單操輸送": "1-8YNZiVw81RjqLPPWmzbC0ng4PAIa53a",
         "106~114 台大化熱化反": "1V1xIOMRl04VJORV4fdKN9Bot76XRnv7A",
@@ -113,56 +112,58 @@
       }
     };
 
+    let authorizedSchools = [];
+
     async function loadUserPermissions() {
-      const username = localStorage.getItem("loggedInUser");
-      const token = localStorage.getItem("sessionToken");
-      if (!username || !token) return;
+      const username = localStorage.getItem('loggedInUser');
+      if (!username) return;
+      const snapshot = await get(ref(db, `users/${username}/purchased`));
+      if (snapshot.exists()) {
+        authorizedSchools = Object.keys(snapshot.val());
+        populateSchoolOptions();
+      }
+    }
 
-      const userRef = ref(db, `users/${username}`);
-      const snapshot = await get(userRef);
-      const user = snapshot.val();
-      if (!user || user.sessionToken !== token) return;
-
-      const purchased = user.purchased || {};
-      const authorizedSchools = Object.keys(purchased);
-
+    function populateSchoolOptions() {
       schoolSelect.innerHTML = "<option value=''>請選擇學校</option>";
       authorizedSchools.forEach(school => {
-        const opt = document.createElement("option");
-        opt.value = school;
-        opt.textContent = school;
-        schoolSelect.appendChild(opt);
+        const option = document.createElement("option");
+        option.value = school;
+        option.textContent = school;
+        schoolSelect.appendChild(option);
       });
     }
 
     schoolSelect.addEventListener("change", () => {
-      const selected = schoolSelect.value;
+      const school = schoolSelect.value;
       subjectSelect.innerHTML = "<option value=''>請選擇科目</option>";
-      if (!subjects[selected]) return;
-      Object.entries(subjects[selected]).forEach(([name, id]) => {
-        const opt = document.createElement("option");
-        opt.value = id;
-        opt.textContent = name;
-        subjectSelect.appendChild(opt);
-      });
+      if (subjects[school]) {
+        Object.entries(subjects[school]).forEach(([subject, fileId]) => {
+          const option = document.createElement("option");
+          option.value = fileId;
+          option.textContent = subject;
+          subjectSelect.appendChild(option);
+        });
+      }
     });
 
     viewBtn.addEventListener("click", () => {
-      const id = subjectSelect.value;
-      const name = subjectSelect.options[subjectSelect.selectedIndex]?.text;
-      if (!id) return alert("請選擇科目！");
+      const subjectId = subjectSelect.value;
+      const subjectText = subjectSelect.options[subjectSelect.selectedIndex]?.text;
+      if (!subjectId) {
+        alert("❌ 請選擇科目！");
+        return;
+      }
+      localStorage.setItem("currentPDF", subjectId);
+      localStorage.setItem("currentPDFName", subjectText);
       sessionStorage.setItem("pageNavigation", "true");
-      localStorage.setItem("currentPDF", id);
-      localStorage.setItem("currentPDFName", name);
       window.location.href = "pdf-viewer.html";
     });
 
-    logoutBtn.addEventListener("click", async () => {
+    window.addEventListener("load", () => {
       sessionStorage.setItem("pageNavigation", "true");
-      await window.logout();
+      loadUserPermissions();
     });
-
-    loadUserPermissions();
   </script>
 </body>
 </html>
