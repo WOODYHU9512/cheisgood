@@ -1,41 +1,47 @@
 <!DOCTYPE html>
 <html lang="zh-TW">
 <head>
-  <meta charset="UTF-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>登入系統</title>
-
-  <!-- ✅ Firebase + 登入邏輯 -->
-  <script type="module">
-    import { initializeApp } from "https://www.gstatic.com/firebasejs/9.6.1/firebase-app.js";
-    import { getDatabase, ref, get, update } from "https://www.gstatic.com/firebasejs/9.6.1/firebase-database.js";
-
-    const firebaseConfig = {
-      databaseURL: "https://access-7a3c3-default-rtdb.firebaseio.com/"
-    };
-
-    const app = initializeApp(firebaseConfig);
-    const db = getDatabase(app);
-
-    // ✅ 寫入登入資訊
-    async function forceLogin(username, password) {
-      const userRef = ref(db, `users/${username}`);
-      const sessionToken = Math.random().toString(36).substring(2, 12); // 隨機 token
-
-      await update(userRef, {
-        isLoggedIn: true,
-        sessionToken: sessionToken
-      });
-
-      localStorage.setItem("loggedInUser", username);
-      localStorage.setItem("sessionToken", sessionToken);
-
-      console.log("✅ 強制登入成功！");
-      window.location.href = "pdf-select.html";
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <title>登入系統（Cloud Function）</title>
+  <style>
+    body {
+      font-family: Arial, sans-serif;
+      padding: 30px;
+      text-align: center;
     }
+    input {
+      padding: 10px;
+      font-size: 16px;
+      margin: 5px;
+      width: 200px;
+    }
+    button {
+      padding: 10px 20px;
+      font-size: 16px;
+      margin-top: 10px;
+      cursor: pointer;
+    }
+    #result {
+      margin-top: 20px;
+      font-size: 18px;
+      color: red;
+      font-weight: bold;
+    }
+  </style>
+</head>
+<body>
+  <h2>請輸入帳號和密碼</h2>
+  <form onsubmit="event.preventDefault(); login();">
+    <input type="text" id="username" placeholder="帳號" required /><br />
+    <input type="password" id="password" placeholder="密碼" required /><br />
+    <button type="submit">登入</button>
+  </form>
 
-    // ✅ 使用者按登入後的主流程
-    window.checkCredentials = async function () {
+  <div id="result"></div>
+
+  <script>
+    async function login(force = false) {
       const username = document.getElementById("username").value.trim();
       const password = document.getElementById("password").value.trim();
 
@@ -45,64 +51,33 @@
       }
 
       try {
-        const userRef = ref(db, `users/${username}`);
-        const snapshot = await get(userRef);
+        const res = await fetch("https://us-central1-access-7a3c3.cloudfunctions.net/loginWithPassword", {
+          method: "POST",
+          headers: {
+            "Content-Type": "application/json"
+          },
+          body: JSON.stringify({ username, password, force })
+        });
 
-        if (!snapshot.exists()) {
-          document.getElementById("result").innerText = "帳號或密碼錯誤！";
-          return;
-        }
+        const data = await res.json();
 
-        const userData = snapshot.val();
-
-        if (userData.password !== password) {
-          document.getElementById("result").innerText = "帳號或密碼錯誤！";
-          return;
-        }
-
-        if (userData.isLoggedIn) {
-          const confirmForce = confirm("⚠️ 此帳號已在其他地方登入！是否要強制登入？");
-          if (!confirmForce) return;
-        }
-
-        await forceLogin(username, password);
-
-      } catch (err) {
-        console.error("❌ 登入錯誤：", err);
-        document.getElementById("result").innerText = "🚨 Firebase 錯誤，請稍後再試。";
-      }
-    };
-
-    // ✅ 登出功能（用在登出按鈕或自動登出）
-    window.logout = async function () {
-      const username = localStorage.getItem("loggedInUser");
-      const token = localStorage.getItem("sessionToken");
-      if (!username || !token) return;
-
-      try {
-        const userRef = ref(db, `users/${username}`);
-        const snapshot = await get(userRef);
-        const data = snapshot.val();
-
-        if (data && data.sessionToken === token) {
-          await update(userRef, { isLoggedIn: false, sessionToken: "" });
+        if (res.ok && data.success) {
+          localStorage.setItem("loggedInUser", username);
+          localStorage.setItem("sessionToken", data.sessionToken);
+          window.location.href = "pdf-select.html";
+        } else if (data.needForce) {
+          const confirmForce = confirm(data.message || "⚠️ 此帳號已在其他地方登入，是否強制登入？");
+          if (confirmForce) {
+            login(true); // 第二次呼叫登入，帶入 force
+          }
+        } else {
+          document.getElementById("result").innerText = "❌ " + (data.error || "登入失敗");
         }
       } catch (err) {
-        console.error("❌ 登出失敗：", err);
+        console.error("登入錯誤：", err);
+        document.getElementById("result").innerText = "🚨 無法連線 Firebase，請稍後再試。";
       }
-
-      localStorage.clear();
-    };
+    }
   </script>
-</head>
-<body>
-  <h2>請輸入帳號和密碼</h2>
-  <form onsubmit="event.preventDefault(); checkCredentials();">
-    <input type="text" id="username" placeholder="帳號" required /><br />
-    <input type="password" id="password" placeholder="密碼" required /><br />
-    <button type="submit">登入</button>
-  </form>
-
-  <div id="result" style="margin-top: 20px; font-size: 20px; font-weight: bold;"></div>
 </body>
 </html>
