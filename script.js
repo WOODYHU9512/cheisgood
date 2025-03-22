@@ -12,6 +12,7 @@ import {
 const firebaseConfig = {
   databaseURL: "https://access-7a3c3-default-rtdb.firebaseio.com/"
 };
+
 const app = initializeApp(firebaseConfig);
 const db = getDatabase(app);
 
@@ -35,27 +36,26 @@ async function logoutUser(showLog = true) {
   localStorage.clear();
 }
 
-// ✅ 登出按鈕綁定
 window.logout = async function () {
   await logoutUser();
   window.location.href = "index.html";
 };
 
-// ✅ onDisconnect 設定
+// ✅ onDisconnect 註冊
 async function setupOnDisconnect(username) {
-  const userRef = ref(db, `users/${username}`);
   try {
+    const userRef = ref(db, `users/${username}`);
     await onDisconnect(userRef).update({
       isLoggedIn: false,
       sessionToken: ""
     });
-    console.log("📡 onDisconnect 已設定");
+    console.log("📡 onDisconnect 設定完成");
   } catch (err) {
     console.error("❌ onDisconnect 設定失敗：", err);
   }
 }
 
-// ✅ 驗證登入狀態
+// ✅ session 驗證
 async function validateSession() {
   const username = localStorage.getItem("loggedInUser");
   const sessionToken = localStorage.getItem("sessionToken");
@@ -73,13 +73,13 @@ async function validateSession() {
   }
 }
 
-// ✅ 判斷是否需要自動登出
+// ✅ 自動登出條件判斷
 function triggerAutoLogout() {
-  const isNavigating = sessionStorage.getItem("pageNavigation");
+  const navFlag = sessionStorage.getItem("pageNavigation");
   sessionStorage.removeItem("pageNavigation");
 
-  if (isNavigating) {
-    console.log("🛑 跳轉或重新整理，略過登出");
+  if (navFlag) {
+    console.log("🛑 偵測跳轉或重新整理，不登出");
     return;
   }
 
@@ -93,16 +93,16 @@ function triggerAutoLogout() {
     keepalive: true
   });
 
-  console.log("📤 自動登出已發送（未標記跳轉）");
+  console.log("📤 自動登出已送出（視為關閉頁面）");
 }
 
-// ✅ 避免太早綁定 unload（確保跳轉標記先建立）
+// ✅ 延遲註冊登出事件（避免 script 載入太早）
 setTimeout(() => {
   window.addEventListener("beforeunload", triggerAutoLogout);
   window.addEventListener("pagehide", triggerAutoLogout);
-}, 100);
+}, 50);
 
-// ✅ hidden 狀態（切 App、切分頁）補一份登出判斷
+// ✅ hidden 狀態下補救（針對部分手機）
 let hiddenTimer;
 document.addEventListener("visibilitychange", () => {
   if (document.visibilityState === "hidden") {
@@ -112,20 +112,11 @@ document.addEventListener("visibilitychange", () => {
   }
 });
 
-// ✅ 標記跳轉（供後續登出判斷使用）
+// ✅ 標記跳轉行為
 function markNavigation() {
   sessionStorage.setItem("pageNavigation", "true");
 }
 
-// ✅ 初始時與所有點擊事件都設跳轉標記
-document.addEventListener("DOMContentLoaded", () => {
-  markNavigation(); // 初始進來就設
-  document.querySelectorAll("a, button").forEach(el =>
-    el.addEventListener("click", markNavigation)
-  );
-});
-
-// ✅ 返回歷史頁面補上標記
 window.addEventListener("pageshow", e => {
   if (
     e.persisted ||
@@ -135,14 +126,22 @@ window.addEventListener("pageshow", e => {
   }
 });
 
-// ✅ 自動登出倒數（pdf-select / pdf-viewer 頁面）
+// ✅ 重新整理、初始載入都先標記
+document.addEventListener("DOMContentLoaded", () => {
+  markNavigation();
+  document.querySelectorAll("a, button").forEach(el => {
+    el.addEventListener("click", markNavigation);
+  });
+});
+
+// ✅ 自動登出倒數邏輯
 if (
   window.location.pathname.includes("pdf-select") ||
   window.location.pathname.includes("pdf-viewer")
 ) {
   validateSession().then(valid => {
     if (!valid) {
-      console.warn("⛔ 無效 session，自動跳轉登入頁");
+      console.warn("⛔ 無效 session，返回登入頁");
       window.location.href = "index.html";
     }
   });
@@ -184,4 +183,3 @@ if (
   resetTimer();
   startCountdown();
 }
-#新版
