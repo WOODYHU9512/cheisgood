@@ -1,14 +1,14 @@
 <!DOCTYPE html>
 <html lang="zh-TW">
 <head>
-  
-
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>登入系統</title>
-  <script type="module" src="https://raw.githubusercontent.com/WOODYHU9512/cheisgood/main/script.js"></script>
 
-  <!-- ✅ Firebase 9+ 模組載入 -->
+  <!-- ✅ script.js 模組 -->
+  <script type="module" src="script.js"></script>
+
+  <!-- ✅ Firebase 登入邏輯 -->
   <script type="module">
     import { initializeApp } from "https://www.gstatic.com/firebasejs/9.6.1/firebase-app.js";
     import { getDatabase, ref, get, update } from "https://www.gstatic.com/firebasejs/9.6.1/firebase-database.js";
@@ -19,90 +19,80 @@
 
     const app = initializeApp(firebaseConfig);
     const db = getDatabase(app);
-    
-    let sessionToken = "";
 
-    // ✅ 修正 checkCredentials（負責登入）
-    window.checkCredentials = async function() {
-      const username = document.getElementById('username').value.trim();
-      const password = document.getElementById('password').value.trim();
+    async function forceLogin(username, password) {
+      const userRef = ref(db, `users/${username}`);
+      const sessionToken = Math.random().toString(36).substring(2, 12);
+
+      await update(userRef, {
+        isLoggedIn: true,
+        sessionToken: sessionToken
+      });
+
+      localStorage.setItem("loggedInUser", username);
+      localStorage.setItem("sessionToken", sessionToken);
+
+      console.log("✅ 強制登入成功！");
+      window.location.href = "pdf-select.html";
+    }
+
+    window.checkCredentials = async function () {
+      const username = document.getElementById("username").value.trim();
+      const password = document.getElementById("password").value.trim();
 
       if (!username || !password) {
-        document.getElementById('result').innerText = "請輸入帳號和密碼！";
+        document.getElementById("result").innerText = "請輸入帳號和密碼！";
         return;
       }
 
       try {
-        console.log(`🔍 嘗試登入：${username}`);
-
-        const userRef = ref(db, "users/" + username);
+        const userRef = ref(db, `users/${username}`);
         const snapshot = await get(userRef);
 
         if (!snapshot.exists()) {
-          document.getElementById('result').innerText = "帳號或密碼錯誤！";
+          document.getElementById("result").innerText = "帳號或密碼錯誤！";
           return;
         }
 
-        const user = snapshot.val();
-        if (user.password !== password) {
-          document.getElementById('result').innerText = "帳號或密碼錯誤！";
+        const userData = snapshot.val();
+
+        if (userData.password !== password) {
+          document.getElementById("result").innerText = "帳號或密碼錯誤！";
           return;
         }
 
-        if (user.isLoggedIn) {
-          document.getElementById('result').innerText = "⚠️ 此帳號已在其他地方登入！";
-          return;
+        if (userData.isLoggedIn) {
+          const confirmForce = confirm("⚠️ 此帳號已在其他地方登入！是否要強制登入？");
+          if (!confirmForce) return;
         }
 
-        sessionToken = Math.random().toString(36).substr(2, 10);
+        await forceLogin(username, password);
 
-        await update(userRef, {
-          isLoggedIn: true,
-          sessionToken: sessionToken
-        });
-
-        console.log("✅ 登入成功！");
-
-        localStorage.setItem('loggedInUser', username);
-        localStorage.setItem('sessionToken', sessionToken);
-
-        window.location.href = 'pdf-select.html';
-
-      } catch (error) {
-        console.error("❌ 登入錯誤：", error);
-        document.getElementById('result').innerText = "🚨 Firebase 連線錯誤，請檢查設定！";
+      } catch (err) {
+        console.error("❌ 登入錯誤：", err);
+        document.getElementById("result").innerText = "🚨 Firebase 錯誤，請稍後再試。";
       }
-    }
+    };
 
-    // 🚀 修正 logout（負責登出）
-    window.logout = async function() {
-      const username = localStorage.getItem('loggedInUser');
-      const storedToken = localStorage.getItem('sessionToken');
-
-      if (!username) return;
+    window.logout = async function () {
+      const username = localStorage.getItem("loggedInUser");
+      const token = localStorage.getItem("sessionToken");
+      if (!username || !token) return;
 
       try {
-        const userRef = ref(db, "users/" + username);
+        const userRef = ref(db, `users/${username}`);
         const snapshot = await get(userRef);
+        const data = snapshot.val();
 
-        if (snapshot.exists()) {
-          const user = snapshot.val();
-
-          if (user.sessionToken === storedToken) {
-            await update(userRef, {
-              isLoggedIn: false,
-              sessionToken: ""
-            });
-            console.log(`🚪 ${username} 已登出！`);
-          }
+        if (data && data.sessionToken === token) {
+          await update(userRef, { isLoggedIn: false, sessionToken: "" });
         }
-      } catch (error) {
-        console.error("❌ 登出時發生錯誤：", error);
+      } catch (err) {
+        console.error("❌ 登出失敗：", err);
       }
 
-      localStorage.removeItem('loggedInUser');
-      localStorage.removeItem('sessionToken');
-    }
+      localStorage.clear();
+    };
   </script>
 </head>
 <body>
