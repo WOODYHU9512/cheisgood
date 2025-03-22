@@ -34,20 +34,26 @@ async function logoutUser(showLog = true) {
   localStorage.clear();
 }
 
-// ✅ 登出並跳轉
+// ✅ 被踢出後登出並跳轉
 async function forceLogout(message = "⚠️ 帳號已在其他裝置登入，您已被登出") {
   await logoutUser(false);
   alert(message);
   window.location.href = "index.html";
 }
 
-// ✅ 定期驗證 sessionToken
+// ✅ 定期驗證 sessionToken 與網路狀態
 async function startSessionChecker() {
   const username = localStorage.getItem("loggedInUser");
   const sessionToken = localStorage.getItem("sessionToken");
   if (!username || !sessionToken) return;
 
   setInterval(async () => {
+    if (!navigator.onLine) {
+      console.warn("📴 網路已中斷，自動登出");
+      await forceLogout("📴 網路已中斷，請重新登入！");
+      return;
+    }
+
     try {
       const userRef = ref(db, `users/${username}`);
       const snapshot = await get(userRef);
@@ -63,7 +69,7 @@ async function startSessionChecker() {
   }, 10000); // 每 10 秒檢查一次
 }
 
-// ✅ 自動登出倒數邏輯
+// ✅ 自動登出倒數（viewer / select 專用）
 if (
   window.location.pathname.includes("pdf-select") ||
   window.location.pathname.includes("pdf-viewer")
@@ -108,7 +114,7 @@ if (
   startCountdown();
 }
 
-// ✅ 提供全域登出按鈕觸發
+// ✅ 提供登出按鈕用
 window.logout = async function () {
   await logoutUser();
   window.location.href = "index.html";
