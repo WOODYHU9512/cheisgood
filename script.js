@@ -28,108 +28,47 @@ async function logoutUser(showLog = true) {
       if (showLog) console.log(`✅ ${username} 已從 Firebase 登出`);
     }
   } catch (err) {
-    console.error("❌ 自動登出失敗：", err);
+    console.error("❌ 登出失敗：", err);
   }
 
-  localStorage.removeItem("loggedInUser");
-  localStorage.removeItem("sessionToken");
-  localStorage.removeItem("currentPDF");
-  localStorage.removeItem("currentPDFName");
+  localStorage.clear();
 }
 
-window.logout = async function () {
-  await logoutUser();
+// ✅ 登出並跳轉
+async function forceLogout(message = "⚠️ 帳號已在其他裝置登入，您已被登出") {
+  await logoutUser(false);
+  alert(message);
   window.location.href = "index.html";
-};
+}
 
-// ✅ 驗證登入狀態
-async function validateSession() {
+// ✅ 定期驗證 sessionToken
+async function startSessionChecker() {
   const username = localStorage.getItem("loggedInUser");
   const sessionToken = localStorage.getItem("sessionToken");
-  if (!username || !sessionToken) return false;
+  if (!username || !sessionToken) return;
 
-  try {
-    const userRef = ref(db, `users/${username}`);
-    const snapshot = await get(userRef);
-    return snapshot.exists() && snapshot.val().sessionToken === sessionToken;
-  } catch (err) {
-    console.error("❌ 驗證登入失敗：", err);
-    return false;
-  }
+  setInterval(async () => {
+    try {
+      const userRef = ref(db, `users/${username}`);
+      const snapshot = await get(userRef);
+      const data = snapshot.val();
+
+      if (!data || data.sessionToken !== sessionToken) {
+        console.warn("🔁 Token 不一致，觸發強制登出");
+        await forceLogout();
+      }
+    } catch (err) {
+      console.error("❌ 驗證 token 失敗：", err);
+    }
+  }, 10000); // 每 10 秒檢查一次
 }
 
-// ✅ 自動登出邏輯
-function triggerAutoLogout() {
-  const isNavigating = sessionStorage.getItem("pageNavigation");
-  sessionStorage.removeItem("pageNavigation");
-  if (isNavigating) {
-    console.log("🛑 跳轉或重新整理，略過登出");
-    return;
-  }
-
-  const username = localStorage.getItem("loggedInUser");
-  if (!username) return;
-
-  fetch(`https://access-7a3c3-default-rtdb.firebaseio.com/users/${username}.json`, {
-    method: "PATCH",
-    headers: { "Content-Type": "application/json" },
-    body: JSON.stringify({ isLoggedIn: false, sessionToken: "" }),
-    keepalive: true
-  });
-
-  console.log("📤 自動登出已發送（非跳轉）");
-}
-
-// ✅ visibilitychange 用於手機切換 app 狀態
-let hiddenTimer;
-document.addEventListener("visibilitychange", () => {
-  if (document.visibilityState === "hidden") {
-    hiddenTimer = setTimeout(() => {
-      triggerAutoLogout();
-    }, 500);
-  } else {
-    clearTimeout(hiddenTimer);
-  }
-});
-
-// ✅ 頁面卸載綁定登出
-window.addEventListener("beforeunload", triggerAutoLogout);
-window.addEventListener("pagehide", triggerAutoLogout);
-
-// ✅ 標記跳轉
-function markNavigation() {
-  sessionStorage.setItem("pageNavigation", "true");
-}
-
-// ✅ 初始與點擊標記跳轉
-document.addEventListener("DOMContentLoaded", () => {
-  markNavigation(); // 初始載入也標記，防止 reload 誤判
-  document.querySelectorAll("a, button").forEach(el => {
-    el.addEventListener("click", markNavigation);
-  });
-});
-
-// ✅ 處理返回快取頁面也補標記
-window.addEventListener("pageshow", (e) => {
-  if (
-    e.persisted ||
-    performance.getEntriesByType("navigation")[0]?.type === "back_forward"
-  ) {
-    markNavigation();
-  }
-});
-
-// ✅ 自動登出倒數（select / viewer 頁面限定）
+// ✅ 自動登出倒數邏輯
 if (
   window.location.pathname.includes("pdf-select") ||
   window.location.pathname.includes("pdf-viewer")
 ) {
-  validateSession().then(valid => {
-    if (!valid) {
-      console.warn("⛔ 無效 session，跳轉登入頁面");
-      window.location.href = "index.html";
-    }
-  });
+  startSessionChecker();
 
   let timeLeft = 1800;
   let idleTimer;
@@ -168,3 +107,9 @@ if (
   resetTimer();
   startCountdown();
 }
+
+// ✅ 提供全域登出按鈕觸發
+window.logout = async function () {
+  await logoutUser();
+  window.location.href = "index.html";
+};
