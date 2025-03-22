@@ -41,21 +41,18 @@ window.logout = async function () {
   window.location.href = "index.html";
 };
 
-// ✅ 設定 Firebase onDisconnect
+// ✅ onDisconnect
 async function setupOnDisconnect(username) {
-  const userRef = ref(db, `users/${username}`);
   try {
-    await onDisconnect(userRef).update({
-      isLoggedIn: false,
-      sessionToken: ""
-    });
-    console.log("📡 onDisconnect 已設定");
+    const userRef = ref(db, `users/${username}`);
+    await onDisconnect(userRef).update({ isLoggedIn: false, sessionToken: "" });
+    console.log("📡 onDisconnect 設定完成");
   } catch (err) {
     console.error("❌ onDisconnect 設定失敗：", err);
   }
 }
 
-// ✅ 驗證登入
+// ✅ 驗證 session，並設定 onDisconnect
 async function validateSession() {
   const username = localStorage.getItem("loggedInUser");
   const sessionToken = localStorage.getItem("sessionToken");
@@ -73,13 +70,13 @@ async function validateSession() {
   }
 }
 
-// ✅ 登出邏輯判斷
+// ✅ 自動登出（非跳轉）
 function triggerAutoLogout() {
-  const navFlag = sessionStorage.getItem("pageNavigation");
+  const isNavigating = sessionStorage.getItem("pageNavigation");
   sessionStorage.removeItem("pageNavigation");
 
-  if (navFlag) {
-    console.log("🛑 跳轉中，略過登出");
+  if (isNavigating) {
+    console.log("🛑 偵測到跳轉，略過登出");
     return;
   }
 
@@ -96,13 +93,13 @@ function triggerAutoLogout() {
   console.log("📤 自動登出已送出");
 }
 
-// ✅ 自動登出觸發註冊（延遲綁定）
+// ✅ 延遲註冊事件，避免太早誤判跳轉
 setTimeout(() => {
   window.addEventListener("beforeunload", triggerAutoLogout);
   window.addEventListener("pagehide", triggerAutoLogout);
 }, 100);
 
-// ✅ hidden 狀態延遲處理（補手機跳轉誤判）
+// ✅ hidden 狀態延遲處理（手機專用）
 let hiddenTimer;
 document.addEventListener("visibilitychange", () => {
   if (document.visibilityState === "hidden") {
@@ -112,7 +109,7 @@ document.addEventListener("visibilitychange", () => {
   }
 });
 
-// ✅ 跳轉標記
+// ✅ 標記跳轉
 function markNavigation() {
   sessionStorage.setItem("pageNavigation", "true");
 }
@@ -121,7 +118,7 @@ document.addEventListener("DOMContentLoaded", () => {
   document.querySelectorAll("a, button").forEach(el =>
     el.addEventListener("click", markNavigation)
   );
-  markNavigation(); // 初始也標記（防止 reload 誤登出）
+  markNavigation(); // 防止 reload 誤登出
 });
 
 window.addEventListener("pageshow", e => {
@@ -133,7 +130,7 @@ window.addEventListener("pageshow", e => {
   }
 });
 
-// ✅ 自動登出倒數邏輯（viewer / select 頁面）
+// ✅ 自動登出倒數邏輯
 if (
   window.location.pathname.includes("pdf-select") ||
   window.location.pathname.includes("pdf-viewer")
