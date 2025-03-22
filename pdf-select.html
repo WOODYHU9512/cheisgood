@@ -97,6 +97,23 @@
       "清大": {
         "106~114 清大單操輸送": "1oDoN0B7hpQEvy9MGDrZvkv7v2ow6NRoj",
         "106~114 清大化熱化反": "14LTMKQmev5gKYjy84RceAq6b-AK_9hTE"
+      },
+      "成大": {
+        "106-114 成大單操輸送": "1Z6dWhVPKlpjQVQLOMl73QCNmLYod7CtY",
+        "106-114 成大化熱": "1YlWIhNIbxILLLSyU0cH9NL6-6oUeWBpu",
+        "106-114 成大化反": "1DFrKbo-9uD-i4e4ipeh3XbX-tgeVEb1Y"
+      },
+      "中央": {
+        "106~114 中央單操輸送": "1sKb01AvjaKl4z-Ch0TyqXKahVhMUA1iE",
+        "106~114 中央化熱化反": "1yN5N4_0B64YtvTmdobnOuJs1mXASH5Xd"
+      },
+      "台科大": {
+        "106-114 台科大工數與單操輸送": "1dq3RAcKUkR4LvZTjDIE1fMFRJ3Vc4346",
+        "106~114 台科大化熱化反": "1rDYx5rR6an3Xg8FQaWan-zqjhovWsn-H"
+      },
+      "中興": {
+        "106-114 中興工程數學與輸送現象": "1AREZvc7hVtVHGpG7qwoZkRVD96ljlcXt",
+        "106-114 中興化熱化反": "1uYHa87G9aoc9VnyVjeXJPgVnVKPI_ujS"
       }
     };
 
@@ -146,20 +163,30 @@
       localStorage.setItem("currentPDF", subjectId);
       localStorage.setItem("currentPDFName", subjectText);
 
-      sessionStorage.setItem("pageNavigation", "true"); // ✅ 跳轉前先標記
+      // ✅ 頁面跳轉前標記，防止誤判登出
+      sessionStorage.setItem("pageNavigation", "true");
+
+      // ✅ 延遲讓 beforeunload 正確判斷
       setTimeout(() => {
         window.location.href = "pdf-viewer.html";
-      }, 100); // ✅ 延遲確保標記設完
+      }, 100);
     });
 
     logoutBtn.addEventListener("click", () => {
       window.logout();
     });
 
+    // ✅ 初始化時也補標記，避免剛進入頁面誤判關閉
     window.addEventListener("DOMContentLoaded", () => {
-      // 延遲設定避免某些裝置未完成載入就判斷登出
-      setTimeout(() => sessionStorage.setItem("pageNavigation", "true"), 0);
+      sessionStorage.setItem("pageNavigation", "true");
       loadUserPermissions();
+    });
+
+    // ✅ 歷史返回補標記
+    window.addEventListener("pageshow", (e) => {
+      if (e.persisted || performance.getEntriesByType("navigation")[0]?.type === "back_forward") {
+        sessionStorage.setItem("pageNavigation", "true");
+      }
     });
   </script>
 </body>
