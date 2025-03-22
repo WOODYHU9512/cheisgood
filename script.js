@@ -4,7 +4,6 @@ import { initializeApp } from "https://www.gstatic.com/firebasejs/9.6.1/firebase
 import {
   getDatabase,
   ref,
-  get,
   update
 } from "https://www.gstatic.com/firebasejs/9.6.1/firebase-database.js";
 
@@ -21,12 +20,14 @@ async function logoutUser(showLog = true) {
   if (!username || !sessionToken) return;
 
   try {
+    await fetch("https://us-central1-access-7a3c3.cloudfunctions.net/heartbeat", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ username, sessionToken })
+    });
     const userRef = ref(db, `users/${username}`);
-    const snapshot = await get(userRef);
-    if (snapshot.exists() && snapshot.val().sessionToken === sessionToken) {
-      await update(userRef, { isLoggedIn: false, sessionToken: "" });
-      if (showLog) console.log(`✅ ${username} 已從 Firebase 登出`);
-    }
+    await update(userRef, { isLoggedIn: false, sessionToken: "" });
+    if (showLog) console.log(`✅ ${username} 已從 Firebase 登出`);
   } catch (err) {
     console.error("❌ 登出失敗：", err);
   }
@@ -55,16 +56,18 @@ async function startSessionChecker() {
     }
 
     try {
-      const userRef = ref(db, `users/${username}`);
-      const snapshot = await get(userRef);
-      const data = snapshot.val();
+      const res = await fetch("https://us-central1-access-7a3c3.cloudfunctions.net/heartbeat", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ username, sessionToken })
+      });
 
-      if (!data || data.sessionToken !== sessionToken) {
-        console.warn("🔁 Token 不一致，觸發強制登出");
+      if (!res.ok) {
+        console.warn("🔁 session 驗證失敗，觸發登出");
         await forceLogout();
       }
     } catch (err) {
-      console.error("❌ 驗證 token 失敗：", err);
+      console.error("❌ 驗證失敗：", err);
     }
   }, 10000); // 每 10 秒檢查一次
 }
