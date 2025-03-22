@@ -1,10 +1,10 @@
 <!DOCTYPE html>
 <html lang="zh-TW">
 <head>
-  <script type="module" src="script.js"></script>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
   <title>選擇學校與科目</title>
+  <script type="module" src="script.js"></script>
   <style>
     body {
       font-family: Arial, sans-serif;
@@ -56,6 +56,7 @@
 </head>
 <body>
   <h2>請選擇學校與科目</h2>
+
   <div id="countdown">⏳ 自動登出倒數：<span id="timer">30:00</span></div>
 
   <label for="schoolSelect">選擇學校：</label>
@@ -120,7 +121,7 @@
     let authorizedSchools = [];
 
     async function loadUserPermissions() {
-      const username = localStorage.getItem('loggedInUser');
+      const username = localStorage.getItem("loggedInUser");
       if (!username) return;
       const snapshot = await get(ref(db, `users/${username}/purchased`));
       if (snapshot.exists()) {
@@ -159,11 +160,9 @@
         alert("❌ 請選擇科目！");
         return;
       }
-
       localStorage.setItem("currentPDF", subjectId);
       localStorage.setItem("currentPDFName", subjectText);
-
-      sessionStorage.setItem("pageNavigation", "true");
+      sessionStorage.setItem("pageNavigation", "true"); // ✅ 標記跳轉
       window.location.href = "pdf-viewer.html";
     });
 
@@ -171,12 +170,21 @@
       window.logout();
     });
 
-    // ✅ 頁面載入時補標記
-    window.addEventListener("DOMContentLoaded", () => {
+    // ✅ 頁面載入時就標記，避免初次刷新誤判登出
+    window.addEventListener("load", () => {
       sessionStorage.setItem("pageNavigation", "true");
-      setTimeout(() => sessionStorage.setItem("pageNavigation", "true"), 100);
-      loadUserPermissions();
     });
+
+    window.addEventListener("pageshow", (e) => {
+      if (
+        e.persisted ||
+        performance.getEntriesByType("navigation")[0]?.type === "back_forward"
+      ) {
+        sessionStorage.setItem("pageNavigation", "true");
+      }
+    });
+
+    loadUserPermissions();
   </script>
 </body>
 </html>
