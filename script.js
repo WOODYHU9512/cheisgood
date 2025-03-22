@@ -14,7 +14,7 @@ const firebaseConfig = {
 const app = initializeApp(firebaseConfig);
 const db = getDatabase(app);
 
-// ✅ 登出邏輯
+// ✅ 登出功能
 async function logoutUser(showLog = true) {
   const username = localStorage.getItem("loggedInUser");
   const sessionToken = localStorage.getItem("sessionToken");
@@ -43,7 +43,7 @@ window.logout = async function () {
   window.location.href = "index.html";
 };
 
-// ✅ 驗證 session 是否有效
+// ✅ session 驗證
 async function validateSession() {
   const username = localStorage.getItem("loggedInUser");
   const sessionToken = localStorage.getItem("sessionToken");
@@ -59,18 +59,13 @@ async function validateSession() {
   }
 }
 
-// ✅ 跳轉標記（手動切頁 or 點選按鈕）
-function markNavigation() {
-  sessionStorage.setItem("pageNavigation", "true");
-}
-
-// ✅ 登出觸發
+// ✅ 自動登出
 function triggerAutoLogout() {
   const isNavigating = sessionStorage.getItem("pageNavigation");
   sessionStorage.removeItem("pageNavigation");
 
   if (isNavigating) {
-    console.log("🛑 偵測到跳轉，略過登出");
+    console.log("🛑 偵測到跳轉或重新整理，略過登出");
     return;
   }
 
@@ -84,36 +79,10 @@ function triggerAutoLogout() {
     keepalive: true
   });
 
-  console.log("📤 已送出自動登出請求（非跳轉）");
+  console.log("📤 自動登出已發送（非跳轉）");
 }
 
-// ✅ 綁定跳轉標記（點擊 a / button）
-document.addEventListener("DOMContentLoaded", () => {
-  document.querySelectorAll("a, button").forEach(el => {
-    el.addEventListener("click", markNavigation);
-  });
-
-  // ✅ 初始頁面也標記，避免 reload 被誤判
-  setTimeout(() => markNavigation(), 0);
-});
-
-// ✅ 回歷史頁面補標記
-window.addEventListener("pageshow", (e) => {
-  if (
-    e.persisted ||
-    performance.getEntriesByType("navigation")[0]?.type === "back_forward"
-  ) {
-    markNavigation();
-  }
-});
-
-// ✅ 延遲綁定自動登出偵測器（避免先觸發）
-setTimeout(() => {
-  window.addEventListener("beforeunload", triggerAutoLogout);
-  window.addEventListener("pagehide", triggerAutoLogout);
-}, 100);
-
-// ✅ 避免手機系統提前 pause app 狀態導致錯誤
+// ✅ visibilitychange 防誤觸
 let hiddenTimer;
 document.addEventListener("visibilitychange", () => {
   if (document.visibilityState === "hidden") {
@@ -125,7 +94,35 @@ document.addEventListener("visibilitychange", () => {
   }
 });
 
-// ✅ 自動倒數登出機制（select / viewer）
+// ✅ 延後綁定登出事件，讓 pageNavigation 有機會先設好
+window.addEventListener("DOMContentLoaded", () => {
+  setTimeout(() => {
+    window.addEventListener("beforeunload", triggerAutoLogout);
+    window.addEventListener("pagehide", triggerAutoLogout);
+  }, 100);
+
+  // 所有按鈕、連結預設設跳轉
+  document.querySelectorAll("a, button").forEach(el => {
+    el.addEventListener("click", () => {
+      sessionStorage.setItem("pageNavigation", "true");
+    });
+  });
+
+  // 初始也設跳轉（處理重新整理）
+  sessionStorage.setItem("pageNavigation", "true");
+});
+
+// ✅ 歷史返回也補標記
+window.addEventListener("pageshow", (e) => {
+  if (
+    e.persisted ||
+    performance.getEntriesByType("navigation")[0]?.type === "back_forward"
+  ) {
+    sessionStorage.setItem("pageNavigation", "true");
+  }
+});
+
+// ✅ 自動登出倒數功能（select / viewer 專用）
 if (window.location.pathname.includes("pdf-select") || window.location.pathname.includes("pdf-viewer")) {
   validateSession().then(valid => {
     if (!valid) {
