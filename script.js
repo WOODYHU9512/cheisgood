@@ -23,11 +23,11 @@ async function logoutUser(showLog = true) {
   if (!username || !sessionToken) return;
 
   try {
-    const userRef = ref(db, users/${username});
+    const userRef = ref(db, `users/${username}`);
     const snapshot = await get(userRef);
     if (snapshot.exists() && snapshot.val().sessionToken === sessionToken) {
       await update(userRef, { isLoggedIn: false, sessionToken: "" });
-      if (showLog) console.log(✅ ${username} 已從 Firebase 登出);
+      if (showLog) console.log(`✅ ${username} 已從 Firebase 登出`);
     }
   } catch (err) {
     console.error("❌ 登出失敗：", err);
@@ -43,7 +43,7 @@ window.logout = async function () {
 
 // ✅ 設定 Firebase onDisconnect
 async function setupOnDisconnect(username) {
-  const userRef = ref(db, users/${username});
+  const userRef = ref(db, `users/${username}`);
   try {
     await onDisconnect(userRef).update({
       isLoggedIn: false,
@@ -62,7 +62,7 @@ async function validateSession() {
   if (!username || !sessionToken) return false;
 
   try {
-    const userRef = ref(db, users/${username});
+    const userRef = ref(db, `users/${username}`);
     const snapshot = await get(userRef);
     const isValid = snapshot.exists() && snapshot.val().sessionToken === sessionToken;
     if (isValid) await setupOnDisconnect(username);
@@ -86,7 +86,7 @@ function triggerAutoLogout() {
   const username = localStorage.getItem("loggedInUser");
   if (!username) return;
 
-  fetch(https://access-7a3c3-default-rtdb.firebaseio.com/users/${username}.json, {
+  fetch(`https://access-7a3c3-default-rtdb.firebaseio.com/users/${username}.json`, {
     method: "PATCH",
     headers: { "Content-Type": "application/json" },
     body: JSON.stringify({ isLoggedIn: false, sessionToken: "" }),
@@ -153,7 +153,7 @@ if (
     if (!timerDisplay) return;
     const m = Math.floor(timeLeft / 60);
     const s = timeLeft % 60;
-    timerDisplay.innerText = ${m}:${s < 10 ? "0" : ""}${s};
+    timerDisplay.innerText = `${m}:${s < 10 ? "0" : ""}${s}`;
   }
 
   function resetTimer() {
