@@ -5,7 +5,7 @@
   <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
   <title>選擇學校與科目</title>
 
-  <!-- ✅ 先標記 pageNavigation，避免一進來就被誤判為 reload -->
+  <!-- ✅ 預先標記跳轉（在 script.js 載入前） -->
   <script>
     sessionStorage.setItem("pageNavigation", "true");
   </script>
@@ -172,7 +172,6 @@
       localStorage.setItem("currentPDFName", subjectText);
       sessionStorage.setItem("pageNavigation", "true");
 
-      // ✅ 延遲跳轉，保證 script.js 能抓到標記
       setTimeout(() => {
         window.location.href = "pdf-viewer.html";
       }, 50);
