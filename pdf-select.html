@@ -160,28 +160,28 @@
         return;
       }
 
+      // ✅ 點擊前標記跳轉，避免誤登出
+      sessionStorage.setItem("pageNavigation", "true");
+
       localStorage.setItem("currentPDF", subjectId);
       localStorage.setItem("currentPDFName", subjectText);
 
-      // ✅ 強化跳轉標記邏輯（提早標記 + timeout補標記）
-      sessionStorage.setItem("pageNavigation", "true");
-      setTimeout(() => sessionStorage.setItem("pageNavigation", "true"), 50);
-
-      window.location.href = "pdf-viewer.html";
+      // ✅ 加個延遲讓 beforeunload 有時間處理
+      setTimeout(() => {
+        window.location.href = "pdf-viewer.html";
+      }, 50);
     });
 
     logoutBtn.addEventListener("click", () => {
       window.logout();
     });
 
-    // ✅ 初次進入頁面預設標記為跳轉狀態，避免誤判
     window.addEventListener("DOMContentLoaded", () => {
+      // ✅ 頁面首次載入也預設為跳轉行為（防誤登出）
       sessionStorage.setItem("pageNavigation", "true");
-      setTimeout(() => sessionStorage.setItem("pageNavigation", "true"), 50);
       loadUserPermissions();
     });
 
-    // ✅ 歷史返回也補上標記
     window.addEventListener("pageshow", (e) => {
       if (e.persisted || performance.getEntriesByType("navigation")[0]?.type === "back_forward") {
         sessionStorage.setItem("pageNavigation", "true");
