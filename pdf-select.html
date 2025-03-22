@@ -171,7 +171,6 @@
       localStorage.setItem("currentPDFName", subjectText);
       sessionStorage.setItem("pageNavigation", "true");
 
-      // ✅ 延遲跳轉，確保標記完成再跳
       setTimeout(() => {
         window.location.href = "pdf-viewer.html";
       }, 50);
@@ -182,6 +181,37 @@
     });
 
     window.addEventListener("DOMContentLoaded", loadUserPermissions);
+  </script>
+
+  <!-- ✅ 防止開發者工具與複製行為 -->
+  <script>
+    // 禁止右鍵
+    document.addEventListener("contextmenu", e => e.preventDefault());
+
+    // 禁止選取與複製
+    document.addEventListener("selectstart", e => e.preventDefault());
+    document.addEventListener("copy", e => e.preventDefault());
+
+    // 禁止 F12 與 Ctrl+Shift+I / U / S / P
+    document.addEventListener("keydown", e => {
+      if (
+        e.key === "F12" ||
+        (e.ctrlKey && e.shiftKey && ["I", "J", "C"].includes(e.key)) ||
+        (e.ctrlKey && ["U", "S", "P"].includes(e.key))
+      ) {
+        e.preventDefault();
+        alert("⚠️ 禁止使用開發者工具！");
+      }
+    });
+
+    // 偵測開發者工具（視窗寬度變化）
+    let threshold = 160;
+    setInterval(() => {
+      if (window.outerWidth - window.innerWidth > threshold) {
+        alert("⚠️ 偵測到開發者工具，操作已被限制！");
+        window.location.href = "index.html";
+      }
+    }, 1000);
   </script>
 </body>
 </html>
