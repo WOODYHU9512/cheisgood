@@ -5,10 +5,7 @@
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>登入系統</title>
 
-  <!-- ✅ script.js 模組 -->
-  <script type="module" src="script.js"></script>
-
-  <!-- ✅ Firebase 登入邏輯 -->
+  <!-- ✅ Firebase + 登入邏輯 -->
   <script type="module">
     import { initializeApp } from "https://www.gstatic.com/firebasejs/9.6.1/firebase-app.js";
     import { getDatabase, ref, get, update } from "https://www.gstatic.com/firebasejs/9.6.1/firebase-database.js";
@@ -20,9 +17,10 @@
     const app = initializeApp(firebaseConfig);
     const db = getDatabase(app);
 
+    // ✅ 寫入登入資訊
     async function forceLogin(username, password) {
       const userRef = ref(db, `users/${username}`);
-      const sessionToken = Math.random().toString(36).substring(2, 12);
+      const sessionToken = Math.random().toString(36).substring(2, 12); // 隨機 token
 
       await update(userRef, {
         isLoggedIn: true,
@@ -36,6 +34,7 @@
       window.location.href = "pdf-select.html";
     }
 
+    // ✅ 使用者按登入後的主流程
     window.checkCredentials = async function () {
       const username = document.getElementById("username").value.trim();
       const password = document.getElementById("password").value.trim();
@@ -74,6 +73,7 @@
       }
     };
 
+    // ✅ 登出功能（用在登出按鈕或自動登出）
     window.logout = async function () {
       const username = localStorage.getItem("loggedInUser");
       const token = localStorage.getItem("sessionToken");
