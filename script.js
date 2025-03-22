@@ -5,14 +5,12 @@ import {
   getDatabase,
   ref,
   get,
-  update,
-  onDisconnect
+  update
 } from "https://www.gstatic.com/firebasejs/9.6.1/firebase-database.js";
 
 const firebaseConfig = {
   databaseURL: "https://access-7a3c3-default-rtdb.firebaseio.com/"
 };
-
 const app = initializeApp(firebaseConfig);
 const db = getDatabase(app);
 
@@ -30,10 +28,13 @@ async function logoutUser(showLog = true) {
       if (showLog) console.log(`✅ ${username} 已從 Firebase 登出`);
     }
   } catch (err) {
-    console.error("❌ 登出失敗：", err);
+    console.error("❌ 自動登出失敗：", err);
   }
 
-  localStorage.clear();
+  localStorage.removeItem("loggedInUser");
+  localStorage.removeItem("sessionToken");
+  localStorage.removeItem("currentPDF");
+  localStorage.removeItem("currentPDFName");
 }
 
 window.logout = async function () {
@@ -41,21 +42,7 @@ window.logout = async function () {
   window.location.href = "index.html";
 };
 
-// ✅ onDisconnect 註冊
-async function setupOnDisconnect(username) {
-  try {
-    const userRef = ref(db, `users/${username}`);
-    await onDisconnect(userRef).update({
-      isLoggedIn: false,
-      sessionToken: ""
-    });
-    console.log("📡 onDisconnect 設定完成");
-  } catch (err) {
-    console.error("❌ onDisconnect 設定失敗：", err);
-  }
-}
-
-// ✅ session 驗證
+// ✅ 驗證登入狀態
 async function validateSession() {
   const username = localStorage.getItem("loggedInUser");
   const sessionToken = localStorage.getItem("sessionToken");
@@ -64,22 +51,19 @@ async function validateSession() {
   try {
     const userRef = ref(db, `users/${username}`);
     const snapshot = await get(userRef);
-    const isValid = snapshot.exists() && snapshot.val().sessionToken === sessionToken;
-    if (isValid) await setupOnDisconnect(username);
-    return isValid;
+    return snapshot.exists() && snapshot.val().sessionToken === sessionToken;
   } catch (err) {
-    console.error("❌ 驗證失敗：", err);
+    console.error("❌ 驗證登入失敗：", err);
     return false;
   }
 }
 
-// ✅ 自動登出條件判斷
+// ✅ 自動登出邏輯
 function triggerAutoLogout() {
-  const navFlag = sessionStorage.getItem("pageNavigation");
+  const isNavigating = sessionStorage.getItem("pageNavigation");
   sessionStorage.removeItem("pageNavigation");
-
-  if (navFlag) {
-    console.log("🛑 偵測跳轉或重新整理，不登出");
+  if (isNavigating) {
+    console.log("🛑 跳轉或重新整理，略過登出");
     return;
   }
 
@@ -93,31 +77,40 @@ function triggerAutoLogout() {
     keepalive: true
   });
 
-  console.log("📤 自動登出已送出（視為關閉頁面）");
+  console.log("📤 自動登出已發送（非跳轉）");
 }
 
-// ✅ 延遲註冊登出事件（避免 script 載入太早）
-setTimeout(() => {
-  window.addEventListener("beforeunload", triggerAutoLogout);
-  window.addEventListener("pagehide", triggerAutoLogout);
-}, 50);
-
-// ✅ hidden 狀態下補救（針對部分手機）
+// ✅ visibilitychange 用於手機切換 app 狀態
 let hiddenTimer;
 document.addEventListener("visibilitychange", () => {
   if (document.visibilityState === "hidden") {
-    hiddenTimer = setTimeout(triggerAutoLogout, 500);
+    hiddenTimer = setTimeout(() => {
+      triggerAutoLogout();
+    }, 500);
   } else {
     clearTimeout(hiddenTimer);
   }
 });
 
-// ✅ 標記跳轉行為
+// ✅ 頁面卸載綁定登出
+window.addEventListener("beforeunload", triggerAutoLogout);
+window.addEventListener("pagehide", triggerAutoLogout);
+
+// ✅ 標記跳轉
 function markNavigation() {
   sessionStorage.setItem("pageNavigation", "true");
 }
 
-window.addEventListener("pageshow", e => {
+// ✅ 初始與點擊標記跳轉
+document.addEventListener("DOMContentLoaded", () => {
+  markNavigation(); // 初始載入也標記，防止 reload 誤判
+  document.querySelectorAll("a, button").forEach(el => {
+    el.addEventListener("click", markNavigation);
+  });
+});
+
+// ✅ 處理返回快取頁面也補標記
+window.addEventListener("pageshow", (e) => {
   if (
     e.persisted ||
     performance.getEntriesByType("navigation")[0]?.type === "back_forward"
@@ -126,22 +119,14 @@ window.addEventListener("pageshow", e => {
   }
 });
 
-// ✅ 重新整理、初始載入都先標記
-document.addEventListener("DOMContentLoaded", () => {
-  markNavigation();
-  document.querySelectorAll("a, button").forEach(el => {
-    el.addEventListener("click", markNavigation);
-  });
-});
-
-// ✅ 自動登出倒數邏輯
+// ✅ 自動登出倒數（select / viewer 頁面限定）
 if (
   window.location.pathname.includes("pdf-select") ||
   window.location.pathname.includes("pdf-viewer")
 ) {
   validateSession().then(valid => {
     if (!valid) {
-      console.warn("⛔ 無效 session，返回登入頁");
+      console.warn("⛔ 無效 session，跳轉登入頁面");
       window.location.href = "index.html";
     }
   });
