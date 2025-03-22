@@ -41,18 +41,21 @@ window.logout = async function () {
   window.location.href = "index.html";
 };
 
-// ✅ onDisconnect
+// ✅ 設定 Firebase onDisconnect
 async function setupOnDisconnect(username) {
+  const userRef = ref(db, `users/${username}`);
   try {
-    const userRef = ref(db, `users/${username}`);
-    await onDisconnect(userRef).update({ isLoggedIn: false, sessionToken: "" });
-    console.log("📡 onDisconnect 設定完成");
+    await onDisconnect(userRef).update({
+      isLoggedIn: false,
+      sessionToken: ""
+    });
+    console.log("📡 onDisconnect 已設定");
   } catch (err) {
     console.error("❌ onDisconnect 設定失敗：", err);
   }
 }
 
-// ✅ 驗證 session，並設定 onDisconnect
+// ✅ 驗證登入狀態
 async function validateSession() {
   const username = localStorage.getItem("loggedInUser");
   const sessionToken = localStorage.getItem("sessionToken");
@@ -70,13 +73,13 @@ async function validateSession() {
   }
 }
 
-// ✅ 自動登出（非跳轉）
+// ✅ 判斷是否自動登出
 function triggerAutoLogout() {
-  const isNavigating = sessionStorage.getItem("pageNavigation");
+  const navFlag = sessionStorage.getItem("pageNavigation");
   sessionStorage.removeItem("pageNavigation");
 
-  if (isNavigating) {
-    console.log("🛑 偵測到跳轉，略過登出");
+  if (navFlag) {
+    console.log("🛑 跳轉 / 重新整理，略過登出");
     return;
   }
 
@@ -93,13 +96,13 @@ function triggerAutoLogout() {
   console.log("📤 自動登出已送出");
 }
 
-// ✅ 延遲註冊事件，避免太早誤判跳轉
+// ✅ 延遲註冊 beforeunload / pagehide（避免 script 載入太早誤判）
 setTimeout(() => {
   window.addEventListener("beforeunload", triggerAutoLogout);
   window.addEventListener("pagehide", triggerAutoLogout);
 }, 100);
 
-// ✅ hidden 狀態延遲處理（手機專用）
+// ✅ 隱藏畫面（手機跳分頁）補登出
 let hiddenTimer;
 document.addEventListener("visibilitychange", () => {
   if (document.visibilityState === "hidden") {
@@ -109,18 +112,20 @@ document.addEventListener("visibilitychange", () => {
   }
 });
 
-// ✅ 標記跳轉
+// ✅ 頁面跳轉標記（跳轉前先寫入 flag）
 function markNavigation() {
   sessionStorage.setItem("pageNavigation", "true");
 }
 
+// ✅ DOM 載入完成後標記（避免第一次 reload 被誤登出）
 document.addEventListener("DOMContentLoaded", () => {
-  document.querySelectorAll("a, button").forEach(el =>
-    el.addEventListener("click", markNavigation)
-  );
-  markNavigation(); // 防止 reload 誤登出
+  markNavigation();
+  document.querySelectorAll("a, button").forEach(el => {
+    el.addEventListener("click", markNavigation);
+  });
 });
 
+// ✅ 返回歷史紀錄也補標記
 window.addEventListener("pageshow", e => {
   if (
     e.persisted ||
@@ -130,7 +135,7 @@ window.addEventListener("pageshow", e => {
   }
 });
 
-// ✅ 自動登出倒數邏輯
+// ✅ 自動登出倒數邏輯（viewer / select 頁面）
 if (
   window.location.pathname.includes("pdf-select") ||
   window.location.pathname.includes("pdf-viewer")
