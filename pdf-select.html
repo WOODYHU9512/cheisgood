@@ -1,10 +1,18 @@
 <!DOCTYPE html>
 <html lang="zh-TW">
 <head>
-  <script type="module" src="script.js"></script>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
   <title>選擇學校與科目</title>
+
+  <!-- ✅ 在 script.js 前面先標記跳轉，避免誤判 reload -->
+  <script>
+    sessionStorage.setItem("pageNavigation", "true");
+  </script>
+
+  <!-- ✅ 主邏輯 -->
+  <script type="module" src="script.js"></script>
+
   <style>
     body {
       font-family: Arial, sans-serif;
@@ -120,7 +128,7 @@
     let authorizedSchools = [];
 
     async function loadUserPermissions() {
-      const username = localStorage.getItem("loggedInUser");
+      const username = localStorage.getItem('loggedInUser');
       if (!username) return;
       const snapshot = await get(ref(db, `users/${username}/purchased`));
       if (snapshot.exists()) {
@@ -162,28 +170,19 @@
 
       localStorage.setItem("currentPDF", subjectId);
       localStorage.setItem("currentPDFName", subjectText);
-
-      // ✅ 標記跳轉行為
       sessionStorage.setItem("pageNavigation", "true");
-      window.location.href = "pdf-viewer.html";
+
+      // ✅ 加點延遲，保證 script.js 抓到跳轉
+      setTimeout(() => {
+        window.location.href = "pdf-viewer.html";
+      }, 50);
     });
 
     logoutBtn.addEventListener("click", () => {
       window.logout();
     });
 
-    // ✅ 初次載入時補標記（確保 reload 不被誤判）
-    window.addEventListener("DOMContentLoaded", () => {
-      setTimeout(() => sessionStorage.setItem("pageNavigation", "true"), 0);
-      loadUserPermissions();
-    });
-
-    // ✅ 從歷史返回也補標記
-    window.addEventListener("pageshow", e => {
-      if (e.persisted || performance.getEntriesByType("navigation")[0]?.type === "back_forward") {
-        sessionStorage.setItem("pageNavigation", "true");
-      }
-    });
+    window.addEventListener("DOMContentLoaded", loadUserPermissions);
   </script>
 </body>
 </html>
