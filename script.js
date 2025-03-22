@@ -15,7 +15,6 @@ const firebaseConfig = {
 const app = initializeApp(firebaseConfig);
 const db = getDatabase(app);
 
-// ✅ 登出 function
 async function logoutUser(showLog = true) {
   const username = localStorage.getItem("loggedInUser");
   const sessionToken = localStorage.getItem("sessionToken");
@@ -43,7 +42,6 @@ window.logout = async function () {
   window.location.href = "index.html";
 };
 
-// ✅ onDisconnect 針對手機或強制關閉瀏覽器
 async function setupOnDisconnect(username) {
   const userRef = ref(db, `users/${username}`);
   try {
@@ -57,7 +55,6 @@ async function setupOnDisconnect(username) {
   }
 }
 
-// ✅ 驗證登入 session
 async function validateSession() {
   const username = localStorage.getItem("loggedInUser");
   const sessionToken = localStorage.getItem("sessionToken");
@@ -67,7 +64,9 @@ async function validateSession() {
     const userRef = ref(db, `users/${username}`);
     const snapshot = await get(userRef);
     const valid = snapshot.exists() && snapshot.val().sessionToken === sessionToken;
-    if (valid) await setupOnDisconnect(username);
+    if (valid) {
+      await setupOnDisconnect(username);
+    }
     return valid;
   } catch (err) {
     console.error("❌ 驗證登入失敗：", err);
@@ -75,14 +74,18 @@ async function validateSession() {
   }
 }
 
-// ✅ 自動登出（非跳轉或重新整理）
 function triggerAutoLogout() {
   const isNavigating = sessionStorage.getItem("pageNavigation");
-  const navType = performance.getEntriesByType("navigation")[0]?.type;
   sessionStorage.removeItem("pageNavigation");
 
-  if (isNavigating || navType === "navigate" || navType === "reload") {
-    console.log("🛑 偵測跳轉或重新整理，略過自動登出");
+  const navigationType = performance.getEntriesByType("navigation")[0]?.type;
+  if (
+    isNavigating ||
+    navigationType === "navigate" ||
+    navigationType === "reload" ||
+    navigationType === "back_forward"
+  ) {
+    console.log("🛑 跳轉/重新整理偵測，略過自動登出");
     return;
   }
 
@@ -96,45 +99,45 @@ function triggerAutoLogout() {
     keepalive: true
   });
 
-  console.log("📤 自動登出已送出");
+  console.log("📤 自動登出已發送");
 }
 
-// ✅ 綁定事件
-let hiddenTimer;
-document.addEventListener("visibilitychange", () => {
-  if (document.visibilityState === "hidden") {
-    hiddenTimer = setTimeout(() => {
-      triggerAutoLogout();
-    }, 400); // 稍微延遲以等待跳轉標記設置
-  } else {
-    clearTimeout(hiddenTimer);
-  }
-});
-window.addEventListener("pagehide", () => {
-  setTimeout(triggerAutoLogout, 100);
-});
-window.addEventListener("beforeunload", () => {
-  setTimeout(triggerAutoLogout, 100);
-});
-
-// ✅ 標記跳轉
 function markNavigation() {
   sessionStorage.setItem("pageNavigation", "true");
 }
+
+// 延遲觸發登出邏輯，保留標記時間（修正 race condition）
+function delayedTriggerAutoLogout() {
+  setTimeout(triggerAutoLogout, 150);
+}
+
+// 事件綁定區
 document.addEventListener("DOMContentLoaded", () => {
+  // 監聽所有跳轉操作
   document.querySelectorAll("a, button").forEach(el => {
     el.addEventListener("click", markNavigation);
   });
-  // 避免重新整理誤判
-  setTimeout(() => sessionStorage.setItem("pageNavigation", "true"), 0);
+
+  // 頁面一開始先標記一次（防止重新整理誤判）
+  markNavigation();
 });
+
 window.addEventListener("pageshow", (e) => {
   if (e.persisted || performance.getEntriesByType("navigation")[0]?.type === "back_forward") {
     markNavigation();
   }
 });
 
-// ✅ 登入頁面驗證與倒數計時
+document.addEventListener("visibilitychange", () => {
+  if (document.visibilityState === "hidden") {
+    setTimeout(triggerAutoLogout, 200);
+  }
+});
+
+window.addEventListener("pagehide", delayedTriggerAutoLogout);
+window.addEventListener("beforeunload", delayedTriggerAutoLogout);
+
+// 🔐 驗證登入狀態 + 開始倒數計時
 if (window.location.pathname.includes("pdf-select") || window.location.pathname.includes("pdf-viewer")) {
   validateSession().then(valid => {
     if (!valid) {
