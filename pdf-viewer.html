@@ -13,6 +13,7 @@
       margin: 0;
       overflow: hidden;
       font-family: sans-serif;
+      user-select: none; /* 禁止選取 */
     }
     #pdf-frame {
       width: 100vw;
@@ -62,44 +63,47 @@
     }
   </script>
 
-  <!-- ✅ 防護區段 -->
+  <!-- ✅ 防護邏輯 -->
   <script>
-    // 禁止右鍵選單
+    // 🚫 禁止右鍵
     window.addEventListener("contextmenu", e => e.preventDefault());
 
-    // 禁止快捷鍵
+    // 🚫 禁止常見快捷鍵：F12 / Ctrl+Shift+I/J/C/U/S
     window.addEventListener("keydown", function (e) {
-      // F12、Ctrl+Shift+I、Ctrl+Shift+J、Ctrl+U、Ctrl+S、Ctrl+C、PrintScreen
-      if (
-        e.key === "F12" ||
-        (e.ctrlKey && e.shiftKey && ["I", "J"].includes(e.key)) ||
-        (e.ctrlKey && ["U", "S", "C"].includes(e.key)) ||
-        (e.key === "PrintScreen")
-      ) {
+      const combo = e.ctrlKey && e.shiftKey && ["I", "J", "C"].includes(e.key.toUpperCase());
+      const forbidden = ["F12", "U", "S"].includes(e.key.toUpperCase()) && e.ctrlKey;
+
+      if (combo || forbidden || e.key === "F12") {
         e.preventDefault();
-        alert("⚠️ 操作已被禁止");
+        alert("⚠️ 此操作已被封鎖！");
       }
     });
 
-    // 嘗試阻止 PrintScreen（進階防截圖）
+    // 🚫 防止 PrintScreen（部分阻擋）
     setInterval(() => {
-      navigator.clipboard.writeText("⛔ 請勿截圖");
+      try {
+        navigator.clipboard.writeText("⛔ 此內容受保護，禁止截圖");
+      } catch (e) {
+        // 某些瀏覽器可能不允許主動寫入剪貼簿
+      }
     }, 1000);
 
-    // 隱藏視覺選取（防止複製）
-    document.body.style.userSelect = "none";
+    // 🚨 改良版 DevTools 檢測（非立即觸發）
+    (function devtoolsCheck() {
+      let opened = false;
 
-    // 偵測 DevTools 開啟（基礎）
-    setInterval(() => {
-      const devtoolsOpened = /./;
-      devtoolsOpened.toString = function () {
-        this.opened = true;
-        alert("🚨 偵測到開發者工具已開啟，頁面將跳轉！");
-        window.location.href = "index.html";
-        return "";
-      };
-      console.log(devtoolsOpened);
-    }, 3000);
+      const threshold = 160; // 開發者工具高度或寬度的門檻
+      setInterval(() => {
+        const widthThreshold = window.outerWidth - window.innerWidth > threshold;
+        const heightThreshold = window.outerHeight - window.innerHeight > threshold;
+
+        if ((widthThreshold || heightThreshold) && !opened) {
+          opened = true;
+          alert("🚨 偵測到開發者工具，頁面將離開！");
+          window.location.href = "index.html";
+        }
+      }, 1000);
+    })();
   </script>
 </body>
 </html>
