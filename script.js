@@ -58,13 +58,13 @@ async function validateSession() {
   }
 }
 
-// ✅ 自動登出邏輯（非跳轉／非重新整理時才觸發）
+// ✅ 自動登出觸發（關閉頁面時）
 function triggerAutoLogout() {
   const isNavigating = sessionStorage.getItem("pageNavigation");
   sessionStorage.removeItem("pageNavigation");
 
   if (isNavigating) {
-    console.log("🛑 跳轉或刷新，略過自動登出");
+    console.log("🛑 跳轉偵測中，跳過登出");
     return;
   }
 
@@ -78,51 +78,48 @@ function triggerAutoLogout() {
     keepalive: true
   });
 
-  console.log("📤 已發送自動登出（關閉分頁或瀏覽器）");
+  console.log("📤 已送出自動登出請求（關閉或中斷）");
 }
 
-// ✅ 記錄跳轉意圖
-function markNavigation() {
-  sessionStorage.setItem("pageNavigation", "true");
-}
-
-// ✅ 初始與互動標記（盡早執行）
-document.addEventListener("DOMContentLoaded", () => {
-  markNavigation(); // 載入時先標記一次
-  document.querySelectorAll("a, button").forEach(el => {
-    el.addEventListener("click", markNavigation);
-  });
-});
-
-// ✅ 返回歷史頁也補標記
-window.addEventListener("pageshow", (e) => {
-  if (
-    e.persisted ||
-    performance.getEntriesByType("navigation")[0]?.type === "back_forward"
-  ) {
-    markNavigation();
-  }
-});
-
-// ✅ 延遲註冊關閉事件（避免過早執行登出）
+// ✅ 延遲綁定登出事件（避免先註冊誤判跳轉）
 setTimeout(() => {
   window.addEventListener("beforeunload", triggerAutoLogout);
   window.addEventListener("pagehide", triggerAutoLogout);
-}, 100);
+}, 150);
 
-// ✅ 隱藏視窗後延遲觸發登出（避免誤判切換）
+// ✅ 視窗被隱藏也可能觸發自動登出（手機或 WebView）
 let hiddenTimer;
 document.addEventListener("visibilitychange", () => {
   if (document.visibilityState === "hidden") {
     hiddenTimer = setTimeout(() => {
       triggerAutoLogout();
-    }, 500);
+    }, 700); // 給手機更多時間保險
   } else {
     clearTimeout(hiddenTimer);
   }
 });
 
-// ✅ 自動登出倒數功能（僅限 select / viewer）
+// ✅ 標記跳轉
+function markNavigation() {
+  sessionStorage.setItem("pageNavigation", "true");
+}
+
+// ✅ 初始與點擊行為都標記跳轉
+document.addEventListener("DOMContentLoaded", () => {
+  markNavigation(); // 初次載入也要設
+  document.querySelectorAll("a, button").forEach(el => {
+    el.addEventListener("click", markNavigation);
+  });
+});
+
+// ✅ 如果從歷史紀錄返回，也補標記
+window.addEventListener("pageshow", (e) => {
+  if (e.persisted || performance.getEntriesByType("navigation")[0]?.type === "back_forward") {
+    markNavigation();
+  }
+});
+
+// ✅ 自動登出倒數邏輯（viewer / select 專用）
 if (window.location.pathname.includes("pdf-select") || window.location.pathname.includes("pdf-viewer")) {
   validateSession().then(valid => {
     if (!valid) {
