@@ -163,30 +163,19 @@
       localStorage.setItem("currentPDF", subjectId);
       localStorage.setItem("currentPDFName", subjectText);
 
-      // ✅ 頁面跳轉前標記，防止誤判登出
       sessionStorage.setItem("pageNavigation", "true");
-
-      // ✅ 延遲讓 beforeunload 正確判斷
-      setTimeout(() => {
-        window.location.href = "pdf-viewer.html";
-      }, 100);
+      window.location.href = "pdf-viewer.html";
     });
 
     logoutBtn.addEventListener("click", () => {
       window.logout();
     });
 
-    // ✅ 初始化時也補標記，避免剛進入頁面誤判關閉
+    // ✅ 頁面載入時補標記
     window.addEventListener("DOMContentLoaded", () => {
       sessionStorage.setItem("pageNavigation", "true");
+      setTimeout(() => sessionStorage.setItem("pageNavigation", "true"), 100);
       loadUserPermissions();
-    });
-
-    // ✅ 歷史返回補標記
-    window.addEventListener("pageshow", (e) => {
-      if (e.persisted || performance.getEntriesByType("navigation")[0]?.type === "back_forward") {
-        sessionStorage.setItem("pageNavigation", "true");
-      }
     });
   </script>
 </body>
