@@ -1,132 +1,105 @@
 <!DOCTYPE html>
 <html lang="zh-TW">
 <head>
-  <script type="module" src="script.js"></script>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
-  <title>PDF 觀看</title>
+  <title>PDF 閱讀器</title>
+
+  <!-- ✅ 主邏輯 -->
+  <script type="module" src="script.js"></script>
+
   <style>
     body {
       margin: 0;
-      background-color: black;
-      color: white;
-      text-align: center;
+      overflow: hidden;
+      font-family: sans-serif;
     }
-    .pdf-container {
-      width: 90vw;
-      height: 90vh;
-      position: relative;
-      margin: 20px auto;
-    }
-    iframe {
-      width: 100%;
-      height: 100%;
+    #pdf-frame {
+      width: 100vw;
+      height: 100vh;
       border: none;
-    }
-    .overlay {
-      width: 100px;
-      height: 100px;
-      position: absolute;
-      opacity: 0;
-      right: 0px;
-      top: 0px;
-      z-index: 10;
-    }
-    #countdown {
-      position: fixed;
-      top: 10px;
-      left: 10px;
-      font-size: 18px;
-      background: rgba(255, 0, 0, 0.8);
-      color: white;
-      padding: 10px 15px;
-      border-radius: 10px;
-      font-weight: bold;
-    }
-    #logout-warning {
-      position: fixed;
-      bottom: 5px;
-      left: 50%;
-      transform: translateX(-50%);
-      background-color: rgba(255, 0, 0, 0.8);
-      color: white;
-      padding: 5px 15px;
-      font-size: 14px;
-      font-weight: bold;
-      border-radius: 5px;
-      z-index: 1000;
-      box-shadow: 0px 2px 5px rgba(0, 0, 0, 0.2);
     }
     #logout-btn {
       position: fixed;
       top: 10px;
       right: 10px;
-      padding: 10px 15px;
+      z-index: 9999;
       background-color: red;
       color: white;
+      padding: 10px 15px;
+      font-size: 16px;
       border: none;
       cursor: pointer;
+    }
+    #countdown {
+      position: fixed;
+      top: 10px;
+      left: 10px;
       font-size: 16px;
+      background-color: rgba(255, 0, 0, 0.8);
+      color: white;
+      padding: 8px 12px;
+      border-radius: 8px;
+      font-weight: bold;
+      z-index: 9999;
     }
   </style>
 </head>
 <body>
-  <h2 id="pdfTitle">📖 PDF 觀看</h2>
-  <div id="countdown">⏳ 自動登出倒數：<span id="timer">30:00</span></div>
-  <div class="pdf-container">
-    <iframe id="pdfFrame"></iframe>
-    <div class="overlay"></div>
-  </div>
-  <div id="logout-warning">⚠️ **請務必透過登出鈕登出！**</div>
-  <button id="logout-btn">🚪 登出</button>
+  <div id="countdown">⏳ 剩餘時間：<span id="timer">30:00</span></div>
+  <button id="logout-btn" onclick="window.logout()">🚪 登出</button>
+  <iframe id="pdf-frame"></iframe>
 
-  <script type="module">
-    function markNavigation() {
-      sessionStorage.setItem("pageNavigation", "true");
+  <script>
+    const pdfId = localStorage.getItem("currentPDF");
+    const pdfFrame = document.getElementById("pdf-frame");
+
+    if (!pdfId) {
+      alert("❌ 未選擇 PDF，返回首頁");
+      window.location.href = "index.html";
+    } else {
+      pdfFrame.src = `https://drive.google.com/file/d/${pdfId}/preview`;
     }
+  </script>
 
-    function loadPDF() {
-      const fileId = localStorage.getItem("currentPDF");
-      const fileName = localStorage.getItem("currentPDFName");
-      if (!fileId || !fileName) {
-        alert("❌ 無法載入 PDF，請重新選擇科目！");
-        window.location.href = "pdf-select.html";
-        return;
-      }
-      document.getElementById("pdfTitle").innerText = `📖 ${fileName}`;
-      const pdfUrl = `https://drive.google.com/file/d/${fileId}/preview?embedded=true`;
-      document.getElementById("pdfFrame").src = pdfUrl;
-    }
+  <!-- ✅ 防護區段 -->
+  <script>
+    // 禁止右鍵選單
+    window.addEventListener("contextmenu", e => e.preventDefault());
 
-    // ✅ 初始載入與頁面還原都標記跳轉，避免誤登出
-    window.addEventListener("DOMContentLoaded", () => {
-      markNavigation();
-      setTimeout(markNavigation, 50); // ✅ 再標一次給 Safari
-      loadPDF();
-    });
-
-    window.addEventListener("pageshow", (e) => {
-      if (e.persisted || performance.getEntriesByType("navigation")[0]?.type === "back_forward") {
-        markNavigation();
-      }
-    });
-
-    document.getElementById("logout-btn").addEventListener("click", () => {
-      window.logout();
-    });
-
-    // ✅ 防止右鍵與常見 F12/開發工具
-    document.addEventListener("contextmenu", e => e.preventDefault());
-    document.addEventListener("keydown", e => {
+    // 禁止快捷鍵
+    window.addEventListener("keydown", function (e) {
+      // F12、Ctrl+Shift+I、Ctrl+Shift+J、Ctrl+U、Ctrl+S、Ctrl+C、PrintScreen
       if (
-        e.keyCode === 123 || // F12
-        (e.ctrlKey && e.shiftKey && (e.keyCode === 73 || e.keyCode === 74)) || // Ctrl+Shift+I/J
-        (e.ctrlKey && e.keyCode === 85) || // Ctrl+U
-        (e.ctrlKey && e.keyCode === 83)    // Ctrl+S
+        e.key === "F12" ||
+        (e.ctrlKey && e.shiftKey && ["I", "J"].includes(e.key)) ||
+        (e.ctrlKey && ["U", "S", "C"].includes(e.key)) ||
+        (e.key === "PrintScreen")
       ) {
         e.preventDefault();
+        alert("⚠️ 操作已被禁止");
       }
     });
+
+    // 嘗試阻止 PrintScreen（進階防截圖）
+    setInterval(() => {
+      navigator.clipboard.writeText("⛔ 請勿截圖");
+    }, 1000);
+
+    // 隱藏視覺選取（防止複製）
+    document.body.style.userSelect = "none";
+
+    // 偵測 DevTools 開啟（基礎）
+    setInterval(() => {
+      const devtoolsOpened = /./;
+      devtoolsOpened.toString = function () {
+        this.opened = true;
+        alert("🚨 偵測到開發者工具已開啟，頁面將跳轉！");
+        window.location.href = "index.html";
+        return "";
+      };
+      console.log(devtoolsOpened);
+    }, 3000);
   </script>
 </body>
 </html>
