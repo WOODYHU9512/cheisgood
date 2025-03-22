@@ -162,11 +162,8 @@
 
       localStorage.setItem("currentPDF", subjectId);
       localStorage.setItem("currentPDFName", subjectText);
-
-      sessionStorage.setItem("pageNavigation", "true"); // ✅ 標記跳轉
-      setTimeout(() => {
-        window.location.href = "pdf-viewer.html";
-      }, 100); // 稍微延遲確保 flag 被設好
+      sessionStorage.setItem("pageNavigation", "true");
+      window.location.href = "pdf-viewer.html";
     });
 
     logoutBtn.addEventListener("click", () => {
@@ -174,7 +171,6 @@
     });
 
     window.addEventListener("DOMContentLoaded", () => {
-      // ✅ 避免首次載入誤判為關閉
       setTimeout(() => {
         sessionStorage.setItem("pageNavigation", "true");
       }, 0);
