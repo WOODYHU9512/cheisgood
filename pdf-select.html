@@ -5,10 +5,12 @@
   <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
   <title>選擇學校與科目</title>
 
-  <!-- ✅ 先標記，避免 reload 被誤判 -->
+  <!-- ✅ 頁面一進來就標記跳轉（避免 reload 被誤判關閉） -->
   <script>
     sessionStorage.setItem("pageNavigation", "true");
   </script>
+
+  <!-- ✅ 主邏輯 -->
   <script type="module" src="script.js"></script>
 
   <style>
@@ -44,17 +46,18 @@
       font-size: 14px;
       font-weight: bold;
       border-radius: 5px;
+      z-index: 1000;
     }
     #logout-btn {
       position: fixed;
       top: 10px;
       right: 10px;
+      padding: 10px 15px;
       background-color: red;
       color: white;
       border: none;
-      font-size: 16px;
-      padding: 10px 15px;
       cursor: pointer;
+      font-size: 16px;
     }
   </style>
 </head>
@@ -74,7 +77,7 @@
 
   <button id="viewBtn">觀看 PDF</button>
 
-  <div id="logout-warning">⚠️ 請務必透過登出鈕登出</div>
+  <div id="logout-warning">⚠️ 請務必透過登出鈕登出！</div>
   <button id="logout-btn">🚪 登出</button>
 
   <script type="module">
@@ -118,13 +121,13 @@
       "中興": {
         "106-114 中興工程數學與輸送現象": "1AREZvc7hVtVHGpG7qwoZkRVD96ljlcXt",
         "106-114 中興化熱化反": "1uYHa87G9aoc9VnyVjeXJPgVnVKPI_ujS"
-
+      }
     };
 
     let authorizedSchools = [];
 
     async function loadUserPermissions() {
-      const username = localStorage.getItem("loggedInUser");
+      const username = localStorage.getItem('loggedInUser');
       if (!username) return;
       const snapshot = await get(ref(db, `users/${username}/purchased`));
       if (snapshot.exists()) {
@@ -168,6 +171,7 @@
       localStorage.setItem("currentPDFName", subjectText);
       sessionStorage.setItem("pageNavigation", "true");
 
+      // ✅ 延遲跳轉，確保標記完成再跳
       setTimeout(() => {
         window.location.href = "pdf-viewer.html";
       }, 50);
