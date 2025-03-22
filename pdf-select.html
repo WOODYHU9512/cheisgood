@@ -39,6 +39,7 @@
       font-weight: bold;
       border-radius: 5px;
       z-index: 1000;
+      box-shadow: 0px 2px 5px rgba(0, 0, 0, 0.2);
     }
     #logout-btn {
       position: fixed;
@@ -69,7 +70,7 @@
 
   <button id="viewBtn">觀看 PDF</button>
 
-  <div id="logout-warning">⚠️ 請務必透過右上角登出鈕登出！</div>
+  <div id="logout-warning">⚠️ **請務必透過登出鈕登出！**</div>
   <button id="logout-btn">🚪 登出</button>
 
   <script type="module">
@@ -119,7 +120,7 @@
     let authorizedSchools = [];
 
     async function loadUserPermissions() {
-      const username = localStorage.getItem('loggedInUser');
+      const username = localStorage.getItem("loggedInUser");
       if (!username) return;
       const snapshot = await get(ref(db, `users/${username}/purchased`));
       if (snapshot.exists()) {
@@ -162,7 +163,8 @@
       localStorage.setItem("currentPDF", subjectId);
       localStorage.setItem("currentPDFName", subjectText);
 
-      sessionStorage.setItem("pageNavigation", "true"); // ✅ 明確標記為跳轉
+      // ✅ 標記跳轉行為
+      sessionStorage.setItem("pageNavigation", "true");
       window.location.href = "pdf-viewer.html";
     });
 
@@ -170,16 +172,15 @@
       window.logout();
     });
 
+    // ✅ 初次載入時補標記（確保 reload 不被誤判）
     window.addEventListener("DOMContentLoaded", () => {
-      sessionStorage.setItem("pageNavigation", "true"); // ✅ 頁面載入就先標記，防止重新整理誤登出
+      setTimeout(() => sessionStorage.setItem("pageNavigation", "true"), 0);
       loadUserPermissions();
     });
 
-    window.addEventListener("pageshow", (e) => {
-      if (
-        e.persisted ||
-        performance.getEntriesByType("navigation")[0]?.type === "back_forward"
-      ) {
+    // ✅ 從歷史返回也補標記
+    window.addEventListener("pageshow", e => {
+      if (e.persisted || performance.getEntriesByType("navigation")[0]?.type === "back_forward") {
         sessionStorage.setItem("pageNavigation", "true");
       }
     });
