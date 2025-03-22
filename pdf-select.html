@@ -162,18 +162,21 @@
 
       localStorage.setItem("currentPDF", subjectId);
       localStorage.setItem("currentPDFName", subjectText);
+
+      // ✅ 明確標記跳轉
       sessionStorage.setItem("pageNavigation", "true");
-      window.location.href = "pdf-viewer.html";
+      setTimeout(() => {
+        window.location.href = "pdf-viewer.html";
+      }, 50);
     });
 
     logoutBtn.addEventListener("click", () => {
       window.logout();
     });
 
+    // ✅ 頁面載入時強化跳轉標記（防止刷新誤登出）
     window.addEventListener("DOMContentLoaded", () => {
-      setTimeout(() => {
-        sessionStorage.setItem("pageNavigation", "true");
-      }, 0);
+      setTimeout(() => sessionStorage.setItem("pageNavigation", "true"), 0);
       loadUserPermissions();
     });
   </script>
