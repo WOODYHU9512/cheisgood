@@ -5,10 +5,10 @@
   <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
   <title>選擇學校與科目</title>
 
+  <!-- 加記識讓 script.js 分辨不是關閉頁面 -->
   <script>
     sessionStorage.setItem("pageNavigation", "true");
   </script>
-
   <script type="module" src="script.js"></script>
 
   <style>
@@ -21,17 +21,6 @@
       margin: 10px;
       padding: 10px;
       font-size: 16px;
-    }
-    #countdown {
-      position: fixed;
-      top: 10px;
-      left: 10px;
-      font-size: 18px;
-      background: rgba(255, 0, 0, 0.8);
-      color: white;
-      padding: 10px 15px;
-      border-radius: 10px;
-      font-weight: bold;
     }
     #logout-warning {
       position: fixed;
@@ -61,7 +50,6 @@
 </head>
 <body>
   <h2>請選擇學校與科目</h2>
-  <div id="countdown">⏳ 自動登出倒數：<span id="timer">30:00</span></div>
 
   <label for="schoolSelect">選擇學校：</label>
   <select id="schoolSelect">
@@ -92,22 +80,26 @@
       const sessionToken = localStorage.getItem("sessionToken");
       if (!username || !sessionToken) return;
 
-      const res = await fetch("https://us-central1-access-7a3c3.cloudfunctions.net/getPurchasedSubjects", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ username, sessionToken })
-      });
+      try {
+        const res = await fetch("https://us-central1-access-7a3c3.cloudfunctions.net/getPurchasedSubjects", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ username, sessionToken })
+        });
 
-      const data = await res.json();
-      if (data.purchased) {
-        purchased = data.purchased;
-        populateSchoolOptions();
+        const data = await res.json();
+        if (data.purchased) {
+          purchased = data.purchased;
+          populateSchoolOptions();
+        }
+      } catch (err) {
+        alert("無法讀取授權資訊");
       }
     }
 
     function populateSchoolOptions() {
       schoolSelect.innerHTML = '<option value="">請選擇學校</option>';
-      Object.keys(purchased).forEach(school => {
+      Object.keys(purchased).forEach((school) => {
         const option = document.createElement("option");
         option.value = school;
         option.textContent = school;
@@ -116,22 +108,26 @@
     }
 
     async function fetchSubjectsForSchool(school) {
-      const res = await fetch("https://us-central1-access-7a3c3.cloudfunctions.net/getSubjectsBySchool", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ school })
-      });
+      try {
+        const res = await fetch("https://us-central1-access-7a3c3.cloudfunctions.net/getSubjectsBySchool", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ school })
+        });
 
-      const data = await res.json();
-      currentSubjects = data.subjects || {};
+        const data = await res.json();
+        currentSubjects = data.subjects || {};
 
-      subjectSelect.innerHTML = '<option value="">請選擇科目</option>';
-      Object.entries(currentSubjects).forEach(([subject, fileId]) => {
-        const option = document.createElement("option");
-        option.value = fileId;
-        option.textContent = subject;
-        subjectSelect.appendChild(option);
-      });
+        subjectSelect.innerHTML = '<option value="">請選擇科目</option>';
+        Object.entries(currentSubjects).forEach(([subject, fileId]) => {
+          const option = document.createElement("option");
+          option.value = fileId;
+          option.textContent = subject;
+          subjectSelect.appendChild(option);
+        });
+      } catch (err) {
+        alert("無法讀取科目");
+      }
     }
 
     schoolSelect.addEventListener("change", () => {
@@ -142,6 +138,7 @@
     viewBtn.addEventListener("click", () => {
       const subjectId = subjectSelect.value;
       const subjectText = subjectSelect.options[subjectSelect.selectedIndex]?.text;
+
       if (!subjectId) {
         alert("❌ 請選擇科目！");
         return;
@@ -150,30 +147,14 @@
       localStorage.setItem("currentPDF", subjectId);
       localStorage.setItem("currentPDFName", subjectText);
       sessionStorage.setItem("pageNavigation", "true");
+
       setTimeout(() => {
         window.location.href = "pdf-viewer.html";
       }, 50);
     });
 
     logoutBtn.addEventListener("click", async () => {
-      const username = localStorage.getItem("loggedInUser");
-      const sessionToken = localStorage.getItem("sessionToken");
-
-      if (username && sessionToken) {
-        try {
-          const ref = await fetch("https://us-central1-access-7a3c3.cloudfunctions.net/heartbeat", {
-            method: "POST",
-            headers: { "Content-Type": "application/json" },
-            body: JSON.stringify({ username, sessionToken })
-          });
-          if (ref.ok) {
-            // 登出動作在 script.js 中執行
-            await window.logout();
-          }
-        } catch (err) {
-          console.error("登出失敗：", err);
-        }
-      }
+      if (window.logout) await window.logout();
     });
 
     window.addEventListener("DOMContentLoaded", getPurchasedSchools);
