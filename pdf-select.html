@@ -5,7 +5,7 @@
   <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
   <title>選擇學校與科目</title>
 
-  <!-- 加記識讓 script.js 分辨不是關閉頁面 -->
+  <!-- 加認證讓 script.js 分辨不是關閉頁面 -->
   <script>
     sessionStorage.setItem("pageNavigation", "true");
   </script>
@@ -63,7 +63,7 @@
 
   <button id="viewBtn">觀看 PDF</button>
 
-  <div id="logout-warning">⚠️ 請務必透過登出鈕登出！</div>
+  <div id="logout-warning">⚠️ 請加強送出登出要求！</div>
   <button id="logout-btn">🚪 登出</button>
 
   <script>
@@ -108,11 +108,15 @@
     }
 
     async function fetchSubjectsForSchool(school) {
+      const username = localStorage.getItem("loggedInUser");
+      const sessionToken = localStorage.getItem("sessionToken");
+      if (!username || !sessionToken || !school) return;
+
       try {
         const res = await fetch("https://us-central1-access-7a3c3.cloudfunctions.net/getSubjectsBySchool", {
           method: "POST",
           headers: { "Content-Type": "application/json" },
-          body: JSON.stringify({ school })
+          body: JSON.stringify({ username, sessionToken, school })
         });
 
         const data = await res.json();
