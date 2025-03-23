@@ -5,10 +5,12 @@
   <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
   <title>選擇學校與科目</title>
 
+  <!-- ✅ 標記頁面跳轉 -->
   <script>
     sessionStorage.setItem("pageNavigation", "true");
   </script>
 
+  <!-- ✅ 主邏輯 -->
   <script type="module" src="script.js"></script>
 
   <style>
@@ -78,16 +80,7 @@
   <div id="logout-warning">⚠️ 請務必透過登出鈕登出！</div>
   <button id="logout-btn">🚪 登出</button>
 
-  <script type="module">
-    import { initializeApp } from "https://www.gstatic.com/firebasejs/9.6.1/firebase-app.js";
-    import { getDatabase, ref, get } from "https://www.gstatic.com/firebasejs/9.6.1/firebase-database.js";
-
-    const firebaseConfig = {
-      databaseURL: "https://access-7a3c3-default-rtdb.firebaseio.com/"
-    };
-    const app = initializeApp(firebaseConfig);
-    const db = getDatabase(app);
-
+  <script>
     const schoolSelect = document.getElementById("schoolSelect");
     const subjectSelect = document.getElementById("subjectSelect");
     const viewBtn = document.getElementById("viewBtn");
@@ -124,50 +117,31 @@
 
     let authorizedSchools = [];
 
-    async function verifyLogin() {
+    async function loadUserPermissions() {
       const username = localStorage.getItem("loggedInUser");
       const sessionToken = localStorage.getItem("sessionToken");
-
-      if (!username || !sessionToken) {
-        alert("❌ 未登入或登入資訊遺失，請重新登入");
-        window.location.href = "index.html";
-        return;
-      }
+      if (!username || !sessionToken) return;
 
       try {
-        const res = await fetch("https://us-central1-access-7a3c3.cloudfunctions.net/heartbeat", {
+        const res = await fetch("https://us-central1-access-7a3c3.cloudfunctions.net/getPurchasedSubjects", {
           method: "POST",
           headers: { "Content-Type": "application/json" },
           body: JSON.stringify({ username, sessionToken })
         });
-        if (!res.ok) {
-          alert("⚠️ 登入已過期或被踢出，請重新登入");
-          localStorage.clear();
+
+        const data = await res.json();
+
+        if (res.ok && data.purchased) {
+          authorizedSchools = Object.keys(data.purchased);
+          populateSchoolOptions();
+        } else {
+          alert("❌ 讀取授權學校失敗，請重新登入");
           window.location.href = "index.html";
         }
       } catch (err) {
-        console.error("驗證失敗：", err);
-        alert("⚠️ 無法驗證登入，請稍後再試");
+        console.error("❌ getPurchasedSubjects 錯誤：", err);
+        alert("⚠️ 無法連接伺服器，請重新登入");
         window.location.href = "index.html";
-      }
-    }
-
-    async function loadUserPermissions() {
-      const username = localStorage.getItem("loggedInUser");
-      if (!username) return;
-      console.log("👉 username:", username);
-
-      try {
-        const snapshot = await get(ref(db, `users/${username}/purchased`));
-        if (snapshot.exists()) {
-          authorizedSchools = Object.keys(snapshot.val());
-          console.log("🎯 購買資料:", authorizedSchools);
-          populateSchoolOptions();
-        } else {
-          console.warn("⚠️ 此使用者無購買資料");
-        }
-      } catch (err) {
-        console.error("❌ 無法讀取 purchased 權限：", err);
       }
     }
 
@@ -215,10 +189,32 @@
       window.logout();
     });
 
-    window.addEventListener("DOMContentLoaded", async () => {
-      await verifyLogin();
-      await loadUserPermissions();
+    window.addEventListener("DOMContentLoaded", loadUserPermissions);
+  </script>
+
+  <!-- ✅ 防止開發者工具與複製行為 -->
+  <script>
+    document.addEventListener("contextmenu", e => e.preventDefault());
+    document.addEventListener("selectstart", e => e.preventDefault());
+    document.addEventListener("copy", e => e.preventDefault());
+
+    document.addEventListener("keydown", e => {
+      if (
+        e.key === "F12" ||
+        (e.ctrlKey && e.shiftKey && ["I", "J", "C"].includes(e.key)) ||
+        (e.ctrlKey && ["U", "S", "P"].includes(e.key))
+      ) {
+        e.preventDefault();
+        alert("⚠️ 禁止使用開發者工具！");
+      }
     });
+
+    setInterval(() => {
+      if (window.outerWidth - window.innerWidth > 160) {
+        alert("⚠️ 偵測到開發者工具，頁面將返回！");
+        window.location.href = "index.html";
+      }
+    }, 1000);
   </script>
 </body>
 </html>
