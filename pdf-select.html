@@ -5,12 +5,10 @@
   <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
   <title>選擇學校與科目</title>
 
-  <!-- ✅ 標記頁面跳轉 -->
   <script>
     sessionStorage.setItem("pageNavigation", "true");
   </script>
 
-  <!-- ✅ 主邏輯 -->
   <script type="module" src="script.js"></script>
 
   <style>
@@ -86,68 +84,30 @@
     const viewBtn = document.getElementById("viewBtn");
     const logoutBtn = document.getElementById("logout-btn");
 
-    const subjects = {
-      "台大": {
-        "106~114 台大單操輸送": "1-8YNZiVw81RjqLPPWmzbC0ng4PAIa53a",
-        "106~114 台大化熱化反": "1V1xIOMRl04VJORV4fdKN9Bot76XRnv7A",
-        "106~114 台大工數": "1twqzBEGA7A3YEzYLRf-kDcLqBkOS4ujD"
-      },
-      "清大": {
-        "106~114 清大單操輸送": "1oDoN0B7hpQEvy9MGDrZvkv7v2ow6NRoj",
-        "106~114 清大化熱化反": "14LTMKQmev5gKYjy84RceAq6b-AK_9hTE"
-      },
-      "成大": {
-        "106-114 成大單操輸送": "1Z6dWhVPKlpjQVQLOMl73QCNmLYod7CtY",
-        "106-114 成大化熱": "1YlWIhNIbxILLLSyU0cH9NL6-6oUeWBpu",
-        "106-114 成大化反": "1DFrKbo-9uD-i4e4ipeh3XbX-tgeVEb1Y"
-      },
-      "中央": {
-        "106~114 中央單操輸送": "1sKb01AvjaKl4z-Ch0TyqXKahVhMUA1iE",
-        "106~114 中央化熱化反": "1yN5N4_0B64YtvTmdobnOuJs1mXASH5Xd"
-      },
-      "台科大": {
-        "106-114 台科大工數與單操輸送": "1dq3RAcKUkR4LvZTjDIE1fMFRJ3Vc4346",
-        "106~114 台科大化熱化反": "1rDYx5rR6an3Xg8FQaWan-zqjhovWsn-H"
-      },
-      "中興": {
-        "106-114 中興工程數學與輸送現象": "1AREZvc7hVtVHGpG7qwoZkRVD96ljlcXt",
-        "106-114 中興化熱化反": "1uYHa87G9aoc9VnyVjeXJPgVnVKPI_ujS"
-      }
-    };
+    let purchased = {};
+    let currentSubjects = {};
 
-    let authorizedSchools = [];
-
-    async function loadUserPermissions() {
+    async function getPurchasedSchools() {
       const username = localStorage.getItem("loggedInUser");
       const sessionToken = localStorage.getItem("sessionToken");
       if (!username || !sessionToken) return;
 
-      try {
-        const res = await fetch("https://us-central1-access-7a3c3.cloudfunctions.net/getPurchasedSubjects", {
-          method: "POST",
-          headers: { "Content-Type": "application/json" },
-          body: JSON.stringify({ username, sessionToken })
-        });
+      const res = await fetch("https://us-central1-access-7a3c3.cloudfunctions.net/getPurchasedSubjects", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ username, sessionToken })
+      });
 
-        const data = await res.json();
-
-        if (res.ok && data.purchased) {
-          authorizedSchools = Object.keys(data.purchased);
-          populateSchoolOptions();
-        } else {
-          alert("❌ 讀取授權學校失敗，請重新登入");
-          window.location.href = "index.html";
-        }
-      } catch (err) {
-        console.error("❌ getPurchasedSubjects 錯誤：", err);
-        alert("⚠️ 無法連接伺服器，請重新登入");
-        window.location.href = "index.html";
+      const data = await res.json();
+      if (data.purchased) {
+        purchased = data.purchased;
+        populateSchoolOptions();
       }
     }
 
     function populateSchoolOptions() {
-      schoolSelect.innerHTML = "<option value=''>請選擇學校</option>";
-      authorizedSchools.forEach(school => {
+      schoolSelect.innerHTML = '<option value="">請選擇學校</option>';
+      Object.keys(purchased).forEach(school => {
         const option = document.createElement("option");
         option.value = school;
         option.textContent = school;
@@ -155,17 +115,28 @@
       });
     }
 
+    async function fetchSubjectsForSchool(school) {
+      const res = await fetch("https://us-central1-access-7a3c3.cloudfunctions.net/getSubjectsBySchool", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ school })
+      });
+
+      const data = await res.json();
+      currentSubjects = data.subjects || {};
+
+      subjectSelect.innerHTML = '<option value="">請選擇科目</option>';
+      Object.entries(currentSubjects).forEach(([subject, fileId]) => {
+        const option = document.createElement("option");
+        option.value = fileId;
+        option.textContent = subject;
+        subjectSelect.appendChild(option);
+      });
+    }
+
     schoolSelect.addEventListener("change", () => {
       const school = schoolSelect.value;
-      subjectSelect.innerHTML = "<option value=''>請選擇科目</option>";
-      if (subjects[school]) {
-        Object.entries(subjects[school]).forEach(([subject, fileId]) => {
-          const option = document.createElement("option");
-          option.value = fileId;
-          option.textContent = subject;
-          subjectSelect.appendChild(option);
-        });
-      }
+      if (school) fetchSubjectsForSchool(school);
     });
 
     viewBtn.addEventListener("click", () => {
@@ -179,42 +150,33 @@
       localStorage.setItem("currentPDF", subjectId);
       localStorage.setItem("currentPDFName", subjectText);
       sessionStorage.setItem("pageNavigation", "true");
-
       setTimeout(() => {
         window.location.href = "pdf-viewer.html";
       }, 50);
     });
 
-    logoutBtn.addEventListener("click", () => {
-      window.logout();
-    });
+    logoutBtn.addEventListener("click", async () => {
+      const username = localStorage.getItem("loggedInUser");
+      const sessionToken = localStorage.getItem("sessionToken");
 
-    window.addEventListener("DOMContentLoaded", loadUserPermissions);
-  </script>
-
-  <!-- ✅ 防止開發者工具與複製行為 -->
-  <script>
-    document.addEventListener("contextmenu", e => e.preventDefault());
-    document.addEventListener("selectstart", e => e.preventDefault());
-    document.addEventListener("copy", e => e.preventDefault());
-
-    document.addEventListener("keydown", e => {
-      if (
-        e.key === "F12" ||
-        (e.ctrlKey && e.shiftKey && ["I", "J", "C"].includes(e.key)) ||
-        (e.ctrlKey && ["U", "S", "P"].includes(e.key))
-      ) {
-        e.preventDefault();
-        alert("⚠️ 禁止使用開發者工具！");
+      if (username && sessionToken) {
+        try {
+          const ref = await fetch("https://us-central1-access-7a3c3.cloudfunctions.net/heartbeat", {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify({ username, sessionToken })
+          });
+          if (ref.ok) {
+            // 登出動作在 script.js 中執行
+            await window.logout();
+          }
+        } catch (err) {
+          console.error("登出失敗：", err);
+        }
       }
     });
 
-    setInterval(() => {
-      if (window.outerWidth - window.innerWidth > 160) {
-        alert("⚠️ 偵測到開發者工具，頁面將返回！");
-        window.location.href = "index.html";
-      }
-    }, 1000);
+    window.addEventListener("DOMContentLoaded", getPurchasedSchools);
   </script>
 </body>
 </html>
