@@ -13,7 +13,7 @@
       margin: 0;
       overflow: hidden;
       font-family: sans-serif;
-      user-select: none; /* 禁止選取 */
+      user-select: none;
     }
     #pdf-frame {
       width: 100vw;
@@ -32,22 +32,9 @@
       border: none;
       cursor: pointer;
     }
-    #countdown {
-      position: fixed;
-      top: 10px;
-      left: 10px;
-      font-size: 16px;
-      background-color: rgba(255, 0, 0, 0.8);
-      color: white;
-      padding: 8px 12px;
-      border-radius: 8px;
-      font-weight: bold;
-      z-index: 9999;
-    }
   </style>
 </head>
 <body>
-  <div id="countdown">⏳ 剩餘時間：<span id="timer">30:00</span></div>
   <button id="logout-btn" onclick="window.logout()">🚪 登出</button>
   <iframe id="pdf-frame"></iframe>
 
@@ -83,20 +70,16 @@
     setInterval(() => {
       try {
         navigator.clipboard.writeText("⛔ 此內容受保護，禁止截圖");
-      } catch (e) {
-        // 某些瀏覽器可能不允許主動寫入剪貼簿
-      }
+      } catch (e) {}
     }, 1000);
 
     // 🚨 改良版 DevTools 檢測（非立即觸發）
     (function devtoolsCheck() {
       let opened = false;
-
-      const threshold = 160; // 開發者工具高度或寬度的門檻
+      const threshold = 160;
       setInterval(() => {
         const widthThreshold = window.outerWidth - window.innerWidth > threshold;
         const heightThreshold = window.outerHeight - window.innerHeight > threshold;
-
         if ((widthThreshold || heightThreshold) && !opened) {
           opened = true;
           alert("🚨 偵測到開發者工具，頁面將離開！");
