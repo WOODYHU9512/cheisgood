@@ -155,10 +155,19 @@
     async function loadUserPermissions() {
       const username = localStorage.getItem("loggedInUser");
       if (!username) return;
-      const snapshot = await get(ref(db, `users/${username}/purchased`));
-      if (snapshot.exists()) {
-        authorizedSchools = Object.keys(snapshot.val());
-        populateSchoolOptions();
+      console.log("👉 username:", username);
+
+      try {
+        const snapshot = await get(ref(db, `users/${username}/purchased`));
+        if (snapshot.exists()) {
+          authorizedSchools = Object.keys(snapshot.val());
+          console.log("🎯 購買資料:", authorizedSchools);
+          populateSchoolOptions();
+        } else {
+          console.warn("⚠️ 此使用者無購買資料");
+        }
+      } catch (err) {
+        console.error("❌ 無法讀取 purchased 權限：", err);
       }
     }
 
