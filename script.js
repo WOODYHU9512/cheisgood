@@ -13,21 +13,22 @@ const firebaseConfig = {
 const app = initializeApp(firebaseConfig);
 const db = getDatabase(app);
 
-// ✅ 登出功能
+// ✅ 登出功能（透過 Cloud Function 完整處理）
 async function logoutUser(showLog = true) {
   const username = localStorage.getItem("loggedInUser");
   const sessionToken = localStorage.getItem("sessionToken");
   if (!username || !sessionToken) return;
 
   try {
-    await fetch("https://us-central1-access-7a3c3.cloudfunctions.net/heartbeat", {
+    const res = await fetch("https://us-central1-access-7a3c3.cloudfunctions.net/logoutUser", {
       method: "POST",
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify({ username, sessionToken })
     });
-    const userRef = ref(db, `users/${username}`);
-    await update(userRef, { isLoggedIn: false, sessionToken: "" });
-    if (showLog) console.log(`✅ ${username} 已從 Firebase 登出`);
+
+    if (res.ok && showLog) {
+      console.log(`✅ ${username} 已從 Firebase 登出`);
+    }
   } catch (err) {
     console.error("❌ 登出失敗：", err);
   }
@@ -72,49 +73,12 @@ async function startSessionChecker() {
   }, 10000); // 每 10 秒檢查一次
 }
 
-// ✅ 自動登出倒數（viewer / select 專用）
+// ✅ 啟動 session 驗證（viewer / select 專用）
 if (
   window.location.pathname.includes("pdf-select") ||
   window.location.pathname.includes("pdf-viewer")
 ) {
   startSessionChecker();
-
-  let timeLeft = 1800;
-  let idleTimer;
-  const timerDisplay = document.getElementById("timer");
-
-  function updateTimer() {
-    if (!timerDisplay) return;
-    const m = Math.floor(timeLeft / 60);
-    const s = timeLeft % 60;
-    timerDisplay.innerText = `${m}:${s < 10 ? "0" : ""}${s}`;
-  }
-
-  function resetTimer() {
-    timeLeft = 1800;
-    updateTimer();
-  }
-
-  function startCountdown() {
-    clearInterval(idleTimer);
-    idleTimer = setInterval(async () => {
-      timeLeft--;
-      updateTimer();
-      if (timeLeft <= 0) {
-        clearInterval(idleTimer);
-        alert("⏰ 閒置超過 30 分鐘，自動登出！");
-        await logoutUser();
-        window.location.href = "index.html";
-      }
-    }, 1000);
-  }
-
-  document.addEventListener("mousemove", resetTimer);
-  document.addEventListener("keydown", resetTimer);
-  document.addEventListener("touchstart", resetTimer);
-
-  resetTimer();
-  startCountdown();
 }
 
 // ✅ 提供登出按鈕用
