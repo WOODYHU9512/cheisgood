@@ -29,19 +29,6 @@
       border: none;
       cursor: pointer;
     }
-    #logout-warning {
-      position: fixed;
-      bottom: 5px;
-      left: 50%;
-      transform: translateX(-50%);
-      background-color: rgba(255, 0, 0, 0.8);
-      color: white;
-      padding: 5px 15px;
-      font-size: 14px;
-      font-weight: bold;
-      border-radius: 5px;
-      z-index: 10001;
-    }
     .watermark {
       position: fixed;
       color: rgba(128, 128, 128, 0.12);
@@ -66,7 +53,6 @@
 </head>
 <body>
   <button id="logout-btn" onclick="window.logout()">🚪 登出</button>
-  <div id="logout-warning">⚠️ 請務必透過登出鈕登出！</div>
   <iframe id="pdf-frame"></iframe>
 
   <footer>
@@ -87,10 +73,9 @@
       pdfFrame.src = `https://drive.google.com/file/d/${pdfId}/preview`;
     }
 
-    // ✅ 浮水印跨越畫面（左下斜向右上）
+    // ✅ 浮水印：從左下跨過整個畫面至右上
     if (username) {
       const step = 100;
-      const w = window.innerWidth;
       const h = window.innerHeight;
       for (let y = h; y > -h; y -= step) {
         const wm = document.createElement("div");
@@ -105,7 +90,7 @@
   </script>
 
   <script>
-    // ✅ 禁止右鍵、F12、開發者快捷鍵
+    // 禁止右鍵、F12、開發者快捷鍵
     window.addEventListener("contextmenu", e => e.preventDefault());
 
     window.addEventListener("keydown", function (e) {
@@ -117,14 +102,14 @@
       }
     });
 
-    // ✅ 禁止截圖行為提示
+    // 禁止截圖行為提示
     setInterval(() => {
       try {
         navigator.clipboard.writeText("⛔ 此內容受保護，禁止截圖");
       } catch (e) {}
     }, 1000);
 
-    // ✅ DevTools 偵測（避免一進來就誤判 + 不因滾動誤判）
+    // 開發者工具偵測（避免初始誤判 + 防滾動誤判）
     (function () {
       let devtools = { open: false };
       const element = new Image();
@@ -147,7 +132,7 @@
 
       setTimeout(() => {
         setInterval(checkDevtools, 1500);
-      }, 4000); // 延遲啟動，避免初始誤判
+      }, 4000); // 延遲啟動，避免剛進頁面時誤判
     })();
   </script>
 </body>
