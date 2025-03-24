@@ -42,16 +42,17 @@
       border-radius: 5px;
       z-index: 10001;
     }
-    .watermark {
-      position: fixed;
-      color: rgba(128, 128, 128, 0.15);
-      font-size: 28px;
-      white-space: nowrap;
-      pointer-events: none;
-      z-index: 9999;
-      transform: rotate(-30deg);
-      user-select: none;
-    }
+    ..watermark {
+  position: fixed;
+  color: rgba(128, 128, 128, 0.1);
+  font-size: 32px;
+  white-space: nowrap;
+  pointer-events: none;
+  z-index: 9999;
+  user-select: none;
+  text-align: center;
+}
+
     footer {
       position: fixed;
       bottom: 0;
@@ -89,16 +90,24 @@
 
     // ✅ 建立斜向浮水印（左下往右上）
     if (username) {
-      const numWatermarks = 6;
-      for (let i = 0; i < numWatermarks; i++) {
-        const wm = document.createElement("div");
-        wm.className = "watermark";
-        wm.innerText = username.repeat(20);
-        wm.style.bottom = `${i * 15}%`;
-        wm.style.left = `${i * 5}%`;
-        document.body.appendChild(wm);
-      }
-    }
+  const screenWidth = window.innerWidth;
+  const screenHeight = window.innerHeight;
+  const numWatermarks = 10;
+  const spacing = screenHeight / numWatermarks;
+
+  for (let i = 0; i < numWatermarks; i++) {
+    const wm = document.createElement("div");
+    wm.className = "watermark";
+    wm.innerText = username.repeat(30);
+    
+    wm.style.left = `-50%`;
+    wm.style.top = `${screenHeight - i * spacing}px`;
+    wm.style.transform = "rotate(-30deg)";
+    wm.style.width = "200%"; // 確保跨過整個畫面
+    document.body.appendChild(wm);
+  }
+}
+
   </script>
 
   <script>
