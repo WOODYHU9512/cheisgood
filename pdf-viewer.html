@@ -83,7 +83,7 @@
         const wm = document.createElement("div");
         wm.className = "watermark";
         wm.innerText = username.repeat(20);
-        wm.style.bottom = `${i * 12}%`;
+        wm.style.bottom = `${i * 10}%`;
         wm.style.left = `${i * 5}%`;
         document.body.appendChild(wm);
       }
@@ -108,28 +108,31 @@
       } catch (e) {}
     }, 1000);
 
-    // ✅ 開發者工具偵測，避免剛開啟頁面時誤判
+    // ✅ 開發者工具偵測（避免剛開啟誤判）
     (function devtoolsCheck() {
       let opened = false;
       const threshold = 160;
-      let lastInner = window.innerWidth + window.innerHeight;
+      let baseline = {
+        width: window.outerWidth - window.innerWidth,
+        height: window.outerHeight - window.innerHeight
+      };
+      let suspiciousCount = 0;
 
       setInterval(async () => {
-        const widthThreshold = window.outerWidth - window.innerWidth > threshold;
-        const heightThreshold = window.outerHeight - window.innerHeight > threshold;
-        const currentInner = window.innerWidth + window.innerHeight;
+        const dw = Math.abs((window.outerWidth - window.innerWidth) - baseline.width);
+        const dh = Math.abs((window.outerHeight - window.innerHeight) - baseline.height);
+        const suspicious = dw > threshold || dh > threshold;
 
-        // 忽略剛開啟造成的視窗變化（避免誤判）
-        if (Math.abs(currentInner - lastInner) > 160) {
-          lastInner = currentInner;
-          return;
-        }
-
-        if ((widthThreshold || heightThreshold) && !opened) {
-          opened = true;
-          alert("🚨 偵測到開發者工具，頁面將離開！");
-          if (window.logout) await window.logout();
-          window.location.href = "index.html";
+        if (suspicious) {
+          suspiciousCount++;
+          if (suspiciousCount >= 3 && !opened) {
+            opened = true;
+            alert("🚨 偵測到開發者工具，頁面將離開！");
+            if (window.logout) await window.logout();
+            window.location.href = "index.html";
+          }
+        } else {
+          suspiciousCount = 0;
         }
       }, 1000);
     })();
