@@ -16,6 +16,8 @@
       width: 100vw;
       height: 100vh;
       border: none;
+      position: relative;
+      z-index: 1;
     }
     #logout-btn {
       position: fixed;
@@ -42,13 +44,20 @@
       border-radius: 5px;
       z-index: 10001;
     }
-    .watermark {
+    #watermark-container {
       position: fixed;
+      pointer-events: none;
+      top: 0;
+      left: 0;
+      width: 100vw;
+      height: 100vh;
+      z-index: 9999;
+    }
+    .watermark {
+      position: absolute;
       color: rgba(128, 128, 128, 0.15);
       font-size: 32px;
       white-space: nowrap;
-      pointer-events: none;
-      z-index: 9999;
       transform: rotate(-30deg);
       user-select: none;
     }
@@ -58,6 +67,7 @@
   <button id="logout-btn" onclick="window.logout()">🚪 登出</button>
   <div id="logout-warning">⚠️ 請務必透過登出鈕登出！</div>
   <iframe id="pdf-frame"></iframe>
+  <div id="watermark-container"></div>
   <footer>
     <p>若有操作相關疑問，請聯絡 <a href="https://www.facebook.com/CHEisverygood/" target="_blank">Facebook 粉專</a> 或來信 <a href="mailto:cheerfactorysolution@gmail.com">cheerfactorysolution@gmail.com</a></p>
     <p>著作權所有，侵害必究 © 化工製造所</p>
@@ -76,16 +86,17 @@
       pdfFrame.src = `https://drive.google.com/file/d/${pdfId}/preview`;
     }
 
-    // ✅ 建立斜向浮水印（左下往右上）
+    // ✅ 建立斜向浮水印
     if (username) {
+      const container = document.getElementById("watermark-container");
       const numWatermarks = 6;
       for (let i = 0; i < numWatermarks; i++) {
         const wm = document.createElement("div");
         wm.className = "watermark";
         wm.innerText = username.repeat(20);
-        wm.style.bottom = `${i * 10}%`;
+        wm.style.bottom = `${i * 12}%`;
         wm.style.left = `${i * 5}%`;
-        document.body.appendChild(wm);
+        container.appendChild(wm);
       }
     }
   </script>
@@ -108,33 +119,26 @@
       } catch (e) {}
     }, 1000);
 
-    // ✅ 開發者工具偵測（避免剛開啟誤判）
-    // ✅ 改善後的開發者工具偵測邏輯
-(function devtoolsCheck() {
-  let opened = false;
-  let suspiciousCount = 0;
-  const threshold = 160;
+    // ✅ 改良開發者工具偵測，避免剛開啟時誤判
+    (function devtoolsCheck() {
+      let opened = false;
+      let allowInitial = true;
 
-  setInterval(async () => {
-    const widthGap = window.outerWidth - window.innerWidth;
-    const heightGap = window.outerHeight - window.innerHeight;
+      setTimeout(() => { allowInitial = false; }, 3000); // 前 3 秒不檢查避免誤判
 
-    const devtoolsLikelyOpen = widthGap > threshold || heightGap > threshold;
+      const threshold = 160;
+      setInterval(async () => {
+        const widthThreshold = window.outerWidth - window.innerWidth > threshold;
+        const heightThreshold = window.outerHeight - window.innerHeight > threshold;
 
-    if (devtoolsLikelyOpen) {
-      suspiciousCount++;
-      if (suspiciousCount >= 4 && !opened) {
-        opened = true;
-        alert("🚨 偵測到開發者工具，頁面將離開！");
-        if (window.logout) await window.logout();
-        window.location.href = "index.html";
-      }
-    } else {
-      suspiciousCount = 0; // 回歸正常則重置
-    }
-  }, 1000);
-})();
-
+        if ((widthThreshold || heightThreshold) && !opened && !allowInitial) {
+          opened = true;
+          alert("🚨 偵測到開發者工具，頁面將離開！");
+          if (window.logout) await window.logout();
+          window.location.href = "index.html";
+        }
+      }, 1000);
+    })();
   </script>
 </body>
 </html>
