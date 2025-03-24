@@ -22,19 +22,6 @@
       padding: 10px;
       font-size: 16px;
     }
-    #logout-warning {
-      position: fixed;
-      bottom: 5px;
-      left: 50%;
-      transform: translateX(-50%);
-      background-color: rgba(255, 0, 0, 0.8);
-      color: white;
-      padding: 5px 15px;
-      font-size: 14px;
-      font-weight: bold;
-      border-radius: 5px;
-      z-index: 1000;
-    }
     #logout-btn {
       position: fixed;
       top: 10px;
@@ -45,10 +32,18 @@
       border: none;
       cursor: pointer;
       font-size: 16px;
+      z-index: 1000;
+    }
+    footer {
+      margin-top: 40px;
+      font-size: 13px;
+      color: #555;
     }
   </style>
 </head>
 <body>
+  <button id="logout-btn">🚪 登出</button>
+
   <h2>請選擇學校與科目</h2>
 
   <label for="schoolSelect">選擇學校：</label>
@@ -61,13 +56,13 @@
     <option value="">請先選擇學校</option>
   </select>
 
-  <button id="viewBtn">觀看 PDF</button>
-
+  <button id="viewBtn">📄 觀看 PDF</button>
 
   <footer>
     <p>若有操作相關疑問，請聯絡 <a href="https://www.facebook.com/CHEisverygood/" target="_blank">Facebook 粉專</a> 或來信 <a href="mailto:cheerfactorysolution@gmail.com">cheerfactorysolution@gmail.com</a></p>
     <p>著作權所有，侵害必究 © 化工製造所</p>
   </footer>
+
   <script>
     const schoolSelect = document.getElementById("schoolSelect");
     const subjectSelect = document.getElementById("subjectSelect");
@@ -93,9 +88,11 @@
         if (data.purchased) {
           purchased = data.purchased;
           populateSchoolOptions();
+        } else {
+          alert("❌ 查無授權學校，請重新登入");
         }
       } catch (err) {
-        alert("無法讀取授權資訊");
+        alert("❌ 無法讀取授權資訊");
       }
     }
 
@@ -132,7 +129,7 @@
           subjectSelect.appendChild(option);
         });
       } catch (err) {
-        alert("無法讀取科目");
+        alert("❌ 無法讀取科目");
       }
     }
 
