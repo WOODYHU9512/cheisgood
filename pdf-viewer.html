@@ -44,15 +44,13 @@
     }
     .watermark {
       position: fixed;
-      top: 30%;
-      left: 0;
-      width: 100%;
-      color: rgba(128, 128, 128, 0.2);
+      color: rgba(128, 128, 128, 0.15);
       font-size: 32px;
-      text-align: center;
-      pointer-events: none;
       white-space: nowrap;
+      pointer-events: none;
       z-index: 9999;
+      transform: rotate(-30deg);
+      user-select: none;
     }
   </style>
 </head>
@@ -60,10 +58,11 @@
   <button id="logout-btn" onclick="window.logout()">🚪 登出</button>
   <div id="logout-warning">⚠️ 請務必透過登出鈕登出！</div>
   <iframe id="pdf-frame"></iframe>
-<footer>
+  <footer>
     <p>若有操作相關疑問，請聯絡 <a href="https://www.facebook.com/CHEisverygood/" target="_blank">Facebook 粉專</a> 或來信 <a href="mailto:cheerfactorysolution@gmail.com">cheerfactorysolution@gmail.com</a></p>
     <p>著作權所有，侵害必究 © 化工製造所</p>
-</footer>
+  </footer>
+
   <script>
     const username = localStorage.getItem("loggedInUser");
     const sessionToken = localStorage.getItem("sessionToken");
@@ -77,19 +76,18 @@
       pdfFrame.src = `https://drive.google.com/file/d/${pdfId}/preview`;
     }
 
-    // ✅ 建立斜向浮水印
-if (username) {
-  const numWatermarks = 6; // 控制出現幾條浮水印
-  for (let i = 0; i < numWatermarks; i++) {
-    const wm = document.createElement("div");
-    wm.className = "watermark";
-    wm.innerText = username.repeat(20);
-    wm.style.top = `${i * 15}%`;    // 每條往下偏移
-    wm.style.left = `${i * 5}%`;    // 每條往右偏移
-    document.body.appendChild(wm);
-  }
-}
-
+    // ✅ 建立斜向浮水印（左下往右上）
+    if (username) {
+      const numWatermarks = 6;
+      for (let i = 0; i < numWatermarks; i++) {
+        const wm = document.createElement("div");
+        wm.className = "watermark";
+        wm.innerText = username.repeat(20);
+        wm.style.bottom = `${i * 12}%`;
+        wm.style.left = `${i * 5}%`;
+        document.body.appendChild(wm);
+      }
+    }
   </script>
 
   <script>
@@ -110,12 +108,23 @@ if (username) {
       } catch (e) {}
     }, 1000);
 
+    // ✅ 開發者工具偵測，避免剛開啟頁面時誤判
     (function devtoolsCheck() {
       let opened = false;
       const threshold = 160;
+      let lastInner = window.innerWidth + window.innerHeight;
+
       setInterval(async () => {
         const widthThreshold = window.outerWidth - window.innerWidth > threshold;
         const heightThreshold = window.outerHeight - window.innerHeight > threshold;
+        const currentInner = window.innerWidth + window.innerHeight;
+
+        // 忽略剛開啟造成的視窗變化（避免誤判）
+        if (Math.abs(currentInner - lastInner) > 160) {
+          lastInner = currentInner;
+          return;
+        }
+
         if ((widthThreshold || heightThreshold) && !opened) {
           opened = true;
           alert("🚨 偵測到開發者工具，頁面將離開！");
