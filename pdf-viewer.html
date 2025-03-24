@@ -109,33 +109,32 @@
     }, 1000);
 
     // ✅ 開發者工具偵測（避免剛開啟誤判）
-    (function devtoolsCheck() {
-      let opened = false;
-      const threshold = 160;
-      let baseline = {
-        width: window.outerWidth - window.innerWidth,
-        height: window.outerHeight - window.innerHeight
-      };
-      let suspiciousCount = 0;
+    // ✅ 改善後的開發者工具偵測邏輯
+(function devtoolsCheck() {
+  let opened = false;
+  let suspiciousCount = 0;
+  const threshold = 160;
 
-      setInterval(async () => {
-        const dw = Math.abs((window.outerWidth - window.innerWidth) - baseline.width);
-        const dh = Math.abs((window.outerHeight - window.innerHeight) - baseline.height);
-        const suspicious = dw > threshold || dh > threshold;
+  setInterval(async () => {
+    const widthGap = window.outerWidth - window.innerWidth;
+    const heightGap = window.outerHeight - window.innerHeight;
 
-        if (suspicious) {
-          suspiciousCount++;
-          if (suspiciousCount >= 3 && !opened) {
-            opened = true;
-            alert("🚨 偵測到開發者工具，頁面將離開！");
-            if (window.logout) await window.logout();
-            window.location.href = "index.html";
-          }
-        } else {
-          suspiciousCount = 0;
-        }
-      }, 1000);
-    })();
+    const devtoolsLikelyOpen = widthGap > threshold || heightGap > threshold;
+
+    if (devtoolsLikelyOpen) {
+      suspiciousCount++;
+      if (suspiciousCount >= 4 && !opened) {
+        opened = true;
+        alert("🚨 偵測到開發者工具，頁面將離開！");
+        if (window.logout) await window.logout();
+        window.location.href = "index.html";
+      }
+    } else {
+      suspiciousCount = 0; // 回歸正常則重置
+    }
+  }, 1000);
+})();
+
   </script>
 </body>
 </html>
