@@ -60,7 +60,10 @@
   <button id="logout-btn" onclick="window.logout()">🚪 登出</button>
   <div id="logout-warning">⚠️ 請務必透過登出鈕登出！</div>
   <iframe id="pdf-frame"></iframe>
-
+<footer>
+    <p>若有操作相關疑問，請聯絡 <a href="https://www.facebook.com/CHEisverygood/" target="_blank">Facebook 粉專</a> 或來信 <a href="mailto:cheerfactorysolution@gmail.com">cheerfactorysolution@gmail.com</a></p>
+    <p>著作權所有，侵害必究 © 化工製造所</p>
+</footer>
   <script>
     const username = localStorage.getItem("loggedInUser");
     const sessionToken = localStorage.getItem("sessionToken");
@@ -74,16 +77,19 @@
       pdfFrame.src = `https://drive.google.com/file/d/${pdfId}/preview`;
     }
 
-    // ✅ 建立浮水印
-    if (username) {
-      for (let i = 0; i < 4; i++) {
-        const wm = document.createElement("div");
-        wm.className = "watermark";
-        wm.style.top = `${30 + i * 8}%`;
-        wm.innerText = username.repeat(20);
-        document.body.appendChild(wm);
-      }
-    }
+    // ✅ 建立斜向浮水印
+if (username) {
+  const numWatermarks = 6; // 控制出現幾條浮水印
+  for (let i = 0; i < numWatermarks; i++) {
+    const wm = document.createElement("div");
+    wm.className = "watermark";
+    wm.innerText = username.repeat(20);
+    wm.style.top = `${i * 15}%`;    // 每條往下偏移
+    wm.style.left = `${i * 5}%`;    // 每條往右偏移
+    document.body.appendChild(wm);
+  }
+}
+
   </script>
 
   <script>
