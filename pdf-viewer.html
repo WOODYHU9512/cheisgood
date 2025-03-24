@@ -42,17 +42,16 @@
       border-radius: 5px;
       z-index: 10001;
     }
-    ..watermark {
-  position: fixed;
-  color: rgba(128, 128, 128, 0.1);
-  font-size: 32px;
-  white-space: nowrap;
-  pointer-events: none;
-  z-index: 9999;
-  user-select: none;
-  text-align: center;
-}
-
+    .watermark {
+      position: fixed;
+      color: rgba(128, 128, 128, 0.12);
+      font-size: 32px;
+      white-space: nowrap;
+      pointer-events: none;
+      z-index: 9999;
+      user-select: none;
+      transform: rotate(-30deg);
+    }
     footer {
       position: fixed;
       bottom: 0;
@@ -88,30 +87,25 @@
       pdfFrame.src = `https://drive.google.com/file/d/${pdfId}/preview`;
     }
 
-    // ✅ 建立斜向浮水印（左下往右上）
+    // ✅ 浮水印跨越畫面（左下斜向右上）
     if (username) {
-  const screenWidth = window.innerWidth;
-  const screenHeight = window.innerHeight;
-  const numWatermarks = 10;
-  const spacing = screenHeight / numWatermarks;
-
-  for (let i = 0; i < numWatermarks; i++) {
-    const wm = document.createElement("div");
-    wm.className = "watermark";
-    wm.innerText = username.repeat(30);
-    
-    wm.style.left = `-50%`;
-    wm.style.top = `${screenHeight - i * spacing}px`;
-    wm.style.transform = "rotate(-30deg)";
-    wm.style.width = "200%"; // 確保跨過整個畫面
-    document.body.appendChild(wm);
-  }
-}
-
+      const step = 100;
+      const w = window.innerWidth;
+      const h = window.innerHeight;
+      for (let y = h; y > -h; y -= step) {
+        const wm = document.createElement("div");
+        wm.className = "watermark";
+        wm.innerText = username.repeat(20);
+        wm.style.left = `-50%`;
+        wm.style.top = `${y}px`;
+        wm.style.width = "300%";
+        document.body.appendChild(wm);
+      }
+    }
   </script>
 
   <script>
-    // ✅ 禁止右鍵、開發者工具鍵、複製截圖
+    // ✅ 禁止右鍵、F12、開發者快捷鍵
     window.addEventListener("contextmenu", e => e.preventDefault());
 
     window.addEventListener("keydown", function (e) {
@@ -123,13 +117,14 @@
       }
     });
 
+    // ✅ 禁止截圖行為提示
     setInterval(() => {
       try {
         navigator.clipboard.writeText("⛔ 此內容受保護，禁止截圖");
       } catch (e) {}
     }, 1000);
 
-    // ✅ 更穩定的開發者工具偵測（避免誤判滑動）
+    // ✅ DevTools 偵測（避免一進來就誤判 + 不因滾動誤判）
     (function () {
       let devtools = { open: false };
       const element = new Image();
@@ -152,7 +147,7 @@
 
       setTimeout(() => {
         setInterval(checkDevtools, 1500);
-      }, 4000); // 延遲執行，避免進頁面就誤判
+      }, 4000); // 延遲啟動，避免初始誤判
     })();
   </script>
 </body>
