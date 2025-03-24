@@ -3,12 +3,22 @@
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
-  <title>登入系統（Cloud Function）</title>
+  <title>化工製造所 - 解答觀看登入系統</title>
   <style>
     body {
       font-family: Arial, sans-serif;
       padding: 30px;
       text-align: center;
+    }
+    .header {
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      margin-bottom: 30px;
+    }
+    .header img {
+      height: 40px;
+      margin-left: 10px;
     }
     input {
       padding: 10px;
@@ -28,10 +38,24 @@
       color: red;
       font-weight: bold;
     }
+    footer {
+      margin-top: 60px;
+      font-size: 14px;
+      color: #555;
+      line-height: 1.6;
+    }
+    footer a {
+      color: #0077cc;
+      text-decoration: none;
+    }
   </style>
 </head>
 <body>
-  <h2>請輸入帳號和密碼</h2>
+  <div class="header">
+    <h2>化工製造所 - 解答觀看登入系統</h2>
+    <img src="https://drive.google.com/uc?export=view&id=1xses6MrhnCil_g7YDsHW88VR_gBnBgHy" alt="CHE Logo" />
+  </div>
+
   <form onsubmit="event.preventDefault(); login();">
     <input type="text" id="username" placeholder="帳號" required /><br />
     <input type="password" id="password" placeholder="密碼" required /><br />
@@ -39,6 +63,11 @@
   </form>
 
   <div id="result"></div>
+
+  <footer>
+    <p>若有操作相關疑問，請聯絡 <a href="https://www.facebook.com/CHEisverygood/" target="_blank">Facebook 粉專</a> 或來信 <a href="mailto:cheerfactorysolution@gmail.com">cheerfactorysolution@gmail.com</a></p>
+    <p>著作權所有，侵害必究 © 化工製造所</p>
+  </footer>
 
   <script>
     async function login(force = false) {
@@ -68,7 +97,7 @@
         } else if (data.needForce) {
           const confirmForce = confirm(data.message || "⚠️ 此帳號已在其他地方登入，是否強制登入？");
           if (confirmForce) {
-            login(true); // 第二次呼叫登入，帶入 force
+            login(true);
           }
         } else {
           document.getElementById("result").innerText = "❌ " + (data.error || "登入失敗");
