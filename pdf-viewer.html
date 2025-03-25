@@ -29,6 +29,20 @@
       border: none;
       cursor: pointer;
     }
+    #back-btn {
+      position: fixed;
+      top: 10px;
+      left: 10px;
+      z-index: 10001;
+      background-color: #0077cc;
+      color: white;
+      padding: 10px 15px;
+      font-size: 16px;
+      border: none;
+      border-radius: 5px;
+      cursor: pointer;
+      text-decoration: none;
+    }
     .watermark {
       position: fixed;
       color: rgba(128, 128, 128, 0.12);
@@ -52,6 +66,7 @@
   </style>
 </head>
 <body>
+  <a href="pdf-select.html" id="back-btn">← 返回選單</a>
   <button id="logout-btn" onclick="window.logout()">🚪 登出</button>
   <iframe id="pdf-frame"></iframe>
 
@@ -132,7 +147,7 @@
 
       setTimeout(() => {
         setInterval(checkDevtools, 1500);
-      }, 4000); // 延遲啟動，避免剛進頁面時誤判
+      }, 4000);
     })();
   </script>
 </body>
