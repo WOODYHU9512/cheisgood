@@ -51,12 +51,6 @@ async function sendHeartbeat() {
   const sessionToken = localStorage.getItem("sessionToken");
   if (!username || !sessionToken) return;
 
-  if (!navigator.onLine) {
-    console.warn("📴 網路已中斷，自動登出");
-    await forceLogout("📴 網路已中斷，請重新登入！");
-    return;
-  }
-
   try {
     const res = await fetch("https://us-central1-access-7a3c3.cloudfunctions.net/heartbeat", {
       method: "POST",
@@ -64,14 +58,26 @@ async function sendHeartbeat() {
       body: JSON.stringify({ username, sessionToken })
     });
 
+    const result = await res.json();
+
     if (!res.ok) {
-      console.warn("🔁 session 驗證失敗，觸發登出");
-      await forceLogout();
+      const code = result?.code;
+      if (code === "SESSION_EXPIRED") {
+        console.warn("⏳ 閒置過久，自動登出");
+        await forceLogout("📴 閒置時間過久，請重新登入");
+      } else if (code === "SESSION_CONFLICT") {
+        console.warn("👥 被他人登入取代，強制登出");
+        await forceLogout("⚠️ 帳號已在其他裝置登入，您已被登出");
+      } else {
+        console.warn("❌ 驗證失敗，觸發登出");
+        await forceLogout("❌ 驗證失敗，請重新登入！");
+      }
     } else {
       console.log("💓 Heartbeat 傳送成功");
     }
   } catch (err) {
-    console.error("❌ 驗證失敗：", err);
+    console.error("❌ 連線錯誤，無法送出 heartbeat：", err);
+    await forceLogout("📴 網路中斷，請重新登入！");
   }
 }
 
@@ -98,6 +104,14 @@ document.addEventListener("visibilitychange", () => {
     stopHeartbeatLoop();
   }
 });
+
+// ✅ 額外加上每 10 秒偵測網路狀態（即時登出）
+setInterval(() => {
+  if (!navigator.onLine) {
+    console.warn("📴 偵測到離線狀態，登出");
+    forceLogout("📴 網路已中斷，請重新登入！");
+  }
+}, 10000);
 
 // ✅ 啟動 session 驗證（viewer / select 專用）
 if (
