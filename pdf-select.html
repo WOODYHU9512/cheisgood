@@ -72,49 +72,46 @@
     let purchased = {};
     let currentSubjects = {};
 
-async function fetchSubjectsForSchool(school) {
-  const username = localStorage.getItem("loggedInUser");
-  const sessionToken = localStorage.getItem("sessionToken");
-  if (!username || !sessionToken || !school) return;
+    async function getPurchasedSchools() {
+      const username = localStorage.getItem("loggedInUser");
+      const sessionToken = localStorage.getItem("sessionToken");
+      if (!username || !sessionToken) return;
 
-  try {
-    const res = await fetch("https://us-central1-access-7a3c3.cloudfunctions.net/getSubjectsBySchool", {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ username, sessionToken, school }),
-      credentials: "omit"
-    });
+      try {
+        const res = await fetch("https://us-central1-access-7a3c3.cloudfunctions.net/getPurchasedSubjects", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ username, sessionToken }),
+          credentials: "omit"
+        });
 
-    if (!res.ok) {
-      const errData = await res.json().catch(() => ({}));
-      console.warn("🛑 錯誤細節：", errData);
-      if (res.status === 403) {
-        alert("❌ 驗證失敗，請重新登入");
-        localStorage.clear();
-        window.location.href = "index.html";
-      } else {
-        alert("❌ 無法讀取科目資訊");
+        if (!res.ok) {
+          const errData = await res.json().catch(() => ({}));
+          console.warn("🛑 getPurchasedSubjects 錯誤：", errData);
+          if (res.status === 403) {
+            alert("❌ 驗證失敗，請重新登入");
+            localStorage.clear();
+            window.location.href = "index.html";
+          } else {
+            alert("❌ 無法取得授權資訊");
+          }
+          return;
+        }
+
+        const data = await res.json();
+        if (data.purchased) {
+          purchased = data.purchased;
+          populateSchoolOptions();
+        } else {
+          alert("❌ 查無授權學校，請重新登入");
+          localStorage.clear();
+          window.location.href = "index.html";
+        }
+      } catch (err) {
+        console.error("🚫 getPurchasedSubjects 失敗：", err);
+        alert("❌ 無法連線至伺服器");
       }
-      return;
     }
-
-    const data = await res.json();
-    currentSubjects = data.subjects || {};
-
-    subjectSelect.innerHTML = '<option value="">請選擇科目</option>';
-    Object.entries(currentSubjects).forEach(([subject, fileId]) => {
-      const option = document.createElement("option");
-      option.value = fileId;
-      option.textContent = subject;
-      subjectSelect.appendChild(option);
-    });
-  } catch (err) {
-    console.error("🚫 科目 fetch 失敗：", err);
-    alert("❌ 無法連線至伺服器");
-  }
-}
-
-
 
     function populateSchoolOptions() {
       schoolSelect.innerHTML = '<option value="">請選擇學校</option>';
@@ -135,8 +132,22 @@ async function fetchSubjectsForSchool(school) {
         const res = await fetch("https://us-central1-access-7a3c3.cloudfunctions.net/getSubjectsBySchool", {
           method: "POST",
           headers: { "Content-Type": "application/json" },
-          body: JSON.stringify({ username, sessionToken, school })
+          body: JSON.stringify({ username, sessionToken, school }),
+          credentials: "omit"
         });
+
+        if (!res.ok) {
+          const errData = await res.json().catch(() => ({}));
+          console.warn("🛑 getSubjectsBySchool 錯誤：", errData);
+          if (res.status === 403) {
+            alert("❌ 驗證失敗，請重新登入");
+            localStorage.clear();
+            window.location.href = "index.html";
+          } else {
+            alert("❌ 無法讀取科目資訊");
+          }
+          return;
+        }
 
         const data = await res.json();
         currentSubjects = data.subjects || {};
@@ -149,7 +160,8 @@ async function fetchSubjectsForSchool(school) {
           subjectSelect.appendChild(option);
         });
       } catch (err) {
-        alert("❌ 無法讀取科目");
+        console.error("🚫 科目 fetch 失敗：", err);
+        alert("❌ 無法連線至伺服器");
       }
     }
 
