@@ -1,4 +1,4 @@
-// ✅ script.js with refined heartbeat management (minimal changes, preserves original)
+// ✅ script.js with refined heartbeat + real-time session monitor
 
 console.log("🔥 script.js loaded");
 
@@ -6,7 +6,8 @@ import { initializeApp } from "https://www.gstatic.com/firebasejs/9.6.1/firebase
 import {
   getDatabase,
   ref,
-  update
+  update,
+  onValue
 } from "https://www.gstatic.com/firebasejs/9.6.1/firebase-database.js";
 
 const firebaseConfig = {
@@ -18,6 +19,22 @@ const db = getDatabase(app);
 let heartbeatTimer = null;
 let lastHeartbeat = 0;
 const MIN_HEARTBEAT_INTERVAL = 60 * 1000; // 最小間隔 1 分鐘
+
+// ✅ 發動 real-time 監聽 sessionToken
+function listenSessionTokenChanges() {
+  const username = localStorage.getItem("loggedInUser");
+  const sessionToken = localStorage.getItem("sessionToken");
+  if (!username || !sessionToken) return;
+
+  const tokenRef = ref(db, `users/${username}/sessionToken`);
+  onValue(tokenRef, (snapshot) => {
+    const latestToken = snapshot.val();
+    if (latestToken !== sessionToken) {
+      console.warn("👥 sessionToken 當前發生變更，可能被從其他裝置登入");
+      forceLogout("⚠️ 此帳號已在其他裝置登入，您已被強制登出\n\n若非本人操作，請立即變更密碼。");
+    }
+  });
+}
 
 // ✅ 登出功能
 async function logoutUser(showLog = true) {
@@ -79,11 +96,11 @@ async function sendHeartbeat() {
     if (!res.ok) {
       const code = result?.code;
       if (code === "SESSION_EXPIRED") {
-        console.warn("⏳ 閒置過久，自動登出");
-        await forceLogout("📴 閒置時間過久，請重新登入");
+        console.warn("⏳ 閑置過久，自動登出");
+        await forceLogout("📴 閑置時間過久，請重新登入");
       } else if (code === "SESSION_CONFLICT") {
         console.warn("👥 被他人登入取代，強制登出");
-        await forceLogout("⚠️ 帳號已在其他裝置登入，您已被登出");
+        await forceLogout("⚠️ 此帳號已在其他裝置登入，您已被強制登出\n\n若非本人操作，請立即變更密碼。");
       } else {
         console.warn("❌ 驗證失敗，觸發登出");
         await forceLogout("❌ 驗證失敗，請重新登入！");
@@ -120,7 +137,7 @@ document.addEventListener("visibilitychange", () => {
       startHeartbeatLoop();
     }, 100);
   } else {
-    console.log("💤 背景頁面，暫停 heartbeat");
+    console.log("📄 背景頁面，暫停 heartbeat");
     stopHeartbeatLoop();
   }
 });
@@ -138,12 +155,13 @@ window.logout = async function () {
   await autoLogout();
 };
 
-// ✅ 初始化 heartbeat
+// ✅ 啟動 heartbeat + 監聽
 if (
   window.location.pathname.includes("pdf-select") ||
   window.location.pathname.includes("pdf-viewer")
 ) {
   if (document.visibilityState === "visible") {
     startHeartbeatLoop();
+    listenSessionTokenChanges();
   }
 }
