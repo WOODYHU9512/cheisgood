@@ -91,7 +91,9 @@
       });
       if (!res.ok) throw new Error("session invalid");
     } catch (err) {
-      await autoLogout("⚠️ 驗證失敗或網路異常，請重新登入");
+      await autoLogout("⚠️ 可以用這句：
+
+> ⚠️ 此帳號已在其他裝置登入，您已被強制登出。如非本人操作，請盡快變更密碼。");
     }
   }
 
