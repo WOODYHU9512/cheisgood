@@ -1,4 +1,4 @@
-// ✅ script.js with refined heartbeat + real-time session monitor
+// ✅ script.js with refined heartbeat + real-time session monitor + getPurchased & getSubjects integration
 
 console.log("🔥 script.js loaded");
 
@@ -149,6 +149,56 @@ function listenSessionTokenChanges() {
   });
 }
 
+// ✅ getPurchasedSubjects & getSubjectsBySchool 整合（可供其他模組呼叫）
+export async function getPurchasedSchools() {
+  const username = localStorage.getItem("loggedInUser");
+  const sessionToken = localStorage.getItem("sessionToken");
+  if (!username || !sessionToken) return null;
+
+  try {
+    const res = await fetch("https://us-central1-access-7a3c3.cloudfunctions.net/getPurchasedSubjects", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ username, sessionToken })
+    });
+
+    const data = await res.json();
+    if (!res.ok || data.error) throw data;
+    return data.purchased || {};
+  } catch (err) {
+    console.error("getPurchasedSubjects 錯誤：", err);
+    await autoLogout();
+    return null;
+  }
+}
+
+export async function fetchSubjectsForSchool(school) {
+  const username = localStorage.getItem("loggedInUser");
+  const sessionToken = localStorage.getItem("sessionToken");
+  if (!username || !sessionToken || !school) return null;
+
+  try {
+    const res = await fetch("https://us-central1-access-7a3c3.cloudfunctions.net/getSubjectsBySchool", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ username, sessionToken, school })
+    });
+
+    const data = await res.json();
+    if (!res.ok || data.error) throw data;
+    return data.subjects || {};
+  } catch (err) {
+    console.error("getSubjectsBySchool 錯誤：", err);
+    await autoLogout();
+    return null;
+  }
+}
+
+// ✅ 提供登出按鈕用
+window.logout = async function () {
+  await autoLogout();
+};
+
 // ✅ 啟動 heartbeat + 監聽（限定頁面）
 if (
   window.location.pathname.includes("pdf-select") ||
@@ -159,8 +209,3 @@ if (
     listenSessionTokenChanges();
   }
 }
-
-// ✅ 提供登出按鈕用
-window.logout = async function () {
-  await autoLogout();
-};
