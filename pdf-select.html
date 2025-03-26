@@ -68,7 +68,7 @@
       if (!username || !sessionToken) return;
 
       try {
-        const res = await fetch("https://getpurchasedsubjects-pziegv2i6a-uc.a.run.app/", {
+        const res = await fetch("https://getpurchasedsubjects-pziegv2i6a-uc.a.run.app", {
           method: "POST",
           headers: { "Content-Type": "application/json" },
           body: JSON.stringify({ username, sessionToken })
@@ -108,7 +108,7 @@
       if (!username || !sessionToken || !school) return;
 
       try {
-        const res = await fetch("https://getsubjectsbyschool-pziegv2i6a-uc.a.run.app/", {
+        const res = await fetch("https://getsubjectsbyschool-pziegv2i6a-uc.a.run.app", {
           method: "POST",
           headers: { "Content-Type": "application/json" },
           body: JSON.stringify({ username, sessionToken, school })
