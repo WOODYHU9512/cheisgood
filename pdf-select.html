@@ -70,7 +70,7 @@
       if (!username || !sessionToken) return;
 
       try {
-        const res = await fetch("https://us-central1-access-7a3c3.cloudfunctions.net/getPurchasedSubjects", {
+        const res = await fetch("https://getpurchasedsubjects-pziegv2i6a-uc.a.run.app", {
           method: "POST",
           headers: {
             "Content-Type": "application/json"
@@ -112,7 +112,7 @@
       if (!username || !sessionToken || !school) return;
 
       try {
-        const res = await fetch("https://us-central1-access-7a3c3.cloudfunctions.net/getSubjectsBySchool", {
+        const res = await fetch("https://getsubjectsbyschool-pziegv2i6a-uc.a.run.app", {
           method: "POST",
           headers: {
             "Content-Type": "application/json"
