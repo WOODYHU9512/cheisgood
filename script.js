@@ -6,7 +6,6 @@ import { initializeApp } from "https://www.gstatic.com/firebasejs/9.6.1/firebase
 import {
   getDatabase,
   ref,
-  update,
   onValue
 } from "https://www.gstatic.com/firebasejs/9.6.1/firebase-database.js";
 
@@ -19,22 +18,6 @@ const db = getDatabase(app);
 let heartbeatTimer = null;
 let lastHeartbeat = 0;
 const MIN_HEARTBEAT_INTERVAL = 60 * 1000; // 最小間隔 1 分鐘
-
-// ✅ 發動 real-time 監聽 sessionToken
-function listenSessionTokenChanges() {
-  const username = localStorage.getItem("loggedInUser");
-  const sessionToken = localStorage.getItem("sessionToken");
-  if (!username || !sessionToken) return;
-
-  const tokenRef = ref(db, `users/${username}/sessionToken`);
-  onValue(tokenRef, (snapshot) => {
-    const latestToken = snapshot.val();
-    if (latestToken !== sessionToken) {
-      console.warn("👥 sessionToken 當前發生變更，可能被從其他裝置登入");
-      forceLogout("⚠️ 此帳號已在其他裝置登入，您已被強制登出\n\n若非本人操作，請立即變更密碼。");
-    }
-  });
-}
 
 // ✅ 登出功能
 async function logoutUser(showLog = true) {
@@ -96,8 +79,8 @@ async function sendHeartbeat() {
     if (!res.ok) {
       const code = result?.code;
       if (code === "SESSION_EXPIRED") {
-        console.warn("⏳ 閑置過久，自動登出");
-        await forceLogout("📴 閑置時間過久，請重新登入");
+        console.warn("⏳ 閒置過久，自動登出");
+        await forceLogout("📴 閒置時間過久，請重新登入");
       } else if (code === "SESSION_CONFLICT") {
         console.warn("👥 被他人登入取代，強制登出");
         await forceLogout("⚠️ 此帳號已在其他裝置登入，您已被強制登出\n\n若非本人操作，請立即變更密碼。");
@@ -150,26 +133,34 @@ setInterval(() => {
   }
 }, 10000);
 
-// ✅ 提供登出按鈕用
-window.logout = async function () {
-  await autoLogout();
-};
+// ✅ sessionToken 即時監聽
+function listenSessionTokenChanges() {
+  const username = localStorage.getItem("loggedInUser");
+  const sessionToken = localStorage.getItem("sessionToken");
+  if (!username || !sessionToken) return;
 
-// ✅ 啟動 heartbeat + 監聽
-if (
-  if (
-  window.location.pathname.includes("pdf-viewer.html") ||
-  window.location.pathname.includes("pdf-select.html")
-) {
-  if (document.visibilityState === "visible") {
-    startHeartbeatLoop();
-    listenSessionTokenChanges(); // ✅ 確保即時監聽啟用
-  }
+  const tokenRef = ref(db, `users/${username}/sessionToken`);
+  onValue(tokenRef, (snapshot) => {
+    const latestToken = snapshot.val();
+    if (latestToken !== sessionToken) {
+      console.warn("👥 sessionToken 當前發生變更，可能被從其他裝置登入");
+      forceLogout("⚠️ 此帳號已在其他裝置登入，您已被強制登出\n\n若非本人操作，請立即變更密碼。");
+    }
+  });
 }
 
+// ✅ 啟動 heartbeat + 監聽（限定頁面）
+if (
+  window.location.pathname.includes("pdf-select") ||
+  window.location.pathname.includes("pdf-viewer")
 ) {
   if (document.visibilityState === "visible") {
     startHeartbeatLoop();
     listenSessionTokenChanges();
   }
 }
+
+// ✅ 提供登出按鈕用
+window.logout = async function () {
+  await autoLogout();
+};
