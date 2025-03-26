@@ -133,93 +133,10 @@ setInterval(() => {
   }
 }, 10000);
 
-// ✅ 取得學校清單
-async function getPurchasedSchools() {
-  const username = localStorage.getItem("loggedInUser");
-  const sessionToken = localStorage.getItem("sessionToken");
-  if (!username || !sessionToken) return;
-
-  try {
-    const res = await fetch("https://us-central1-access-7a3c3.cloudfunctions.net/getPurchasedSubjects", {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ username, sessionToken })
-    });
-    const data = await res.json();
-    if (!res.ok || data.error) throw data;
-    purchased = data.purchased || {};
-    populateSchoolOptions();
-  } catch (err) {
-    console.error("getPurchasedSubjects 錯誤：", err);
-    await autoLogout();
-  }
-}
-
-// ✅ 取得科目清單
-async function fetchSubjectsForSchool(school) {
-  const username = localStorage.getItem("loggedInUser");
-  const sessionToken = localStorage.getItem("sessionToken");
-  if (!username || !sessionToken || !school) return;
-
-  try {
-    const res = await fetch("https://us-central1-access-7a3c3.cloudfunctions.net/getSubjectsBySchool", {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ username, sessionToken, school })
-    });
-    const data = await res.json();
-    if (!res.ok || data.error) throw data;
-
-    currentSubjects = data.subjects || {};
-    subjectSelect.innerHTML = '<option value="">請選擇科目</option>';
-    Object.entries(currentSubjects).forEach(([subject, fileId]) => {
-      const option = document.createElement("option");
-      option.value = fileId;
-      option.textContent = subject;
-      subjectSelect.appendChild(option);
-    });
-  } catch (err) {
-    console.error("getSubjectsBySchool 錯誤：", err);
-    await autoLogout();
-  }
-}
-
-// ✅ DOM 綁定與邏輯
-const schoolSelect = document.getElementById("schoolSelect");
-const subjectSelect = document.getElementById("subjectSelect");
-const viewBtn = document.getElementById("viewBtn");
-const logoutBtn = document.getElementById("logout-btn");
-
-let purchased = {};
-let currentSubjects = {};
-
-schoolSelect.addEventListener("change", () => {
-  const school = schoolSelect.value;
-  if (school) fetchSubjectsForSchool(school);
-});
-
-viewBtn.addEventListener("click", () => {
-  const subjectId = subjectSelect.value;
-  const subjectText = subjectSelect.options[subjectSelect.selectedIndex]?.text;
-  if (!subjectId) {
-    alert("❌ 請選擇科目！");
-    return;
-  }
-  localStorage.setItem("currentPDF", subjectId);
-  localStorage.setItem("currentPDFName", subjectText);
-  sessionStorage.setItem("pageNavigation", "true");
-  window.location.href = "pdf-viewer.html";
-});
-
-logoutBtn.addEventListener("click", async () => {
-  await autoLogout();
-});
-
+// ✅ 提供登出按鈕用
 window.logout = async function () {
   await autoLogout();
 };
-
-window.addEventListener("DOMContentLoaded", getPurchasedSchools);
 
 // ✅ 初始化 heartbeat
 if (
