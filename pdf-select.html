@@ -39,23 +39,21 @@
 </head>
 <body>
   <button id="logout-btn">🚪 登出</button>
-
   <h2>請選擇學校與科目</h2>
-
   <label for="schoolSelect">選擇學校：</label>
   <select id="schoolSelect"><option value="">請選擇學校</option></select>
-
   <label for="subjectSelect">選擇科目：</label>
   <select id="subjectSelect"><option value="">請先選擇學校</option></select>
-
   <button id="viewBtn">📄 觀看 PDF</button>
 
   <footer>
     <p>若有操作相關疑問，請聯絡 <a href="https://www.facebook.com/CHEisverygood/" target="_blank">Facebook 粉專</a> 或來信 <a href="mailto:cheerfactorysolution@gmail.com">cheerfactorysolution@gmail.com</a></p>
-    <p>著作權所有，侵害必究 © 化工製造所</p>
+    <p>著作權所有，侵害必精 © 化工製造所</p>
   </footer>
 
   <script type="module">
+    import "./script.js";
+
     const schoolSelect = document.getElementById("schoolSelect");
     const subjectSelect = document.getElementById("subjectSelect");
     const viewBtn = document.getElementById("viewBtn");
