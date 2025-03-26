@@ -157,8 +157,16 @@ window.logout = async function () {
 
 // ✅ 啟動 heartbeat + 監聽
 if (
-  window.location.pathname.includes("pdf-select") ||
-  window.location.pathname.includes("pdf-viewer")
+  if (
+  window.location.pathname.includes("pdf-viewer.html") ||
+  window.location.pathname.includes("pdf-select.html")
+) {
+  if (document.visibilityState === "visible") {
+    startHeartbeatLoop();
+    listenSessionTokenChanges(); // ✅ 確保即時監聽啟用
+  }
+}
+
 ) {
   if (document.visibilityState === "visible") {
     startHeartbeatLoop();
