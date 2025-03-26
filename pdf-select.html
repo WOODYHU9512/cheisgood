@@ -2,7 +2,7 @@
 <html lang="zh-TW">
 <head>
   <meta charset="UTF-8" />
-  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
   <title>選擇學校與科目</title>
   <script>
     sessionStorage.setItem("pageNavigation", "true");
@@ -51,7 +51,7 @@
     <p>著作權所有，侵害必精 © 化工製造所</p>
   </footer>
 
-<script>
+<script type="module">
   const schoolSelect = document.getElementById("schoolSelect");
   const subjectSelect = document.getElementById("subjectSelect");
   const viewBtn = document.getElementById("viewBtn");
@@ -59,6 +59,47 @@
 
   let purchased = {};
   let currentSubjects = {};
+
+  async function autoLogout(message = "❌ 登出，請重新登入") {
+    const username = localStorage.getItem("loggedInUser");
+    const sessionToken = localStorage.getItem("sessionToken");
+    if (username && sessionToken) {
+      try {
+        await fetch("https://us-central1-access-7a3c3.cloudfunctions.net/logoutUser", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ username, sessionToken })
+        });
+      } catch {}
+    }
+    localStorage.clear();
+    sessionStorage.clear();
+    alert(message);
+    window.location.href = "index.html";
+  }
+
+  async function heartbeatCheck() {
+    const username = localStorage.getItem("loggedInUser");
+    const sessionToken = localStorage.getItem("sessionToken");
+    if (!username || !sessionToken) return;
+
+    try {
+      const res = await fetch("https://us-central1-access-7a3c3.cloudfunctions.net/heartbeat", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ username, sessionToken })
+      });
+      if (!res.ok) throw new Error("session invalid");
+    } catch (err) {
+      await autoLogout("⚠️ 驗證失敗或網路異常，請重新登入");
+    }
+  }
+
+  setInterval(heartbeatCheck, 30000); // 每 30 秒驗證 token
+
+  window.addEventListener("offline", () => {
+    autoLogout("📴 網路中斷，請重新登入");
+  });
 
   async function getPurchasedSchools() {
     const username = localStorage.getItem("loggedInUser");
@@ -77,10 +118,7 @@
       purchased = data.purchased || {};
       populateSchoolOptions();
     } catch (err) {
-      console.warn("getPurchasedSubjects error:", err);
-      alert("❌ 驗證失敗或伺服器錯誤，請重新登入");
-      localStorage.clear();
-      window.location.href = "index.html";
+      await autoLogout("❌ 無法取得授權資料，請重新登入");
     }
   }
 
@@ -117,10 +155,7 @@
         subjectSelect.appendChild(option);
       });
     } catch (err) {
-      console.warn("getSubjectsBySchool error:", err);
-      alert("❌ 無法讀取科目資料，請重新登入");
-      localStorage.clear();
-      window.location.href = "index.html";
+      await autoLogout("❌ 無法取得科目資料，請重新登入");
     }
   }
 
@@ -136,26 +171,11 @@
     localStorage.setItem("currentPDF", subjectId);
     localStorage.setItem("currentPDFName", subjectText);
     sessionStorage.setItem("pageNavigation", "true");
-    setTimeout(() => window.location.href = "pdf-viewer.html", 50);
+    window.location.href = "pdf-viewer.html";
   });
 
   logoutBtn.addEventListener("click", async () => {
-    const username = localStorage.getItem("loggedInUser");
-    const sessionToken = localStorage.getItem("sessionToken");
-    if (!username || !sessionToken) return;
-
-    try {
-      await fetch("https://us-central1-access-7a3c3.cloudfunctions.net/logoutUser", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ username, sessionToken })
-      });
-    } catch (err) {
-      console.warn("logout failed:", err);
-    } finally {
-      localStorage.clear();
-      window.location.href = "index.html";
-    }
+    await autoLogout();
   });
 
   window.addEventListener("DOMContentLoaded", getPurchasedSchools);
