@@ -72,9 +72,7 @@
       try {
         const res = await fetch("https://getpurchasedsubjects-pziegv2i6a-uc.a.run.app/", {
           method: "POST",
-          headers: {
-            "Content-Type": "application/json"
-          },
+          headers: { "Content-Type": "application/json" },
           body: JSON.stringify({ username, sessionToken })
         });
 
@@ -114,9 +112,7 @@
       try {
         const res = await fetch("https://getsubjectsbyschool-pziegv2i6a-uc.a.run.app/", {
           method: "POST",
-          headers: {
-            "Content-Type": "application/json"
-          },
+          headers: { "Content-Type": "application/json" },
           body: JSON.stringify({ username, sessionToken, school })
         });
 
