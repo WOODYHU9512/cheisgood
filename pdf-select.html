@@ -51,7 +51,6 @@
     <p>著作權所有，侵害必精 © 化工製造所</p>
   </footer>
 
-  <!-- 其餘保持原樣 -->
 <script type="module">
   import "./script.js";
 
@@ -69,8 +68,7 @@
     if (!username || !sessionToken) return;
 
     try {
-      const res = await fetch("https://us-central1-access-7a3c3.cloudfunctions.net/getPurchasedSubjects", {
- // ✅ 已更新 URL
+      const res = await fetch("https://getpurchasedsubjects-pziegv2i6a-uc.a.run.app", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ username, sessionToken })
@@ -110,8 +108,7 @@
     if (!username || !sessionToken || !school) return;
 
     try {
-      const res = await fetch("https://us-central1-access-7a3c3.cloudfunctions.net/getSubjectsBySchool", {
- // ✅ 已更新 URL
+      const res = await fetch("https://getsubjectsbyschool-pziegv2i6a-uc.a.run.app", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ username, sessionToken, school })
