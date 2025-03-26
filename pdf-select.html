@@ -47,7 +47,7 @@
   <button id="viewBtn">📄 觀看 PDF</button>
 
   <footer>
-    <p>若有操作相關疑問，請聯絡 <a href="https://www.facebook.com/CHEisverygood/" target="_blank">Facebook 粉專</a> 或來信 <a href="mailto:cheerfactorysolution@gmail.com">cheerfactorysolution@gmail.com</a></p>
+    <p>若有操作相關疑問，請聯繫 <a href="https://www.facebook.com/CHEisverygood/" target="_blank">Facebook 粉專</a> 或來信 <a href="mailto:cheerfactorysolution@gmail.com">cheerfactorysolution@gmail.com</a></p>
     <p>著作權所有，侵害必精 © 化工製造所</p>
   </footer>
 
@@ -68,7 +68,7 @@
     if (!username || !sessionToken) return;
 
     try {
-      const res = await fetch("https://getpurchasedsubjects-pziegv2i6a-uc.a.run.app", {
+      const res = await fetch("https://us-central1-access-7a3c3.cloudfunctions.net/getPurchasedSubjects", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ username, sessionToken })
@@ -108,7 +108,7 @@
     if (!username || !sessionToken || !school) return;
 
     try {
-      const res = await fetch("https://getsubjectsbyschool-pziegv2i6a-uc.a.run.app", {
+      const res = await fetch("https://us-central1-access-7a3c3.cloudfunctions.net/getSubjectsBySchool", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ username, sessionToken, school })
