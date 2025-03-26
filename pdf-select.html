@@ -5,7 +5,7 @@
   <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
   <title>選擇學校與科目</title>
 
-  <!-- 加認證讓 script.js 分辨不是關閉頁面 -->
+  <!-- 避免誤判關閉頁面 -->
   <script>
     sessionStorage.setItem("pageNavigation", "true");
   </script>
@@ -42,7 +42,7 @@
   </style>
 </head>
 <body>
-  <button id="logout-btn">🚪 登出</button>
+  <button id="logout-btn">\uD83D\uDEAA 登出</button>
 
   <h2>請選擇學校與科目</h2>
 
@@ -56,7 +56,7 @@
     <option value="">請先選擇學校</option>
   </select>
 
-  <button id="viewBtn">📄 觀看 PDF</button>
+  <button id="viewBtn">\uD83D\uDCC4 觀看 PDF</button>
 
   <footer>
     <p>若有操作相關疑問，請聯絡 <a href="https://www.facebook.com/CHEisverygood/" target="_blank">Facebook 粉專</a> 或來信 <a href="mailto:cheerfactorysolution@gmail.com">cheerfactorysolution@gmail.com</a></p>
@@ -81,13 +81,12 @@
         const res = await fetch("https://us-central1-access-7a3c3.cloudfunctions.net/getPurchasedSubjects", {
           method: "POST",
           headers: { "Content-Type": "application/json" },
-          body: JSON.stringify({ username, sessionToken }),
-          credentials: "omit"
+          body: JSON.stringify({ username, sessionToken })
         });
 
         if (!res.ok) {
           const errData = await res.json().catch(() => ({}));
-          console.warn("🛑 getPurchasedSubjects 錯誤：", errData);
+          console.warn("\uD83D\uDEA9 getPurchasedSubjects 錯誤：", errData);
           if (res.status === 403) {
             alert("❌ 驗證失敗，請重新登入");
             localStorage.clear();
@@ -108,7 +107,7 @@
           window.location.href = "index.html";
         }
       } catch (err) {
-        console.error("🚫 getPurchasedSubjects 失敗：", err);
+        console.error("\u274C getPurchasedSubjects 失敗：", err);
         alert("❌ 無法連線至伺服器");
       }
     }
@@ -132,13 +131,12 @@
         const res = await fetch("https://us-central1-access-7a3c3.cloudfunctions.net/getSubjectsBySchool", {
           method: "POST",
           headers: { "Content-Type": "application/json" },
-          body: JSON.stringify({ username, sessionToken, school }),
-          credentials: "omit"
+          body: JSON.stringify({ username, sessionToken, school })
         });
 
         if (!res.ok) {
           const errData = await res.json().catch(() => ({}));
-          console.warn("🛑 getSubjectsBySchool 錯誤：", errData);
+          console.warn("\uD83D\uDEA9 getSubjectsBySchool 錯誤：", errData);
           if (res.status === 403) {
             alert("❌ 驗證失敗，請重新登入");
             localStorage.clear();
@@ -160,7 +158,7 @@
           subjectSelect.appendChild(option);
         });
       } catch (err) {
-        console.error("🚫 科目 fetch 失敗：", err);
+        console.error("\u274C 科目 fetch 失敗：", err);
         alert("❌ 無法連線至伺服器");
       }
     }
