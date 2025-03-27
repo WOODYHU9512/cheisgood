@@ -15,7 +15,21 @@ const db = getDatabase(app);
 
 let heartbeatTimer = null;
 let lastHeartbeat = 0;
-const MIN_HEARTBEAT_INTERVAL = 60 * 1000; // 最小間隔 1 分鐘
+const HEARTBEAT_INTERVAL = 8 * 60 * 1000; // ✅ 8 分鐘送一次 Heartbeat
+const AUTO_LOGOUT_TIME = 30 * 60 * 1000; // ✅ 30 分鐘無操作自動登出
+const CHECK_INTERVAL = 60 * 1000; // ✅ 每 1 分鐘檢查一次
+
+let lastActivityTime = Date.now();
+let lastFocusTime = Date.now();
+
+// ✅ 記錄滑鼠/鍵盤活動
+function resetActivityTimer() {
+  lastActivityTime = Date.now();
+}
+
+// ✅ 監聽滑鼠 & 鍵盤事件
+document.addEventListener("mousemove", resetActivityTimer);
+document.addEventListener("keydown", resetActivityTimer);
 
 // ✅ 登出功能
 async function logoutUser(showLog = true) {
@@ -58,7 +72,6 @@ async function autoLogout() {
 // ✅ 單次 heartbeat
 async function sendHeartbeat() {
   const now = Date.now();
-  if (now - lastHeartbeat < MIN_HEARTBEAT_INTERVAL) return;
   lastHeartbeat = now;
 
   const username = localStorage.getItem("loggedInUser");
@@ -75,31 +88,22 @@ async function sendHeartbeat() {
     const result = await res.json();
 
     if (!res.ok) {
-      const code = result?.code;
-      if (code === "SESSION_EXPIRED") {
-        console.warn("⏳ 閒置過久，自動登出");
-        await forceLogout("📴 閒置時間過久，請重新登入");
-      } else if (code === "SESSION_CONFLICT") {
-        console.warn("👥 被他人登入取代，強制登出");
-        await forceLogout("⚠️ 此帳號已在其他裝置登入，您已被強制登出\n\n若非本人操作，請立即變更密碼。");
-      } else {
-        console.warn("❌ 驗證失敗，觸發登出");
-        await forceLogout("❌ 驗證失敗，請重新登入！");
-      }
+      console.warn("❌ Heartbeat 驗證失敗，登出");
+      await forceLogout();
     } else {
       console.log("💓 Heartbeat 傳送成功");
     }
   } catch (err) {
     console.error("❌ 連線錯誤，無法送出 heartbeat：", err);
-    await forceLogout("📴 網路中斷，請重新登入！");
+    await forceLogout();
   }
 }
 
-// ✅ 啟動與停止 heartbeat
+// ✅ 啟動 Heartbeat
 function startHeartbeatLoop() {
   if (heartbeatTimer) clearInterval(heartbeatTimer);
   sendHeartbeat();
-  heartbeatTimer = setInterval(sendHeartbeat, 3 * 60 * 1000);
+  heartbeatTimer = setInterval(sendHeartbeat, HEARTBEAT_INTERVAL);
 }
 
 function stopHeartbeatLoop() {
@@ -107,18 +111,14 @@ function stopHeartbeatLoop() {
   heartbeatTimer = null;
 }
 
-// ✅ 背景切換管理
-let visibilityTimer = null;
+// ✅ 背景切換監聽
 document.addEventListener("visibilitychange", () => {
   if (document.visibilityState === "visible") {
     console.log("👀 回到前景");
-    clearTimeout(visibilityTimer);
-    visibilityTimer = setTimeout(() => {
-      sendHeartbeat();
-      startHeartbeatLoop();
-    }, 100);
+    lastFocusTime = Date.now();
+    startHeartbeatLoop();
   } else {
-    console.log("📄 背景頁面，暫停 heartbeat");
+    console.log("📄 背景頁面，暫停 Heartbeat");
     stopHeartbeatLoop();
   }
 });
@@ -126,10 +126,10 @@ document.addEventListener("visibilitychange", () => {
 // ✅ 網路偵測
 setInterval(() => {
   if (!navigator.onLine) {
-    console.warn("📴 離線，登出");
-    forceLogout("📴 網路已中斷，請重新登入！");
+    console.warn("📴 網路中斷，登出");
+    forceLogout();
   }
-}, 10000);
+}, CHECK_INTERVAL);
 
 // ✅ sessionToken 即時監聽
 function listenSessionTokenChanges() {
@@ -143,10 +143,23 @@ function listenSessionTokenChanges() {
 
     if (latestToken !== currentToken) {
       console.warn("👥 sessionToken 發生變更，可能被從其他裝置登入");
-      forceLogout("⚠️ 此帳號已在其他裝置登入，您已被強制登出\n\n若非本人操作，請立即變更密碼。");
+      forceLogout();
     }
   });
 }
+
+// ✅ 1 分鐘檢查一次是否需要登出
+setInterval(() => {
+  const now = Date.now();
+
+  if (now - lastFocusTime >= AUTO_LOGOUT_TIME) {
+    console.warn("🚪 長時間未回來頁面，登出");
+    forceLogout("📴 30 分鐘未回來，請重新登入！");
+  } else if (now - lastActivityTime >= AUTO_LOGOUT_TIME) {
+    console.warn("🚪 長時間未操作，登出");
+    forceLogout("📴 30 分鐘未操作，請重新登入！");
+  }
+}, CHECK_INTERVAL);
 
 // ✅ 確保登出按鈕正常運作
 const logoutBtn = document.getElementById("logout-btn");
@@ -155,15 +168,13 @@ logoutBtn.addEventListener("click", async () => {
   await autoLogout();
 });
 
-// ✅ 啟動 heartbeat + 監聽（限定頁面）
+// ✅ 啟動 Heartbeat + 監聽
 if (
   window.location.pathname.includes("pdf-select") ||
   window.location.pathname.includes("pdf-viewer")
 ) {
-  if (document.visibilityState === "visible") {
-    startHeartbeatLoop();
-    listenSessionTokenChanges();
-  }
+  startHeartbeatLoop();
+  listenSessionTokenChanges();
 }
 
 // ✅ 提供登出按鈕用
