@@ -134,13 +134,14 @@ setInterval(() => {
 // ✅ sessionToken 即時監聽
 function listenSessionTokenChanges() {
   const username = localStorage.getItem("loggedInUser");
-  const sessionToken = localStorage.getItem("sessionToken");
-  if (!username || !sessionToken) return;
+  if (!username) return;
 
   const tokenRef = ref(db, `users/${username}/sessionToken`);
   onValue(tokenRef, (snapshot) => {
     const latestToken = snapshot.val();
-    if (latestToken !== sessionToken) {
+    const currentToken = localStorage.getItem("sessionToken");
+
+    if (latestToken !== currentToken) {
       console.warn("👥 sessionToken 發生變更，可能被從其他裝置登入");
       forceLogout("⚠️ 此帳號已在其他裝置登入，您已被強制登出\n\n若非本人操作，請立即變更密碼。");
     }
