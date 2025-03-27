@@ -117,8 +117,8 @@ document.addEventListener("visibilitychange", () => {
     lastFocusTime = Date.now();
     startHeartbeatLoop();
   } else {
-    console.log("📄 背景頁面，暫停 Heartbeat");
-    stopHeartbeatLoop();
+    console.log("📄 背景頁面，仍然保持 Heartbeat 運行");
+    // 不再停止 Heartbeat
   }
 });
 
