@@ -22,14 +22,15 @@ const CHECK_INTERVAL = 60 * 1000; // ✅ 每 1 分鐘檢查一次
 let lastActivityTime = Date.now();
 let lastFocusTime = Date.now();
 
-// ✅ 記錄滑鼠/鍵盤活動
+// ✅ 記錄滑鼠/鍵盤/觸控活動
 function resetActivityTimer() {
   lastActivityTime = Date.now();
 }
 
-// ✅ 監聽滑鼠 & 鍵盤事件
-document.addEventListener("mousemove", resetActivityTimer);
-document.addEventListener("keydown", resetActivityTimer);
+// ✅ 監聽滑鼠、鍵盤、觸控事件
+["mousemove", "keydown", "touchstart", "touchmove"].forEach(event => {
+  document.addEventListener(event, resetActivityTimer);
+});
 
 // ✅ 登出功能
 async function logoutUser(showLog = true) {
@@ -53,7 +54,7 @@ async function logoutUser(showLog = true) {
 }
 
 // ✅ 被踢出後登出並跳轉
-async function forceLogout(message = "⚠️ 此帳號已在其他裝置登入，您已被強制登出\n\n若非本人操作，請立即變更密碼。") {
+async function forceLogout(message = "⚠️ 您已被強制登出") {
   await logoutUser(false);
   alert(message);
   localStorage.clear();
@@ -69,7 +70,7 @@ async function autoLogout() {
   window.location.href = "index.html";
 }
 
-// ✅ 單次 heartbeat
+// ✅ 單次 Heartbeat
 async function sendHeartbeat() {
   const now = Date.now();
   lastHeartbeat = now;
@@ -84,8 +85,6 @@ async function sendHeartbeat() {
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify({ username, sessionToken })
     });
-
-    const result = await res.json();
 
     if (!res.ok) {
       console.warn("❌ Heartbeat 驗證失敗，登出");
