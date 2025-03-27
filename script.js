@@ -1,5 +1,3 @@
-// ✅ script.js with refined heartbeat + real-time session monitor
-
 console.log("🔥 script.js loaded");
 
 import { initializeApp } from "https://www.gstatic.com/firebasejs/9.6.1/firebase-app.js";
@@ -41,7 +39,7 @@ async function logoutUser(showLog = true) {
 }
 
 // ✅ 被踢出後登出並跳轉
-async function forceLogout(message = "⚠️ 帳號已在其他裝置登入，您已被登出") {
+async function forceLogout(message = "⚠️ 此帳號已在其他裝置登入，您已被強制登出\n\n若非本人操作，請立即變更密碼。") {
   await logoutUser(false);
   alert(message);
   localStorage.clear();
@@ -148,6 +146,13 @@ function listenSessionTokenChanges() {
     }
   });
 }
+
+// ✅ 確保登出按鈕正常運作
+const logoutBtn = document.getElementById("logout-btn");
+logoutBtn.addEventListener("click", async () => {
+  console.log("🚪 手動登出按鈕被點擊");
+  await autoLogout();
+});
 
 // ✅ 啟動 heartbeat + 監聽（限定頁面）
 if (
