@@ -23,6 +23,7 @@ const OFFLINE_CHECK_INTERVAL = 10 * 1000; // ✅ 10 秒檢查一次網路
 let lastActivityTime = Date.now();
 let lastFocusTime = Date.now();
 let isPageActive = true; // ✅ 是否在前景
+let isHBRunning = false; // ✅ 確保 HB 只執行一次
 
 // ✅ 記錄滑鼠/鍵盤/觸控活動
 function resetActivityTimer() {
@@ -100,9 +101,10 @@ async function sendHeartbeat() {
   }
 }
 
-// ✅ 啟動 Heartbeat
+// ✅ 啟動 Heartbeat，只在還沒執行時才會啟動
 function startHeartbeatLoop() {
-  if (heartbeatTimer) clearInterval(heartbeatTimer);
+  if (isHBRunning) return; // ✅ 確保 HB 只啟動一次
+  isHBRunning = true;
   sendHeartbeat();
   heartbeatTimer = setInterval(sendHeartbeat, HEARTBEAT_INTERVAL);
 }
@@ -110,6 +112,7 @@ function startHeartbeatLoop() {
 function stopHeartbeatLoop() {
   if (heartbeatTimer) clearInterval(heartbeatTimer);
   heartbeatTimer = null;
+  isHBRunning = false;
 }
 
 // ✅ 背景切換監聽
@@ -182,4 +185,4 @@ if (
 window.logout = async function () {
   await autoLogout();
 };
-// ✅ 20250328
+// ✅ 202503281058
