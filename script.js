@@ -24,6 +24,7 @@ let lastActivityTime = Date.now();
 let lastFocusTime = Date.now();
 let isPageActive = true; // ✅ 是否在前景
 let isHBRunning = false; // ✅ 確保 HB 只執行一次
+let isOffline = false; // ✅ 記錄網路狀態
 
 // ✅ 記錄滑鼠/鍵盤/觸控活動
 function resetActivityTimer() {
@@ -65,9 +66,10 @@ async function forceLogout(message = "⚠️ 您已被強制登出") {
   window.location.href = "index.html";
 }
 
-// ✅ 自動登出
-async function autoLogout() {
+// ✅ 網路中斷登出
+async function offlineLogout() {
   await logoutUser(false);
+  alert("📴 網路中斷，請重新登入！");
   localStorage.clear();
   sessionStorage.clear();
   window.location.href = "index.html";
@@ -75,6 +77,7 @@ async function autoLogout() {
 
 // ✅ 單次 Heartbeat
 async function sendHeartbeat() {
+  if (!navigator.onLine) return; // ✅ 網路斷線時不發送 HB
   const now = Date.now();
   lastHeartbeat = now;
 
@@ -97,7 +100,7 @@ async function sendHeartbeat() {
     }
   } catch (err) {
     console.error("❌ 連線錯誤，無法送出 heartbeat：", err);
-    await forceLogout();
+    await offlineLogout();
   }
 }
 
@@ -130,8 +133,16 @@ document.addEventListener("visibilitychange", () => {
 // ✅ 網路偵測（每 10 秒檢查一次）
 setInterval(() => {
   if (!navigator.onLine) {
-    console.warn("📴 網路中斷，登出");
-    forceLogout();
+    if (!isOffline) {
+      console.warn("📴 網路中斷，登出");
+      isOffline = true;
+      offlineLogout();
+    }
+  } else {
+    if (isOffline) {
+      console.log("📶 網路恢復");
+      isOffline = false;
+    }
   }
 }, OFFLINE_CHECK_INTERVAL);
 
@@ -169,7 +180,7 @@ setInterval(() => {
 const logoutBtn = document.getElementById("logout-btn");
 logoutBtn.addEventListener("click", async () => {
   console.log("🚪 手動登出按鈕被點擊");
-  await autoLogout();
+  await forceLogout("👋 您已成功登出");
 });
 
 // ✅ 啟動 Heartbeat + 監聽
@@ -183,6 +194,6 @@ if (
 
 // ✅ 提供登出按鈕用
 window.logout = async function () {
-  await autoLogout();
+  await forceLogout("👋 您已成功登出");
 };
-// ✅ 202503281058
+// ✅ 202503281131
