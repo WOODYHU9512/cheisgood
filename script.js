@@ -123,12 +123,14 @@ document.addEventListener("visibilitychange", () => {
 });
 
 // ✅ 網路偵測
-setInterval(() => {
-  if (!navigator.onLine) {
-    console.warn("📴 網路中斷，登出");
-    forceLogout();
-  }
-}, CHECK_INTERVAL);
+window.addEventListener("offline", () => {
+  console.warn("📴 網路中斷，登出");
+  forceLogout();
+});
+
+window.addEventListener("online", () => {
+  console.log("📶 網路連線恢復");
+});
 
 // ✅ sessionToken 即時監聽
 function listenSessionTokenChanges() {
@@ -142,7 +144,7 @@ function listenSessionTokenChanges() {
 
     if (latestToken !== currentToken) {
       console.warn("👥 sessionToken 發生變更，可能被從其他裝置登入");
-      forceLogout();
+      forceLogout("⚠️ 此帳號已在其他裝置登入，您已被強制登出\n\n若非本人操作，請立即變更密碼。");
     }
   });
 }
