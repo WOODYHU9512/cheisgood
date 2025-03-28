@@ -16,11 +16,13 @@ const db = getDatabase(app);
 let heartbeatTimer = null;
 let lastHeartbeat = 0;
 const HEARTBEAT_INTERVAL = 8 * 60 * 1000; // ✅ 8 分鐘送一次 Heartbeat
-const AUTO_LOGOUT_TIME = 30 * 60 * 1000; // ✅ 30 分鐘無操作自動登出
+const AUTO_LOGOUT_TIME = 30 * 60 * 1000; // ✅ 30 分鐘無操作或未回前景登出
 const CHECK_INTERVAL = 60 * 1000; // ✅ 每 1 分鐘檢查一次
+const OFFLINE_CHECK_INTERVAL = 10 * 1000; // ✅ 10 秒檢查一次網路
 
 let lastActivityTime = Date.now();
 let lastFocusTime = Date.now();
+let isPageActive = true; // ✅ 是否在前景
 
 // ✅ 記錄滑鼠/鍵盤/觸控活動
 function resetActivityTimer() {
@@ -115,22 +117,20 @@ document.addEventListener("visibilitychange", () => {
   if (document.visibilityState === "visible") {
     console.log("👀 回到前景");
     lastFocusTime = Date.now();
-    startHeartbeatLoop();
+    isPageActive = true; // ✅ 記錄頁面回到前景
   } else {
     console.log("📄 背景頁面，仍然保持 Heartbeat 運行");
-    // 不再停止 Heartbeat
+    isPageActive = false;
   }
 });
 
-// ✅ 網路偵測
-window.addEventListener("offline", () => {
-  console.warn("📴 網路中斷，登出");
-  forceLogout();
-});
-
-window.addEventListener("online", () => {
-  console.log("📶 網路連線恢復");
-});
+// ✅ 網路偵測（每 10 秒檢查一次）
+setInterval(() => {
+  if (!navigator.onLine) {
+    console.warn("📴 網路中斷，登出");
+    forceLogout();
+  }
+}, OFFLINE_CHECK_INTERVAL);
 
 // ✅ sessionToken 即時監聽
 function listenSessionTokenChanges() {
