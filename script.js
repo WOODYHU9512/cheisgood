@@ -92,14 +92,40 @@ async function autoLogout() {
 }
 
 // ✅ 手動登出（確保 sessionToken 會被清除）
+// ✅ 手動登出（確保 sessionToken 會被清除）
 async function manualLogout() {
+  if (isManualLogout) return;
   isManualLogout = true;
-  console.log("🚪 手動登出");
-  await logoutUser(false);
+  console.log("🚪 手動登出中...");
+
+  const username = localStorage.getItem("loggedInUser");
+  if (!username) {
+    console.warn("⚠️ 找不到使用者資訊，直接跳轉");
+    window.location.href = "index.html";
+    return;
+  }
+
+  try {
+    // ✅ 1. 先清除 Firebase 端的 sessionToken
+    await set(ref(db, `users/${username}/sessionToken`), null);
+    console.log("✅ Firebase sessionToken 已清除");
+
+    // ✅ 2. 送登出請求給 Cloud Functions
+    await logoutUser(false);
+    console.log("✅ Cloud Functions 登出請求已發送");
+
+  } catch (err) {
+    console.error("❌ 登出時發生錯誤", err);
+  }
+
+  // ✅ 3. 確保 localStorage 清空，避免殘留 session
   clearSession();
+
+  // ✅ 4. 跳轉回登入頁
   alert("👋 您已成功登出");
   window.location.href = "index.html";
 }
+
 
 // ✅ 網路中斷登出
 async function offlineLogout() {
@@ -193,4 +219,4 @@ document.getElementById("logout-btn").addEventListener("click", manualLogout);
 window.logout = manualLogout;
 
 
-// ✅ 202503292227
+// ✅ 202503292240
