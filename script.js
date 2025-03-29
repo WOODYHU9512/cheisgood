@@ -5,7 +5,8 @@ import {
   getDatabase,
   ref,
   onValue,
-  set
+  set,
+  remove
 } from "https://www.gstatic.com/firebasejs/9.6.1/firebase-database.js";
 
 const firebaseConfig = {
@@ -49,10 +50,10 @@ document.addEventListener("visibilitychange", () => {
   }
 });
 
-// ✅ 清理 session，確保 sessionToken 被清除
+// ✅ 清理 session，確保 Firebase `sessionToken` 被清除
 async function clearSession(username) {
   if (username) {
-    await set(ref(db, `users/${username}/sessionToken`), null);
+    await remove(ref(db, `users/${username}/sessionToken`));
     console.log(`✅ Firebase sessionToken 已清除 (${username})`);
   }
   localStorage.removeItem("sessionToken");
@@ -97,7 +98,7 @@ async function autoLogout() {
   window.location.href = "index.html";
 }
 
-// ✅ 手動登出
+// ✅ 手動登出（確保 Firebase `sessionToken` 會被清除）
 async function manualLogout() {
   if (isManualLogout) return;
   isManualLogout = true;
@@ -214,4 +215,4 @@ if (window.location.pathname.includes("pdf-select") || window.location.pathname.
 document.getElementById("logout-btn").addEventListener("click", manualLogout);
 window.logout = manualLogout;
 
-// ✅ 202503292254
+// ✅ 202503292345
