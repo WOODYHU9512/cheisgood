@@ -25,7 +25,7 @@ let lastFocusTime = Date.now();
 let isPageActive = true; // ✅ 是否在前景
 let isHBRunning = false; // ✅ 確保 HB 只執行一次
 let isOffline = false; // ✅ 記錄網路狀態
-let isLoggingOut = false; // ✅ 避免重複登出
+let manualLogout = false; // ✅ 記錄是否為手動登出，避免彈錯誤訊息
 
 // ✅ 記錄滑鼠/鍵盤/觸控活動
 function resetActivityTimer() {
@@ -59,11 +59,19 @@ async function logoutUser(showLog = true) {
 }
 
 // ✅ 強制登出
-async function forceLogout(message = "⚠️ 您已被強制登出") {
-  if (isLoggingOut) return; // ✅ 避免重複登出
-  isLoggingOut = true;
+async function forceLogout(message) {
+  if (manualLogout) return; // ✅ 如果是手動登出，不要顯示錯誤訊息
   await logoutUser(false);
   alert(message);
+  localStorage.clear();
+  sessionStorage.clear();
+  window.location.href = "index.html";
+}
+
+// ✅ 網路中斷登出
+async function offlineLogout() {
+  await logoutUser(false);
+  alert("📴 網路中斷，請重新登入！");
   localStorage.clear();
   sessionStorage.clear();
   window.location.href = "index.html";
@@ -88,13 +96,13 @@ async function sendHeartbeat() {
 
     if (!res.ok) {
       console.warn("❌ Heartbeat 驗證失敗，登出");
-      await forceLogout();
+      await forceLogout("❌ Heartbeat 驗證失敗，請重新登入！");
     } else {
       console.log("💓 Heartbeat 傳送成功");
     }
   } catch (err) {
     console.error("❌ 連線錯誤，無法送出 heartbeat：", err);
-    await forceLogout("📴 網路中斷，請重新登入！");
+    await offlineLogout();
   }
 }
 
@@ -124,6 +132,22 @@ document.addEventListener("visibilitychange", () => {
   }
 });
 
+// ✅ 網路偵測
+setInterval(() => {
+  if (!navigator.onLine) {
+    if (!isOffline) {
+      console.warn("📴 網路中斷，登出");
+      isOffline = true;
+      offlineLogout();
+    }
+  } else {
+    if (isOffline) {
+      console.log("📶 網路恢復");
+      isOffline = false;
+    }
+  }
+}, OFFLINE_CHECK_INTERVAL);
+
 // ✅ sessionToken 監聽
 function listenSessionTokenChanges() {
   const username = localStorage.getItem("loggedInUser");
@@ -134,9 +158,9 @@ function listenSessionTokenChanges() {
     const latestToken = snapshot.val();
     const currentToken = localStorage.getItem("sessionToken");
 
-    if (latestToken !== currentToken && !isLoggingOut) {
+    if (!manualLogout && latestToken !== currentToken) {
       console.warn("👥 sessionToken 發生變更，可能被從其他裝置登入");
-      forceLogout("⚠️ 此帳號已在其他裝置登入，您已被強制登出\n\n若非本人操作，請立即變更密碼。");
+      forceLogout("⚠️ 此帳號已在其他裝置登入，您已被強制登出！");
     }
   });
 }
@@ -144,11 +168,7 @@ function listenSessionTokenChanges() {
 // ✅ 1 分鐘檢查登出
 setInterval(() => {
   const now = Date.now();
-
-  if (now - lastFocusTime >= AUTO_LOGOUT_TIME) {
-    console.warn("🚪 長時間未回來頁面，登出");
-    forceLogout("📴 30 分鐘未回來，請重新登入！");
-  } else if (now - lastActivityTime >= AUTO_LOGOUT_TIME) {
+  if (now - lastFocusTime >= AUTO_LOGOUT_TIME || now - lastActivityTime >= AUTO_LOGOUT_TIME) {
     console.warn("🚪 長時間未操作，登出");
     forceLogout("📴 30 分鐘未操作，請重新登入！");
   }
@@ -163,4 +183,5 @@ if (
   listenSessionTokenChanges();
 }
 
-// ✅ 302503290422
+
+// ✅ 302503291719
