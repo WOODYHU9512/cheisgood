@@ -28,6 +28,7 @@ let isHBRunning = false;
 let isOffline = false;
 let isManualLogout = false;
 let isAutoLogout = false;
+let sessionCleared = false; // 確保 session 只會被清除一次
 
 // ✅ 記錄滑鼠/鍵盤/觸控活動
 function resetActivityTimer() {
@@ -50,13 +51,15 @@ document.addEventListener("visibilitychange", () => {
   }
 });
 
-// ✅ 清理 session，確保 sessionToken 被清除
+// ✅ 清理 session
 function clearSession() {
+  if (sessionCleared) return;
+  sessionCleared = true;
   localStorage.removeItem("sessionToken");
   sessionStorage.clear();
 }
 
-// ✅ 登出功能（清除 sessionToken + 更新 Firebase）
+// ✅ 登出功能（清除 sessionToken + Firebase）
 async function logoutUser(showLog = true) {
   if (isManualLogout || isAutoLogout) return;
 
@@ -65,7 +68,7 @@ async function logoutUser(showLog = true) {
   if (!username || !sessionToken) return;
 
   try {
-    await set(ref(db, `users/${username}/sessionToken`), null); // 清除 Firebase 的 sessionToken
+    await set(ref(db, `users/${username}/sessionToken`), null);
     const res = await fetch("https://us-central1-access-7a3c3.cloudfunctions.net/logoutUser", {
       method: "POST",
       headers: { "Content-Type": "application/json" },
@@ -80,7 +83,7 @@ async function logoutUser(showLog = true) {
   }
 }
 
-// ✅ 強制登出（用於被別人踢出）
+// ✅ 強制登出（防止重複觸發）
 async function forceLogout(message = "⚠️ 您已被強制登出") {
   if (isManualLogout || isAutoLogout) return;
   await logoutUser(false);
@@ -89,7 +92,7 @@ async function forceLogout(message = "⚠️ 您已被強制登出") {
   window.location.href = "index.html";
 }
 
-// ✅ 30 分鐘自動登出（確保 sessionToken 也會更新）
+// ✅ 30 分鐘自動登出
 async function autoLogout() {
   if (isAutoLogout) return;
   isAutoLogout = true;
@@ -100,7 +103,7 @@ async function autoLogout() {
   window.location.href = "index.html";
 }
 
-// ✅ 手動登出（確保 sessionToken 會被清除）
+// ✅ 手動登出
 async function manualLogout() {
   isManualLogout = true;
   console.log("🚪 手動登出");
@@ -119,7 +122,7 @@ async function offlineLogout() {
   window.location.href = "index.html";
 }
 
-// ✅ 單次 Heartbeat
+// ✅ Heartbeat
 async function sendHeartbeat() {
   if (!navigator.onLine || isManualLogout) return;
   lastHeartbeat = Date.now();
@@ -147,15 +150,7 @@ async function sendHeartbeat() {
   }
 }
 
-// ✅ 啟動 Heartbeat
-function startHeartbeatLoop() {
-  if (isHBRunning) return;
-  isHBRunning = true;
-  sendHeartbeat();
-  heartbeatTimer = setInterval(sendHeartbeat, HEARTBEAT_INTERVAL);
-}
-
-// ✅ 監聽 sessionToken 變更
+// ✅ 監聽 sessionToken
 function listenSessionTokenChanges() {
   const username = localStorage.getItem("loggedInUser");
   if (!username) return;
@@ -200,4 +195,4 @@ if (window.location.pathname.includes("pdf-select") || window.location.pathname.
 
 document.getElementById("logout-btn").addEventListener("click", manualLogout);
 window.logout = manualLogout;
-// ✅202503292155
+// ✅ 202503292219
