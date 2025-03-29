@@ -4,7 +4,8 @@ import { initializeApp } from "https://www.gstatic.com/firebasejs/9.6.1/firebase
 import {
   getDatabase,
   ref,
-  onValue
+  onValue,
+  set
 } from "https://www.gstatic.com/firebasejs/9.6.1/firebase-database.js";
 
 const firebaseConfig = {
@@ -37,13 +38,25 @@ function resetActivityTimer() {
   document.addEventListener(event, resetActivityTimer);
 });
 
-// ✅ 清理 session，避免重複判斷
+// ✅ 背景偵測
+document.addEventListener("visibilitychange", () => {
+  if (document.visibilityState === "visible") {
+    console.log("👀 回到前景");
+    lastFocusTime = Date.now();
+    isPageActive = true;
+  } else {
+    console.log("📄 進入背景");
+    isPageActive = false;
+  }
+});
+
+// ✅ 清理 session，確保 sessionToken 被清除
 function clearSession() {
   localStorage.removeItem("sessionToken");
   sessionStorage.clear();
 }
 
-// ✅ 登出功能
+// ✅ 登出功能（清除 sessionToken + 更新 Firebase）
 async function logoutUser(showLog = true) {
   if (isManualLogout || isAutoLogout) return;
 
@@ -52,6 +65,7 @@ async function logoutUser(showLog = true) {
   if (!username || !sessionToken) return;
 
   try {
+    await set(ref(db, `users/${username}/sessionToken`), null); // 清除 Firebase 的 sessionToken
     const res = await fetch("https://us-central1-access-7a3c3.cloudfunctions.net/logoutUser", {
       method: "POST",
       headers: { "Content-Type": "application/json" },
@@ -75,8 +89,9 @@ async function forceLogout(message = "⚠️ 您已被強制登出") {
   window.location.href = "index.html";
 }
 
-// ✅ 30 分鐘自動登出
+// ✅ 30 分鐘自動登出（確保 sessionToken 也會更新）
 async function autoLogout() {
+  if (isAutoLogout) return;
   isAutoLogout = true;
   console.warn("🚪 30 分鐘未操作，自動登出");
   await logoutUser(false);
@@ -85,7 +100,7 @@ async function autoLogout() {
   window.location.href = "index.html";
 }
 
-// ✅ 手動登出
+// ✅ 手動登出（確保 sessionToken 會被清除）
 async function manualLogout() {
   isManualLogout = true;
   console.log("🚪 手動登出");
@@ -185,4 +200,4 @@ if (window.location.pathname.includes("pdf-select") || window.location.pathname.
 
 document.getElementById("logout-btn").addEventListener("click", manualLogout);
 window.logout = manualLogout;
-// ✅ 202503292111
+// ✅202503292155
