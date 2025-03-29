@@ -63,7 +63,7 @@ async function clearSession(username) {
   sessionStorage.clear();
 }
 
-// ✅ 登出功能（適用於手動登出、自動登出、網路斷線）
+// ✅ 登出功能（適用於手動登出、自動登出）
 async function logoutUser(showLog = true) {
   if (isManualLogout || isAutoLogout) return;
 
@@ -130,9 +130,7 @@ async function offlineLogout() {
   if (isManualLogout || isAutoLogout || isOffline) return;
   isOffline = true;
 
-  console.warn("📴 網路斷線，立即執行登出...");
-  await logoutUser(false);
-
+  console.warn("📴 網路斷線，立即跳轉...");
   alert("📴 網路中斷，請重新登入！");
   window.location.href = "index.html";
 }
@@ -221,4 +219,4 @@ if (window.location.pathname.includes("pdf-select") || window.location.pathname.
 
 document.getElementById("logout-btn").addEventListener("click", manualLogout);
 window.logout = manualLogout;
-// ✅ 202503301250
+// ✅ 202503200128
