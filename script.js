@@ -25,7 +25,8 @@ let lastFocusTime = Date.now();
 let isPageActive = true;
 let isHBRunning = false;
 let isOffline = false;
-let isManualLogout = false; // 紀錄是否為手動登出
+let isManualLogout = false; // 記錄是否為手動登出
+let isAutoLoggedOut = false; // 記錄是否為 30 分鐘自動登出
 
 // ✅ 記錄滑鼠/鍵盤/觸控活動
 function resetActivityTimer() {
@@ -38,7 +39,7 @@ function resetActivityTimer() {
 
 // ✅ 登出功能
 async function logoutUser(showLog = true) {
-  if (isManualLogout) return; // 防止重複執行
+  if (isManualLogout || isAutoLoggedOut) return; // 防止重複執行
   
   const username = localStorage.getItem("loggedInUser");
   const sessionToken = localStorage.getItem("sessionToken");
@@ -171,7 +172,7 @@ function listenSessionTokenChanges() {
     const latestToken = snapshot.val();
     const currentToken = localStorage.getItem("sessionToken");
 
-    if (!isManualLogout && latestToken !== currentToken) {
+    if (!isManualLogout && !isAutoLoggedOut && latestToken !== currentToken) {
       console.warn("👥 sessionToken 發生變更，可能被從其他裝置登入");
       forceLogout("⚠️ 此帳號已在其他裝置登入，請重新登入");
     }
@@ -183,18 +184,16 @@ setInterval(() => {
   const now = Date.now();
   if (now - lastFocusTime >= AUTO_LOGOUT_TIME) {
     console.warn("🚪 長時間未回來頁面，登出");
+    isAutoLoggedOut = true;
     forceLogout("📴 30 分鐘未回來，請重新登入！");
   } else if (now - lastActivityTime >= AUTO_LOGOUT_TIME) {
     console.warn("🚪 長時間未操作，登出");
+    isAutoLoggedOut = true;
     forceLogout("📴 30 分鐘未操作，請重新登入！");
   }
 }, CHECK_INTERVAL);
 
-// ✅ 啟動 Heartbeat + 監聽
-if (window.location.pathname.includes("pdf-select") || window.location.pathname.includes("pdf-viewer")) {
-  startHeartbeatLoop();
-  listenSessionTokenChanges();
-}
-
 document.getElementById("logout-btn").addEventListener("click", manualLogout);
 window.logout = manualLogout;
+
+// 202503292021
