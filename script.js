@@ -57,7 +57,7 @@ async function logoutUser(showLog = true) {
   }
 }
 
-// ✅ 被踢出後登出並跳轉
+// ✅ 強制登出
 async function forceLogout(message = "⚠️ 您已被強制登出") {
   await logoutUser(false);
   alert(message);
@@ -77,7 +77,7 @@ async function offlineLogout() {
 
 // ✅ 單次 Heartbeat
 async function sendHeartbeat() {
-  if (!navigator.onLine) return; // ✅ 網路斷線時不發送 HB
+  if (!navigator.onLine) return;
   const now = Date.now();
   lastHeartbeat = now;
 
@@ -104,9 +104,9 @@ async function sendHeartbeat() {
   }
 }
 
-// ✅ 啟動 Heartbeat，只在還沒執行時才會啟動
+// ✅ 啟動 Heartbeat
 function startHeartbeatLoop() {
-  if (isHBRunning) return; // ✅ 確保 HB 只啟動一次
+  if (isHBRunning) return;
   isHBRunning = true;
   sendHeartbeat();
   heartbeatTimer = setInterval(sendHeartbeat, HEARTBEAT_INTERVAL);
@@ -123,14 +123,14 @@ document.addEventListener("visibilitychange", () => {
   if (document.visibilityState === "visible") {
     console.log("👀 回到前景");
     lastFocusTime = Date.now();
-    isPageActive = true; // ✅ 記錄頁面回到前景
+    isPageActive = true;
   } else {
     console.log("📄 背景頁面，仍然保持 Heartbeat 運行");
     isPageActive = false;
   }
 });
 
-// ✅ 網路偵測（每 10 秒檢查一次）
+// ✅ 網路偵測
 setInterval(() => {
   if (!navigator.onLine) {
     if (!isOffline) {
@@ -146,7 +146,7 @@ setInterval(() => {
   }
 }, OFFLINE_CHECK_INTERVAL);
 
-// ✅ sessionToken 即時監聽
+// ✅ sessionToken 監聽
 function listenSessionTokenChanges() {
   const username = localStorage.getItem("loggedInUser");
   if (!username) return;
@@ -163,7 +163,7 @@ function listenSessionTokenChanges() {
   });
 }
 
-// ✅ 1 分鐘檢查一次是否需要登出
+// ✅ 1 分鐘檢查登出
 setInterval(() => {
   const now = Date.now();
 
@@ -176,13 +176,6 @@ setInterval(() => {
   }
 }, CHECK_INTERVAL);
 
-// ✅ 確保登出按鈕正常運作
-const logoutBtn = document.getElementById("logout-btn");
-logoutBtn.addEventListener("click", async () => {
-  console.log("🚪 手動登出按鈕被點擊");
-  await forceLogout("👋 您已成功登出");
-});
-
 // ✅ 啟動 Heartbeat + 監聽
 if (
   window.location.pathname.includes("pdf-select") ||
@@ -191,9 +184,3 @@ if (
   startHeartbeatLoop();
   listenSessionTokenChanges();
 }
-
-// ✅ 提供登出按鈕用
-window.logout = async function () {
-  await forceLogout("👋 您已成功登出");
-};
-// ✅ 202503281131
