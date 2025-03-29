@@ -15,18 +15,18 @@ const db = getDatabase(app);
 
 let heartbeatTimer = null;
 let lastHeartbeat = 0;
-const HEARTBEAT_INTERVAL = 8 * 60 * 1000;
-const AUTO_LOGOUT_TIME = 30 * 60 * 1000;
-const CHECK_INTERVAL = 60 * 1000;
-const OFFLINE_CHECK_INTERVAL = 10 * 1000;
+const HEARTBEAT_INTERVAL = 8 * 60 * 1000; // ✅ 8 分鐘送一次 Heartbeat
+const AUTO_LOGOUT_TIME = 30 * 60 * 1000; // ✅ 30 分鐘無操作或未回前景登出
+const CHECK_INTERVAL = 60 * 1000; // ✅ 每 1 分鐘檢查一次
+const OFFLINE_CHECK_INTERVAL = 10 * 1000; // ✅ 10 秒檢查一次網路
 
 let lastActivityTime = Date.now();
 let lastFocusTime = Date.now();
 let isPageActive = true;
 let isHBRunning = false;
 let isOffline = false;
-let isManualLogout = false; // 記錄是否為手動登出
-let isAutoLoggedOut = false; // 記錄是否為 30 分鐘自動登出
+let isManualLogout = false;
+let isAutoLogout = false; // 紀錄是否為 30 分鐘自動登出
 
 // ✅ 記錄滑鼠/鍵盤/觸控活動
 function resetActivityTimer() {
@@ -39,8 +39,8 @@ function resetActivityTimer() {
 
 // ✅ 登出功能
 async function logoutUser(showLog = true) {
-  if (isManualLogout || isAutoLoggedOut) return; // 防止重複執行
-  
+  if (isManualLogout || isAutoLogout) return; // 防止重複執行
+
   const username = localStorage.getItem("loggedInUser");
   const sessionToken = localStorage.getItem("sessionToken");
   if (!username || !sessionToken) return;
@@ -60,11 +60,22 @@ async function logoutUser(showLog = true) {
   }
 }
 
-// ✅ 強制登出
+// ✅ 強制登出（用於被別人踢出）
 async function forceLogout(message = "⚠️ 您已被強制登出") {
   if (isManualLogout) return;
   await logoutUser(false);
   alert(message);
+  localStorage.clear();
+  sessionStorage.clear();
+  window.location.href = "index.html";
+}
+
+// ✅ 30 分鐘自動登出
+async function autoLogout() {
+  isAutoLogout = true;
+  console.warn("🚪 30 分鐘未操作，自動登出");
+  await logoutUser(false);
+  alert("📴 30 分鐘未操作，請重新登入！");
   localStorage.clear();
   sessionStorage.clear();
   window.location.href = "index.html";
@@ -172,7 +183,7 @@ function listenSessionTokenChanges() {
     const latestToken = snapshot.val();
     const currentToken = localStorage.getItem("sessionToken");
 
-    if (!isManualLogout && !isAutoLoggedOut && latestToken !== currentToken) {
+    if (!isManualLogout && !isAutoLogout && latestToken !== currentToken) {
       console.warn("👥 sessionToken 發生變更，可能被從其他裝置登入");
       forceLogout("⚠️ 此帳號已在其他裝置登入，請重新登入");
     }
@@ -183,17 +194,18 @@ function listenSessionTokenChanges() {
 setInterval(() => {
   const now = Date.now();
   if (now - lastFocusTime >= AUTO_LOGOUT_TIME) {
-    console.warn("🚪 長時間未回來頁面，登出");
-    isAutoLoggedOut = true;
-    forceLogout("📴 30 分鐘未回來，請重新登入！");
+    autoLogout();
   } else if (now - lastActivityTime >= AUTO_LOGOUT_TIME) {
-    console.warn("🚪 長時間未操作，登出");
-    isAutoLoggedOut = true;
-    forceLogout("📴 30 分鐘未操作，請重新登入！");
+    autoLogout();
   }
 }, CHECK_INTERVAL);
 
+// ✅ 啟動 Heartbeat + 監聽
+if (window.location.pathname.includes("pdf-select") || window.location.pathname.includes("pdf-viewer")) {
+  startHeartbeatLoop();
+  listenSessionTokenChanges();
+}
+
 document.getElementById("logout-btn").addEventListener("click", manualLogout);
 window.logout = manualLogout;
-
-// 202503292021
+// ✅ 20250392033
