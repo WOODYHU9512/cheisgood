@@ -28,7 +28,7 @@ let isHBRunning = false;
 let isOffline = false;
 let isManualLogout = false;
 let isAutoLogout = false;
-let isSessionMismatchHandled = false; // 防止重複處理
+let isSessionMismatchHandled = false;
 
 // ✅ 記錄滑鼠/鍵盤/觸控活動
 function resetActivityTimer() {
@@ -50,7 +50,7 @@ document.addEventListener("visibilitychange", () => {
   }
 });
 
-// ✅ 清理 session，確保 `sessionToken` 被清除
+// ✅ 清理 session
 async function clearSession(username) {
   if (username) {
     await update(ref(db, `users/${username}`), {
@@ -63,7 +63,7 @@ async function clearSession(username) {
   sessionStorage.clear();
 }
 
-// ✅ 登出功能（僅適用於手動登出、自動登出、網路中斷）
+// ✅ 登出功能（適用於手動登出、自動登出、網路斷線）
 async function logoutUser(showLog = true) {
   if (isManualLogout || isAutoLogout) return;
 
@@ -81,14 +81,14 @@ async function logoutUser(showLog = true) {
 
 // ✅ 強制登出（不同裝置登入 A -> B）
 async function forceLogout(message = "⚠️ 您已被強制登出") {
-  if (isManualLogout || isAutoLogout || isSessionMismatchHandled) return;
-  isSessionMismatchHandled = true; // 避免重複執行
+  if (isManualLogout || isAutoLogout || isOffline || isSessionMismatchHandled) return;
+  isSessionMismatchHandled = true;
 
   alert(message);
   window.location.href = "index.html";
 }
 
-// ✅ 30 分鐘自動登出（Firebase `sessionToken = ""`，`isLoggedIn = false`）
+// ✅ 30 分鐘自動登出
 async function autoLogout() {
   if (isAutoLogout) return;
   isAutoLogout = true;
@@ -101,7 +101,7 @@ async function autoLogout() {
   window.location.href = "index.html";
 }
 
-// ✅ 手動登出（Firebase `sessionToken = ""`，`isLoggedIn = false`）
+// ✅ 手動登出
 async function manualLogout() {
   if (isManualLogout) return;
   isManualLogout = true;
@@ -125,9 +125,11 @@ async function manualLogout() {
   window.location.href = "index.html";
 }
 
-// ✅ 網路中斷登出（Firebase `sessionToken = ""`，`isLoggedIn = false`）
+// ✅ 網路中斷登出
 async function offlineLogout() {
-  if (isManualLogout || isAutoLogout) return;
+  if (isManualLogout || isAutoLogout || isOffline) return;
+  isOffline = true;
+
   await logoutUser(false);
   alert("📴 網路中斷，請重新登入！");
   window.location.href = "index.html";
@@ -169,15 +171,20 @@ function startHeartbeatLoop() {
   heartbeatTimer = setInterval(sendHeartbeat, HEARTBEAT_INTERVAL);
 }
 
-// ✅ 監聽 sessionToken 變更（只針對不同裝置登入 A -> B）
+// ✅ 監聽 sessionToken 變更（不同裝置登入）
 function listenSessionTokenChanges() {
   const username = localStorage.getItem("loggedInUser");
   if (!username) return;
-  
+
   const tokenRef = ref(db, `users/${username}/sessionToken`);
   onValue(tokenRef, (snapshot) => {
     const latestToken = snapshot.val();
     const currentToken = localStorage.getItem("sessionToken");
+
+    if (!navigator.onLine) {
+      console.warn("📴 偵測到網路離線，不執行 sessionToken 監聽");
+      return;
+    }
 
     if (!isManualLogout && !isAutoLogout && latestToken !== currentToken) {
       console.warn("👥 sessionToken 變更，可能被從其他裝置登入");
@@ -214,4 +221,4 @@ if (window.location.pathname.includes("pdf-select") || window.location.pathname.
 
 document.getElementById("logout-btn").addEventListener("click", manualLogout);
 window.logout = manualLogout;
-// ✅ 202503301217
+// ✅ 20250330
