@@ -25,6 +25,7 @@ let lastFocusTime = Date.now();
 let isPageActive = true; // ✅ 是否在前景
 let isHBRunning = false; // ✅ 確保 HB 只執行一次
 let isOffline = false; // ✅ 記錄網路狀態
+let isLoggingOut = false; // ✅ 避免重複登出
 
 // ✅ 記錄滑鼠/鍵盤/觸控活動
 function resetActivityTimer() {
@@ -59,17 +60,10 @@ async function logoutUser(showLog = true) {
 
 // ✅ 強制登出
 async function forceLogout(message = "⚠️ 您已被強制登出") {
+  if (isLoggingOut) return; // ✅ 避免重複登出
+  isLoggingOut = true;
   await logoutUser(false);
   alert(message);
-  localStorage.clear();
-  sessionStorage.clear();
-  window.location.href = "index.html";
-}
-
-// ✅ 網路中斷登出
-async function offlineLogout() {
-  await logoutUser(false);
-  alert("📴 網路中斷，請重新登入！");
   localStorage.clear();
   sessionStorage.clear();
   window.location.href = "index.html";
@@ -100,7 +94,7 @@ async function sendHeartbeat() {
     }
   } catch (err) {
     console.error("❌ 連線錯誤，無法送出 heartbeat：", err);
-    await offlineLogout();
+    await forceLogout("📴 網路中斷，請重新登入！");
   }
 }
 
@@ -130,22 +124,6 @@ document.addEventListener("visibilitychange", () => {
   }
 });
 
-// ✅ 網路偵測
-setInterval(() => {
-  if (!navigator.onLine) {
-    if (!isOffline) {
-      console.warn("📴 網路中斷，登出");
-      isOffline = true;
-      offlineLogout();
-    }
-  } else {
-    if (isOffline) {
-      console.log("📶 網路恢復");
-      isOffline = false;
-    }
-  }
-}, OFFLINE_CHECK_INTERVAL);
-
 // ✅ sessionToken 監聽
 function listenSessionTokenChanges() {
   const username = localStorage.getItem("loggedInUser");
@@ -156,7 +134,7 @@ function listenSessionTokenChanges() {
     const latestToken = snapshot.val();
     const currentToken = localStorage.getItem("sessionToken");
 
-    if (latestToken !== currentToken) {
+    if (latestToken !== currentToken && !isLoggingOut) {
       console.warn("👥 sessionToken 發生變更，可能被從其他裝置登入");
       forceLogout("⚠️ 此帳號已在其他裝置登入，您已被強制登出\n\n若非本人操作，請立即變更密碼。");
     }
@@ -184,3 +162,5 @@ if (
   startHeartbeatLoop();
   listenSessionTokenChanges();
 }
+
+// ✅ 302503290422
