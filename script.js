@@ -50,7 +50,11 @@ document.addEventListener("visibilitychange", () => {
 });
 
 // ✅ 清理 session，確保 sessionToken 被清除
-function clearSession() {
+async function clearSession(username) {
+  if (username) {
+    await set(ref(db, `users/${username}/sessionToken`), null);
+    console.log(`✅ Firebase sessionToken 已清除 (${username})`);
+  }
   localStorage.removeItem("sessionToken");
   sessionStorage.clear();
 }
@@ -64,7 +68,7 @@ async function logoutUser(showLog = true) {
   if (!username || !sessionToken) return;
 
   try {
-    await set(ref(db, `users/${username}/sessionToken`), null);
+    await clearSession(username);
     if (showLog) console.log(`✅ ${username} 已從 Firebase 登出`);
   } catch (err) {
     console.error("❌ 登出失敗：", err);
@@ -75,24 +79,25 @@ async function logoutUser(showLog = true) {
 async function forceLogout(message = "⚠️ 您已被強制登出") {
   if (isManualLogout || isAutoLogout) return;
   await logoutUser(false);
-  clearSession();
+  clearSession(localStorage.getItem("loggedInUser"));
   alert(message);
   window.location.href = "index.html";
 }
 
-// ✅ 30 分鐘自動登出（確保 sessionToken 也會更新）
+// ✅ 30 分鐘自動登出
 async function autoLogout() {
   if (isAutoLogout) return;
   isAutoLogout = true;
   console.warn("🚪 30 分鐘未操作，自動登出");
-  await logoutUser(false);
-  clearSession();
+
+  const username = localStorage.getItem("loggedInUser");
+  await clearSession(username);
+  
   alert("📴 30 分鐘未操作，請重新登入！");
   window.location.href = "index.html";
 }
 
-// ✅ 手動登出（確保 sessionToken 會被清除）
-// ✅ 手動登出（確保 sessionToken 會被清除）
+// ✅ 手動登出
 async function manualLogout() {
   if (isManualLogout) return;
   isManualLogout = true;
@@ -106,32 +111,23 @@ async function manualLogout() {
   }
 
   try {
-    // ✅ 1. 先清除 Firebase 端的 sessionToken
-    await set(ref(db, `users/${username}/sessionToken`), null);
+    await clearSession(username);
     console.log("✅ Firebase sessionToken 已清除");
-
-    // ✅ 2. 送登出請求給 Cloud Functions
-    await logoutUser(false);
-    console.log("✅ Cloud Functions 登出請求已發送");
 
   } catch (err) {
     console.error("❌ 登出時發生錯誤", err);
   }
 
-  // ✅ 3. 確保 localStorage 清空，避免殘留 session
   clearSession();
-
-  // ✅ 4. 跳轉回登入頁
   alert("👋 您已成功登出");
   window.location.href = "index.html";
 }
-
 
 // ✅ 網路中斷登出
 async function offlineLogout() {
   if (isManualLogout || isAutoLogout) return;
   await logoutUser(false);
-  clearSession();
+  clearSession(localStorage.getItem("loggedInUser"));
   alert("📴 網路中斷，請重新登入！");
   window.location.href = "index.html";
 }
@@ -218,5 +214,4 @@ if (window.location.pathname.includes("pdf-select") || window.location.pathname.
 document.getElementById("logout-btn").addEventListener("click", manualLogout);
 window.logout = manualLogout;
 
-
-// ✅ 202503292240
+// ✅ 202503292254
