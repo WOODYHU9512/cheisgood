@@ -130,7 +130,9 @@ async function offlineLogout() {
   if (isManualLogout || isAutoLogout || isOffline) return;
   isOffline = true;
 
+  console.warn("📴 網路斷線，立即執行登出...");
   await logoutUser(false);
+
   alert("📴 網路中斷，請重新登入！");
   window.location.href = "index.html";
 }
@@ -196,8 +198,6 @@ function listenSessionTokenChanges() {
 // ✅ 監聽網路狀態
 setInterval(() => {
   if (!navigator.onLine && !isOffline) {
-    console.warn("📴 網路中斷，登出");
-    isOffline = true;
     offlineLogout();
   } else if (navigator.onLine && isOffline) {
     console.log("📶 網路恢復");
@@ -221,4 +221,4 @@ if (window.location.pathname.includes("pdf-select") || window.location.pathname.
 
 document.getElementById("logout-btn").addEventListener("click", manualLogout);
 window.logout = manualLogout;
-// ✅ 20250330
+// ✅ 202503301250
