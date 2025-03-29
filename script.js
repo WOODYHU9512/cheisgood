@@ -15,10 +15,10 @@ const db = getDatabase(app);
 
 let heartbeatTimer = null;
 let lastHeartbeat = 0;
-const HEARTBEAT_INTERVAL = 8 * 60 * 1000; // ✅ 8 分鐘送一次 Heartbeat
-const AUTO_LOGOUT_TIME = 30 * 60 * 1000; // ✅ 30 分鐘無操作或未回前景登出
-const CHECK_INTERVAL = 60 * 1000; // ✅ 每 1 分鐘檢查一次
-const OFFLINE_CHECK_INTERVAL = 10 * 1000; // ✅ 10 秒檢查一次網路
+const HEARTBEAT_INTERVAL = 8 * 60 * 1000;
+const AUTO_LOGOUT_TIME = 30 * 60 * 1000;
+const CHECK_INTERVAL = 60 * 1000;
+const OFFLINE_CHECK_INTERVAL = 10 * 1000;
 
 let lastActivityTime = Date.now();
 let lastFocusTime = Date.now();
@@ -26,7 +26,7 @@ let isPageActive = true;
 let isHBRunning = false;
 let isOffline = false;
 let isManualLogout = false;
-let isAutoLogout = false; // 紀錄是否為 30 分鐘自動登出
+let isAutoLogout = false;
 
 // ✅ 記錄滑鼠/鍵盤/觸控活動
 function resetActivityTimer() {
@@ -37,9 +37,15 @@ function resetActivityTimer() {
   document.addEventListener(event, resetActivityTimer);
 });
 
+// ✅ 清理 session，避免重複判斷
+function clearSession() {
+  localStorage.removeItem("sessionToken");
+  sessionStorage.clear();
+}
+
 // ✅ 登出功能
 async function logoutUser(showLog = true) {
-  if (isManualLogout || isAutoLogout) return; // 防止重複執行
+  if (isManualLogout || isAutoLogout) return;
 
   const username = localStorage.getItem("loggedInUser");
   const sessionToken = localStorage.getItem("sessionToken");
@@ -62,11 +68,10 @@ async function logoutUser(showLog = true) {
 
 // ✅ 強制登出（用於被別人踢出）
 async function forceLogout(message = "⚠️ 您已被強制登出") {
-  if (isManualLogout) return;
+  if (isManualLogout || isAutoLogout) return;
   await logoutUser(false);
+  clearSession();
   alert(message);
-  localStorage.clear();
-  sessionStorage.clear();
   window.location.href = "index.html";
 }
 
@@ -75,9 +80,8 @@ async function autoLogout() {
   isAutoLogout = true;
   console.warn("🚪 30 分鐘未操作，自動登出");
   await logoutUser(false);
+  clearSession();
   alert("📴 30 分鐘未操作，請重新登入！");
-  localStorage.clear();
-  sessionStorage.clear();
   window.location.href = "index.html";
 }
 
@@ -86,27 +90,24 @@ async function manualLogout() {
   isManualLogout = true;
   console.log("🚪 手動登出");
   await logoutUser(false);
+  clearSession();
   alert("👋 您已成功登出");
-  localStorage.clear();
-  sessionStorage.clear();
   window.location.href = "index.html";
 }
 
 // ✅ 網路中斷登出
 async function offlineLogout() {
-  if (isManualLogout) return;
+  if (isManualLogout || isAutoLogout) return;
   await logoutUser(false);
+  clearSession();
   alert("📴 網路中斷，請重新登入！");
-  localStorage.clear();
-  sessionStorage.clear();
   window.location.href = "index.html";
 }
 
 // ✅ 單次 Heartbeat
 async function sendHeartbeat() {
   if (!navigator.onLine || isManualLogout) return;
-  const now = Date.now();
-  lastHeartbeat = now;
+  lastHeartbeat = Date.now();
 
   const username = localStorage.getItem("loggedInUser");
   const sessionToken = localStorage.getItem("sessionToken");
@@ -139,41 +140,7 @@ function startHeartbeatLoop() {
   heartbeatTimer = setInterval(sendHeartbeat, HEARTBEAT_INTERVAL);
 }
 
-function stopHeartbeatLoop() {
-  if (heartbeatTimer) clearInterval(heartbeatTimer);
-  heartbeatTimer = null;
-  isHBRunning = false;
-}
-
-// ✅ 背景切換監聽
-document.addEventListener("visibilitychange", () => {
-  if (document.visibilityState === "visible") {
-    console.log("👀 回到前景");
-    lastFocusTime = Date.now();
-    isPageActive = true;
-  } else {
-    console.log("📄 背景頁面，仍然保持 Heartbeat 運行");
-    isPageActive = false;
-  }
-});
-
-// ✅ 網路偵測
-setInterval(() => {
-  if (!navigator.onLine) {
-    if (!isOffline) {
-      console.warn("📴 網路中斷，登出");
-      isOffline = true;
-      offlineLogout();
-    }
-  } else {
-    if (isOffline) {
-      console.log("📶 網路恢復");
-      isOffline = false;
-    }
-  }
-}, OFFLINE_CHECK_INTERVAL);
-
-// ✅ sessionToken 監聽
+// ✅ 監聽 sessionToken 變更
 function listenSessionTokenChanges() {
   const username = localStorage.getItem("loggedInUser");
   if (!username) return;
@@ -190,17 +157,27 @@ function listenSessionTokenChanges() {
   });
 }
 
+// ✅ 監聽網路狀態
+setInterval(() => {
+  if (!navigator.onLine && !isOffline) {
+    console.warn("📴 網路中斷，登出");
+    isOffline = true;
+    offlineLogout();
+  } else if (navigator.onLine && isOffline) {
+    console.log("📶 網路恢復");
+    isOffline = false;
+  }
+}, OFFLINE_CHECK_INTERVAL);
+
 // ✅ 1 分鐘檢查登出
 setInterval(() => {
   const now = Date.now();
-  if (now - lastFocusTime >= AUTO_LOGOUT_TIME) {
-    autoLogout();
-  } else if (now - lastActivityTime >= AUTO_LOGOUT_TIME) {
+  if (now - lastFocusTime >= AUTO_LOGOUT_TIME || now - lastActivityTime >= AUTO_LOGOUT_TIME) {
     autoLogout();
   }
 }, CHECK_INTERVAL);
 
-// ✅ 啟動 Heartbeat + 監聽
+// ✅ 啟動
 if (window.location.pathname.includes("pdf-select") || window.location.pathname.includes("pdf-viewer")) {
   startHeartbeatLoop();
   listenSessionTokenChanges();
@@ -208,4 +185,4 @@ if (window.location.pathname.includes("pdf-select") || window.location.pathname.
 
 document.getElementById("logout-btn").addEventListener("click", manualLogout);
 window.logout = manualLogout;
-// ✅ 20250392033
+// ✅ 202503292111
