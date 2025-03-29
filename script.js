@@ -5,8 +5,6 @@ import {
   getDatabase,
   ref,
   onValue,
-  set,
-  remove,
   update
 } from "https://www.gstatic.com/firebasejs/9.6.1/firebase-database.js";
 
@@ -17,7 +15,6 @@ const app = initializeApp(firebaseConfig);
 const db = getDatabase(app);
 
 let heartbeatTimer = null;
-let lastHeartbeat = 0;
 const HEARTBEAT_INTERVAL = 8 * 60 * 1000;
 const AUTO_LOGOUT_TIME = 30 * 60 * 1000;
 const CHECK_INTERVAL = 60 * 1000;
@@ -49,13 +46,13 @@ document.addEventListener("visibilitychange", () => {
   }
 });
 
-async function clearSession(username) {
+async function clearSession(username, fullLogout = true) {
   if (username) {
     await update(ref(db, `users/${username}`), {
-      sessionToken: null,
-      isLoggedIn: false
+      sessionToken: fullLogout ? "" : null, // 設為 "" 代表正常登出，null 代表強制登出
+      isLoggedIn: fullLogout ? false : true
     });
-    console.log(`✅ Firebase sessionToken & isLoggedIn 已清除 (${username})`);
+    console.log(`✅ Firebase sessionToken & isLoggedIn 已更新 (${username})`);
   }
   localStorage.removeItem("sessionToken");
   sessionStorage.clear();
@@ -79,7 +76,7 @@ async function logoutUser(showLog = true) {
 async function forceLogout(message = "⚠️ 您已被強制登出") {
   if (isManualLogout || isAutoLogout) return;
   await logoutUser(false);
-  clearSession(localStorage.getItem("loggedInUser"));
+  clearSession(localStorage.getItem("loggedInUser"), false);
   alert(message);
   window.location.href = "index.html";
 }
@@ -112,7 +109,6 @@ async function manualLogout() {
     console.error("❌ 登出時發生錯誤", err);
   }
 
-  clearSession();
   alert("👋 您已成功登出");
   window.location.href = "index.html";
 }
@@ -127,8 +123,6 @@ async function offlineLogout() {
 
 async function sendHeartbeat() {
   if (!navigator.onLine || isManualLogout) return;
-  lastHeartbeat = Date.now();
-
   const username = localStorage.getItem("loggedInUser");
   const sessionToken = localStorage.getItem("sessionToken");
   if (!username || !sessionToken) return;
@@ -198,5 +192,3 @@ if (window.location.pathname.includes("pdf-select") || window.location.pathname.
 
 document.getElementById("logout-btn").addEventListener("click", manualLogout);
 window.logout = manualLogout;
-
-// ✅ 202503292345 執行基於此版本修正 isLoggedIn 資訊
