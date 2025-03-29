@@ -15,30 +15,31 @@ const db = getDatabase(app);
 
 let heartbeatTimer = null;
 let lastHeartbeat = 0;
-const HEARTBEAT_INTERVAL = 8 * 60 * 1000; // ✅ 8 分鐘送一次 Heartbeat
-const AUTO_LOGOUT_TIME = 30 * 60 * 1000; // ✅ 30 分鐘無操作或未回前景登出
-const CHECK_INTERVAL = 60 * 1000; // ✅ 每 1 分鐘檢查一次
-const OFFLINE_CHECK_INTERVAL = 10 * 1000; // ✅ 10 秒檢查一次網路
+const HEARTBEAT_INTERVAL = 8 * 60 * 1000;
+const AUTO_LOGOUT_TIME = 30 * 60 * 1000;
+const CHECK_INTERVAL = 60 * 1000;
+const OFFLINE_CHECK_INTERVAL = 10 * 1000;
 
 let lastActivityTime = Date.now();
 let lastFocusTime = Date.now();
-let isPageActive = true; // ✅ 是否在前景
-let isHBRunning = false; // ✅ 確保 HB 只執行一次
-let isOffline = false; // ✅ 記錄網路狀態
-let manualLogout = false; // ✅ 記錄是否為手動登出，避免彈錯誤訊息
+let isPageActive = true;
+let isHBRunning = false;
+let isOffline = false;
+let isManualLogout = false; // 紀錄是否為手動登出
 
 // ✅ 記錄滑鼠/鍵盤/觸控活動
 function resetActivityTimer() {
   lastActivityTime = Date.now();
 }
 
-// ✅ 監聽滑鼠、鍵盤、觸控事件
 ["mousemove", "keydown", "touchstart", "touchmove"].forEach(event => {
   document.addEventListener(event, resetActivityTimer);
 });
 
 // ✅ 登出功能
 async function logoutUser(showLog = true) {
+  if (isManualLogout) return; // 防止重複執行
+  
   const username = localStorage.getItem("loggedInUser");
   const sessionToken = localStorage.getItem("sessionToken");
   if (!username || !sessionToken) return;
@@ -59,8 +60,8 @@ async function logoutUser(showLog = true) {
 }
 
 // ✅ 強制登出
-async function forceLogout(message) {
-  if (manualLogout) return; // ✅ 如果是手動登出，不要顯示錯誤訊息
+async function forceLogout(message = "⚠️ 您已被強制登出") {
+  if (isManualLogout) return;
   await logoutUser(false);
   alert(message);
   localStorage.clear();
@@ -68,8 +69,20 @@ async function forceLogout(message) {
   window.location.href = "index.html";
 }
 
+// ✅ 手動登出
+async function manualLogout() {
+  isManualLogout = true;
+  console.log("🚪 手動登出");
+  await logoutUser(false);
+  alert("👋 您已成功登出");
+  localStorage.clear();
+  sessionStorage.clear();
+  window.location.href = "index.html";
+}
+
 // ✅ 網路中斷登出
 async function offlineLogout() {
+  if (isManualLogout) return;
   await logoutUser(false);
   alert("📴 網路中斷，請重新登入！");
   localStorage.clear();
@@ -79,7 +92,7 @@ async function offlineLogout() {
 
 // ✅ 單次 Heartbeat
 async function sendHeartbeat() {
-  if (!navigator.onLine) return;
+  if (!navigator.onLine || isManualLogout) return;
   const now = Date.now();
   lastHeartbeat = now;
 
@@ -96,7 +109,7 @@ async function sendHeartbeat() {
 
     if (!res.ok) {
       console.warn("❌ Heartbeat 驗證失敗，登出");
-      await forceLogout("❌ Heartbeat 驗證失敗，請重新登入！");
+      await forceLogout();
     } else {
       console.log("💓 Heartbeat 傳送成功");
     }
@@ -158,9 +171,9 @@ function listenSessionTokenChanges() {
     const latestToken = snapshot.val();
     const currentToken = localStorage.getItem("sessionToken");
 
-    if (!manualLogout && latestToken !== currentToken) {
+    if (!isManualLogout && latestToken !== currentToken) {
       console.warn("👥 sessionToken 發生變更，可能被從其他裝置登入");
-      forceLogout("⚠️ 此帳號已在其他裝置登入，您已被強制登出！");
+      forceLogout("⚠️ 此帳號已在其他裝置登入，請重新登入");
     }
   });
 }
@@ -168,20 +181,20 @@ function listenSessionTokenChanges() {
 // ✅ 1 分鐘檢查登出
 setInterval(() => {
   const now = Date.now();
-  if (now - lastFocusTime >= AUTO_LOGOUT_TIME || now - lastActivityTime >= AUTO_LOGOUT_TIME) {
+  if (now - lastFocusTime >= AUTO_LOGOUT_TIME) {
+    console.warn("🚪 長時間未回來頁面，登出");
+    forceLogout("📴 30 分鐘未回來，請重新登入！");
+  } else if (now - lastActivityTime >= AUTO_LOGOUT_TIME) {
     console.warn("🚪 長時間未操作，登出");
     forceLogout("📴 30 分鐘未操作，請重新登入！");
   }
 }, CHECK_INTERVAL);
 
 // ✅ 啟動 Heartbeat + 監聽
-if (
-  window.location.pathname.includes("pdf-select") ||
-  window.location.pathname.includes("pdf-viewer")
-) {
+if (window.location.pathname.includes("pdf-select") || window.location.pathname.includes("pdf-viewer")) {
   startHeartbeatLoop();
   listenSessionTokenChanges();
 }
 
-
-// ✅ 302503291719
+document.getElementById("logout-btn").addEventListener("click", manualLogout);
+window.logout = manualLogout;
