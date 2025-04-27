@@ -39,11 +39,13 @@
 </head>
 <body>
   <button id="logout-btn">🚪 登出</button>
-  <h2>請選擇學校與科目</h2>
+  <h2>請選擇學校、科目與年份</h2>
   <label for="schoolSelect">選擇學校：</label>
   <select id="schoolSelect"><option value="">請選擇學校</option></select>
   <label for="subjectSelect">選擇科目：</label>
   <select id="subjectSelect"><option value="">請先選擇學校</option></select>
+  <label for="yearSelect">選擇年份：</label>
+  <select id="yearSelect"><option value="">請先選擇科目</option></select>
   <button id="viewBtn">📄 觀看 PDF</button>
 
   <footer>
@@ -51,7 +53,6 @@
     <p>著作權所有，侵害必究 © 化工製造所</p>
   </footer>
 
-  <!-- ✅ 確保正確引用 script.js -->
   <script type="module">
     import "./script.js";
   </script>
@@ -68,6 +69,7 @@
 
     const schoolSelect = document.getElementById("schoolSelect");
     const subjectSelect = document.getElementById("subjectSelect");
+    const yearSelect = document.getElementById("yearSelect");
     const viewBtn = document.getElementById("viewBtn");
     const logoutBtn = document.getElementById("logout-btn");
 
@@ -124,9 +126,11 @@
         if (!res.ok || data.error) throw data;
         currentSubjects = data.subjects || {};
         subjectSelect.innerHTML = '<option value="">請選擇科目</option>';
-        Object.entries(currentSubjects).forEach(([subject, fileId]) => {
+        yearSelect.innerHTML = '<option value="">請先選擇科目</option>';
+
+        Object.keys(currentSubjects).forEach(subject => {
           const option = document.createElement("option");
-          option.value = fileId;
+          option.value = subject;
           option.textContent = subject;
           subjectSelect.appendChild(option);
         });
@@ -143,12 +147,27 @@
       if (school) fetchSubjectsForSchool(school);
     });
 
+    subjectSelect.addEventListener("change", () => {
+      const subject = subjectSelect.value;
+      yearSelect.innerHTML = '<option value="">請選擇年份</option>';
+
+      if (subject && currentSubjects[subject]) {
+        Object.entries(currentSubjects[subject]).forEach(([year, fileId]) => {
+          const option = document.createElement("option");
+          option.value = fileId;
+          option.textContent = year;
+          yearSelect.appendChild(option);
+        });
+      }
+    });
+
     viewBtn.addEventListener("click", () => {
-      const subjectId = subjectSelect.value;
-      const subjectText = subjectSelect.options[subjectSelect.selectedIndex]?.text;
-      if (!subjectId) return alert("❌ 請選擇科目！");
-      localStorage.setItem("currentPDF", subjectId);
-      localStorage.setItem("currentPDFName", subjectText);
+      const fileId = yearSelect.value;
+      const yearText = yearSelect.options[yearSelect.selectedIndex]?.text;
+      if (!fileId) return alert("❌ 請選擇年份！");
+
+      localStorage.setItem("currentPDF", fileId);
+      localStorage.setItem("currentPDFName", yearText);
       sessionStorage.setItem("pageNavigation", "true");
       window.location.href = "pdf-viewer.html";
     });
