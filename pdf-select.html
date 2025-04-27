@@ -138,7 +138,9 @@
 
         Object.keys(currentSubjects).forEach(subject => {
           const option = document.createElement("option");
-          option.value = subject;
+
+          // 👇 這裡判斷，如果是物件（有年份分的），就把整個object JSON字串化放到option.value
+          option.value = typeof currentSubjects[subject] === "object" ? JSON.stringify(currentSubjects[subject]) : currentSubjects[subject];
           option.textContent = subject;
           subjectSelect.appendChild(option);
         });
@@ -158,15 +160,25 @@
     });
 
     subjectSelect.addEventListener("change", () => {
-      const subject = subjectSelect.value;
+      const subjectRaw = subjectSelect.value;
       yearSelect.innerHTML = '<option value="">請選擇年份</option>';
-      if (subject && currentSubjects[subject]) {
-        Object.entries(currentSubjects[subject]).forEach(([year, fileId]) => {
+
+      try {
+        const subjectObj = JSON.parse(subjectRaw);
+
+        Object.entries(subjectObj).forEach(([year, fileId]) => {
           const option = document.createElement("option");
           option.value = fileId;
           option.textContent = year;
           yearSelect.appendChild(option);
         });
+      } catch (err) {
+        if (subjectRaw) {
+          const option = document.createElement("option");
+          option.value = subjectRaw;
+          option.textContent = "無年份（直接打開）";
+          yearSelect.appendChild(option);
+        }
       }
     });
 
