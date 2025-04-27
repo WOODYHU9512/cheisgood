@@ -3,7 +3,7 @@
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>選擇學校與科目</title>
+  <title>選擇學校、科目與年份</title>
   <script>
     sessionStorage.setItem("pageNavigation", "true");
   </script>
@@ -40,12 +40,22 @@
 <body>
   <button id="logout-btn">🚪 登出</button>
   <h2>請選擇學校、科目與年份</h2>
+
   <label for="schoolSelect">選擇學校：</label>
-  <select id="schoolSelect"><option value="">請選擇學校</option></select>
+  <select id="schoolSelect">
+    <option value="">請選擇學校</option>
+  </select>
+
   <label for="subjectSelect">選擇科目：</label>
-  <select id="subjectSelect"><option value="">請先選擇學校</option></select>
+  <select id="subjectSelect">
+    <option value="">請先選擇學校</option>
+  </select>
+
   <label for="yearSelect">選擇年份：</label>
-  <select id="yearSelect"><option value="">請先選擇科目</option></select>
+  <select id="yearSelect">
+    <option value="">請先選擇科目</option>
+  </select>
+
   <button id="viewBtn">📄 觀看 PDF</button>
 
   <footer>
@@ -55,11 +65,8 @@
 
   <script type="module">
     import "./script.js";
-  </script>
-
-  <script type="module">
-    import { getDatabase, ref, onValue } from "https://www.gstatic.com/firebasejs/9.6.1/firebase-database.js";
     import { initializeApp } from "https://www.gstatic.com/firebasejs/9.6.1/firebase-app.js";
+    import { getDatabase, ref, onValue } from "https://www.gstatic.com/firebasejs/9.6.1/firebase-database.js";
 
     const firebaseConfig = {
       databaseURL: "https://access-7a3c3-default-rtdb.firebaseio.com/"
@@ -125,6 +132,7 @@
         const data = await res.json();
         if (!res.ok || data.error) throw data;
         currentSubjects = data.subjects || {};
+
         subjectSelect.innerHTML = '<option value="">請選擇科目</option>';
         yearSelect.innerHTML = '<option value="">請先選擇科目</option>';
 
@@ -144,13 +152,14 @@
 
     schoolSelect.addEventListener("change", () => {
       const school = schoolSelect.value;
+      subjectSelect.innerHTML = '<option value="">請先選擇學校</option>';
+      yearSelect.innerHTML = '<option value="">請先選擇科目</option>';
       if (school) fetchSubjectsForSchool(school);
     });
 
     subjectSelect.addEventListener("change", () => {
       const subject = subjectSelect.value;
       yearSelect.innerHTML = '<option value="">請選擇年份</option>';
-
       if (subject && currentSubjects[subject]) {
         Object.entries(currentSubjects[subject]).forEach(([year, fileId]) => {
           const option = document.createElement("option");
@@ -164,8 +173,10 @@
     viewBtn.addEventListener("click", () => {
       const fileId = yearSelect.value;
       const yearText = yearSelect.options[yearSelect.selectedIndex]?.text;
-      if (!fileId) return alert("❌ 請選擇年份！");
-
+      if (!fileId) {
+        alert("❌ 請選擇年份！");
+        return;
+      }
       localStorage.setItem("currentPDF", fileId);
       localStorage.setItem("currentPDFName", yearText);
       sessionStorage.setItem("pageNavigation", "true");
