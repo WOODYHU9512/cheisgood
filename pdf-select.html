@@ -30,6 +30,23 @@
       font-size: 16px;
       z-index: 1000;
     }
+    #resize-warning {
+      position: fixed;
+      top: 55px;
+      width: 100%;
+      text-align: center;
+      font-size: 15px;
+      color: #cc0000;
+      background-color: #fff3cd;
+      padding: 8px 0;
+      z-index: 999;
+      border-bottom: 1px solid #f5c6cb;
+      animation: blink 1.5s infinite;
+    }
+    @keyframes blink {
+      0%, 100% { opacity: 1; }
+      50% { opacity: 0.4; }
+    }
     footer {
       margin-top: 40px;
       font-size: 13px;
@@ -38,30 +55,8 @@
   </style>
 </head>
 <body>
-  <button id="logout-btn">🚪 登出</button>
-  <!-- 新增提示文字 -->
-<div id="resize-warning">⚠️ 在此頁面請勿放大或縮小視窗</div>
-
-<style>
-  #resize-warning {
-    position: fixed;
-    top: 55px;
-    width: 100%;
-    text-align: center;
-    font-size: 15px;
-    color: #cc0000;
-    background-color: #fff3cd;
-    padding: 8px 0;
-    z-index: 999;
-    border-bottom: 1px solid #f5c6cb;
-    animation: blink 1.5s infinite;
-  }
-
-  @keyframes blink {
-    0%, 100% { opacity: 1; }
-    50% { opacity: 0.4; }
-  }
-</style>
+  <button id="logout-btn">\ud83d\udeaa 登出</button>
+  <div id="resize-warning">⚠️ 在此頁面請勿放大或縮小視窗</div>
 
   <h2>請選擇學校、科目與年份</h2>
 
@@ -80,7 +75,7 @@
     <option value="">請先選擇科目</option>
   </select>
 
-  <button id="viewBtn">📄 觀看 PDF</button>
+  <button id="viewBtn">\ud83d\udcc4 觀看 PDF</button>
 
   <footer>
     <p>若有操作相關疑問，請聯繫 <a href="https://www.facebook.com/CHEisverygood/" target="_blank">Facebook 粉專</a> 或來信 <a href="mailto:cheerfactorysolution@gmail.com">cheerfactorysolution@gmail.com</a></p>
@@ -90,11 +85,9 @@
   <script type="module">
     import "./script.js";
     import { initializeApp } from "https://www.gstatic.com/firebasejs/9.6.1/firebase-app.js";
-    import { getDatabase, ref, onValue } from "https://www.gstatic.com/firebasejs/9.6.1/firebase-database.js";
+    import { getDatabase } from "https://www.gstatic.com/firebasejs/9.6.1/firebase-database.js";
 
-    const firebaseConfig = {
-      databaseURL: "https://access-7a3c3-default-rtdb.firebaseio.com/"
-    };
+    const firebaseConfig = { databaseURL: "https://access-7a3c3-default-rtdb.firebaseio.com/" };
     const app = initializeApp(firebaseConfig);
     const db = getDatabase(app);
 
@@ -111,14 +104,12 @@
       const username = localStorage.getItem("loggedInUser");
       const sessionToken = localStorage.getItem("sessionToken");
       if (!username || !sessionToken) return;
-
       try {
         const res = await fetch("https://us-central1-access-7a3c3.cloudfunctions.net/getPurchasedSubjects", {
           method: "POST",
           headers: { "Content-Type": "application/json" },
           body: JSON.stringify({ username, sessionToken })
         });
-
         const data = await res.json();
         if (!res.ok || data.error) throw data;
         purchased = data.purchased || {};
@@ -145,21 +136,17 @@
       const username = localStorage.getItem("loggedInUser");
       const sessionToken = localStorage.getItem("sessionToken");
       if (!username || !sessionToken || !school) return;
-
       try {
         const res = await fetch("https://us-central1-access-7a3c3.cloudfunctions.net/getSubjectsBySchool", {
           method: "POST",
           headers: { "Content-Type": "application/json" },
           body: JSON.stringify({ username, sessionToken, school })
         });
-
         const data = await res.json();
         if (!res.ok || data.error) throw data;
         currentSubjects = data.subjects || {};
-
         subjectSelect.innerHTML = '<option value="">請選擇科目</option>';
         yearSelect.innerHTML = '<option value="">請先選擇科目</option>';
-
         Object.keys(currentSubjects).forEach(subject => {
           const option = document.createElement("option");
           option.value = typeof currentSubjects[subject] === "object" ? JSON.stringify(currentSubjects[subject]) : currentSubjects[subject];
@@ -184,10 +171,8 @@
     subjectSelect.addEventListener("change", () => {
       const subjectRaw = subjectSelect.value;
       yearSelect.innerHTML = '<option value="">請選擇年份</option>';
-
       try {
         const subjectObj = JSON.parse(subjectRaw);
-
         Object.entries(subjectObj).forEach(([year, fileId]) => {
           const option = document.createElement("option");
           option.value = fileId;
@@ -224,42 +209,28 @@
     window.addEventListener("DOMContentLoaded", getPurchasedSchools);
   </script>
 
-  <!-- ====== 版本紀錄：v20240429-01，更新F12防護機制 ====== -->
+  <!-- ====== 版本紀錄：v20240429-02，加強DevTools防護 ====== -->
 <script>
-// 防止開發者工具(F12)開啟偵測（強制版）
 (function () {
-  let devtools = { open: false };
-  const threshold = 160; // 判斷 console 視窗開啟高度門檻
-
+  const threshold = 200;
   function detectDevTools() {
     const widthThreshold = window.outerWidth - window.innerWidth > threshold;
     const heightThreshold = window.outerHeight - window.innerHeight > threshold;
     if (widthThreshold || heightThreshold) {
-      devtools.open = true;
-    } else {
-      devtools.open = false;
-    }
-    if (devtools.open) {
       alert("🚨 偵測到開發者工具開啟，頁面將登出！");
-      if (typeof window.logout === "function") {
-        window.logout();
-      }
+      if (typeof window.logout === "function") window.logout();
       location.href = "index.html";
     }
   }
-
   window.addEventListener("load", () => {
-    detectDevTools();       // 頁面載入馬上檢查一次
-    setInterval(detectDevTools, 1000); // 每1秒檢查一次
+    detectDevTools();
+    setInterval(detectDevTools, 1000);
   });
-
   window.addEventListener("resize", () => {
-    detectDevTools();        // 當視窗resize時也檢查
+    detectDevTools();
   });
 })();
 </script>
-
-
 
 </body>
 </html>
