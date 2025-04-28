@@ -200,24 +200,23 @@
     window.addEventListener("DOMContentLoaded", getPurchasedSchools);
   </script>
 
-  <!-- ✅ 新增這段：防止上頁開好 F12 -->
-  <script>
-// 防止開發者工具(F12)開啟偵測
+  <!-- ====== 版本紀錄：v20240429-01，更新F12防護機制 ====== -->
+<script>
+// 防止開發者工具(F12)開啟偵測（強制版）
 (function () {
   let devtools = { open: false };
-  const element = new Image();
-  Object.defineProperty(element, 'id', {
-    get: function () {
-      devtools.open = true;
-      throw new Error("DevTools detected");
-    }
-  });
+  const threshold = 160; // 判斷 console 視窗開啟高度門檻
 
-  function checkDevtools() {
-    devtools.open = false;
-    console.log(element); // 要用 log，不能用 dir
+  function detectDevTools() {
+    const widthThreshold = window.outerWidth - window.innerWidth > threshold;
+    const heightThreshold = window.outerHeight - window.innerHeight > threshold;
+    if (widthThreshold || heightThreshold) {
+      devtools.open = true;
+    } else {
+      devtools.open = false;
+    }
     if (devtools.open) {
-      alert("🚨 偵測到開發者工具，頁面將登出！");
+      alert("🚨 偵測到開發者工具開啟，頁面將登出！");
       if (typeof window.logout === "function") {
         window.logout();
       }
@@ -226,11 +225,16 @@
   }
 
   window.addEventListener("load", () => {
-    checkDevtools();         // 頁面載入完馬上檢查一次
-    setInterval(checkDevtools, 1500); // 之後每 1.5秒檢查一次
+    detectDevTools();       // 頁面載入馬上檢查一次
+    setInterval(detectDevTools, 1000); // 每1秒檢查一次
+  });
+
+  window.addEventListener("resize", () => {
+    detectDevTools();        // 當視窗resize時也檢查
   });
 })();
 </script>
+
 
 
 </body>
