@@ -213,29 +213,32 @@
   <!-- ====== 版本紀錄：v20240429-03，加強DevTools防護 (Console偵測) ====== -->
   <script>
   (function () {
-    let opened = false;
-    const element = new Image();
-    Object.defineProperty(element, 'id', {
-      get: function () {
-        opened = true;
-        throw new Error("DevTools detected");
-      }
-    });
+  let opened = false;
+  const element = new Image();
+  Object.defineProperty(element, 'id', {
+    get: function () {
+      opened = true;
+      throw new Error("DevTools detected");
+    }
+  });
 
-    function detect() {
-      opened = false;
-      console.dir(element);
+  function detect() {
+    opened = false;
+    console.log(element); // 👈 用 log，不要用 dir！
+    setTimeout(() => {     // 👈 記得加 setTimeout，給瀏覽器時間觸發
       if (opened) {
         alert("🚨 偵測到開發者工具開啟，頁面將登出！");
         if (typeof window.logout === "function") window.logout();
         location.href = "index.html";
       }
-    }
+    }, 100); // 延遲100ms判斷
+  }
 
-    window.addEventListener("load", () => {
-      setInterval(detect, 1000);
-    });
-  })();
+  window.addEventListener("load", () => {
+    setInterval(detect, 1000); // 每秒檢查一次
+  });
+})();
+
   </script>
 
 </body>
