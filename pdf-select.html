@@ -200,22 +200,8 @@
     window.addEventListener("DOMContentLoaded", getPurchasedSchools);
   </script>
 
-  <!-- ✅ 加上防止右鍵 + 防F12 + 進來就掃的防護 -->
+  <!-- ✅ 新增這段：防止上頁開好 F12 -->
   <script>
-    // 禁止右鍵
-    window.addEventListener("contextmenu", e => e.preventDefault());
-
-    // 禁止特定快捷鍵
-    window.addEventListener("keydown", function (e) {
-      const combo = e.ctrlKey && e.shiftKey && ["I", "J", "C"].includes(e.key.toUpperCase());
-      const forbidden = ["F12", "U", "S"].includes(e.key.toUpperCase()) && e.ctrlKey;
-      if (combo || forbidden || e.key === "F12") {
-        e.preventDefault();
-        alert("⚠️ 此操作已被封鎖！");
-      }
-    });
-
-    // 檢查 DevTools 是否打開
     (function () {
       let devtools = { open: false };
       const element = new Image();
@@ -226,7 +212,7 @@
         }
       });
 
-      function detectDevTools() {
+      function checkDevtools() {
         devtools.open = false;
         console.dir(element);
         if (devtools.open) {
@@ -236,8 +222,8 @@
         }
       }
 
-      window.addEventListener("load", detectDevTools);
-      setInterval(detectDevTools, 2000);
+      window.addEventListener("load", checkDevtools); // 進來就檢查
+      setInterval(checkDevtools, 2000); // 每2秒再檢查一次
     })();
   </script>
 
