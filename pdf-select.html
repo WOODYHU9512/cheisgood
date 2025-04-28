@@ -39,6 +39,30 @@
 </head>
 <body>
   <button id="logout-btn">🚪 登出</button>
+  <!-- 新增提示文字 -->
+<div id="resize-warning">⚠️ 在此頁面請勿放大或縮小視窗</div>
+
+<style>
+  #resize-warning {
+    position: fixed;
+    top: 55px;
+    width: 100%;
+    text-align: center;
+    font-size: 15px;
+    color: #cc0000;
+    background-color: #fff3cd;
+    padding: 8px 0;
+    z-index: 999;
+    border-bottom: 1px solid #f5c6cb;
+    animation: blink 1.5s infinite;
+  }
+
+  @keyframes blink {
+    0%, 100% { opacity: 1; }
+    50% { opacity: 0.4; }
+  }
+</style>
+
   <h2>請選擇學校、科目與年份</h2>
 
   <label for="schoolSelect">選擇學校：</label>
