@@ -138,8 +138,6 @@
 
         Object.keys(currentSubjects).forEach(subject => {
           const option = document.createElement("option");
-
-          // 👇 這裡判斷，如果是物件（有年份分的），就把整個object JSON字串化放到option.value
           option.value = typeof currentSubjects[subject] === "object" ? JSON.stringify(currentSubjects[subject]) : currentSubjects[subject];
           option.textContent = subject;
           subjectSelect.appendChild(option);
@@ -201,5 +199,47 @@
 
     window.addEventListener("DOMContentLoaded", getPurchasedSchools);
   </script>
+
+  <!-- ✅ 加上防止右鍵 + 防F12 + 進來就掃的防護 -->
+  <script>
+    // 禁止右鍵
+    window.addEventListener("contextmenu", e => e.preventDefault());
+
+    // 禁止特定快捷鍵
+    window.addEventListener("keydown", function (e) {
+      const combo = e.ctrlKey && e.shiftKey && ["I", "J", "C"].includes(e.key.toUpperCase());
+      const forbidden = ["F12", "U", "S"].includes(e.key.toUpperCase()) && e.ctrlKey;
+      if (combo || forbidden || e.key === "F12") {
+        e.preventDefault();
+        alert("⚠️ 此操作已被封鎖！");
+      }
+    });
+
+    // 檢查 DevTools 是否打開
+    (function () {
+      let devtools = { open: false };
+      const element = new Image();
+      Object.defineProperty(element, 'id', {
+        get: function () {
+          devtools.open = true;
+          throw new Error("DevTools detected");
+        }
+      });
+
+      function detectDevTools() {
+        devtools.open = false;
+        console.dir(element);
+        if (devtools.open) {
+          alert("🚨 偵測到開發者工具，頁面將登出！");
+          if (window.logout) window.logout();
+          location.href = "index.html";
+        }
+      }
+
+      window.addEventListener("load", detectDevTools);
+      setInterval(detectDevTools, 2000);
+    })();
+  </script>
+
 </body>
 </html>
