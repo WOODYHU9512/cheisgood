@@ -202,6 +202,7 @@
 
   <!-- ✅ 新增這段：防止上頁開好 F12 -->
   <script>
+// 防止開發者工具(F12)開啟偵測
 (function () {
   let devtools = { open: false };
   const element = new Image();
@@ -214,19 +215,19 @@
 
   function checkDevtools() {
     devtools.open = false;
-    console.log(element); // 注意！要用 console.log 才會觸發 get，不能用 dir
+    console.log(element); // 要用 log，不能用 dir
     if (devtools.open) {
       alert("🚨 偵測到開發者工具，頁面將登出！");
       if (typeof window.logout === "function") {
         window.logout();
       }
-      window.location.href = "index.html";
+      location.href = "index.html";
     }
   }
 
   window.addEventListener("load", () => {
-    checkDevtools(); // 頁面載入完就先檢查一次
-    setInterval(checkDevtools, 1500); // 每1.5秒檢查一次，不卡也能穩定抓
+    checkDevtools();         // 頁面載入完馬上檢查一次
+    setInterval(checkDevtools, 1500); // 之後每 1.5秒檢查一次
   });
 })();
 </script>
