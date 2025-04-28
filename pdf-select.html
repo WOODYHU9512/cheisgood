@@ -192,28 +192,25 @@
     window.addEventListener("DOMContentLoaded", getPurchasedSchools);
   </script>
 
-  <!-- ====== 版本紀錄：v20240429-03，加強DevTools防護 (Console偵測) ====== -->
+  <!-- ====== 版本紀錄：v202404291210，加強DevTools防護 (Console偵測) ====== -->
   <script>
-  (function () {
+(function () {
   let devtoolsOpened = false;
 
   setInterval(function () {
     const start = new Date();
-    debugger; // 👈 如果F12開著，這裡會卡一小下
+    try { debugger; } catch (e) {}
     const end = new Date();
-    if (end - start > 100) { // 超過100ms，就代表F12開了
+    if (end - start > 100) {
       if (!devtoolsOpened) {
         devtoolsOpened = true;
-        alert("🚨 偵測到開發者工具開啟，頁面將登出！");
-        if (typeof window.logout === "function") window.logout();
-        location.href = "index.html";
+        window.location.replace("index.html"); // ✅ 直接強制跳轉，不彈 alert
       }
     }
-  }, 1000);
+  }, 300);
 })();
+</script>
 
-
-  </script>
 
 </body>
 </html>
