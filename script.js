@@ -16,7 +16,7 @@ const db = getDatabase(app);
 
 let heartbeatTimer = null;
 let lastHeartbeat = 0;
-const HEARTBEAT_INTERVAL = 8 * 60 * 1000;
+const HEARTBEAT_INTERVAL = 5 * 60 * 1000; // ✅ 改為每 5 分鐘
 const AUTO_LOGOUT_TIME = 30 * 60 * 1000;
 const CHECK_INTERVAL = 60 * 1000;
 const OFFLINE_CHECK_INTERVAL = 10 * 1000;
@@ -29,6 +29,8 @@ let isOffline = false;
 let isManualLogout = false;
 let isAutoLogout = false;
 let isSessionMismatchHandled = false;
+let failedHBCount = 0;
+const MAX_HB_FAILURES = 6; // ✅ 最多容忍 6 次錯誤（約 30 分鐘）
 
 // ✅ 記錄滑鼠/鍵盤/觸控活動
 function resetActivityTimer() {
@@ -39,16 +41,8 @@ function resetActivityTimer() {
 });
 
 // ✅ 背景偵測
-document.addEventListener("visibilitychange", () => {
-  if (document.visibilityState === "visible") {
-    console.log("👀 回到前景");
-    lastFocusTime = Date.now();
-    isPageActive = true;
-  } else {
-    console.log("📄 進入背景");
-    isPageActive = false;
-  }
-});
+// 切換至背景與前景時更新焦點狀態，並於回到前景時補送 heartbeat
+
 
 // ✅ 清理 session
 async function clearSession(username) {
@@ -66,7 +60,6 @@ async function clearSession(username) {
 // ✅ 登出功能（適用於手動登出、自動登出）
 async function logoutUser(showLog = true) {
   if (isManualLogout || isAutoLogout) return;
-
   const username = localStorage.getItem("loggedInUser");
   const sessionToken = localStorage.getItem("sessionToken");
   if (!username || !sessionToken) return;
@@ -83,7 +76,6 @@ async function logoutUser(showLog = true) {
 async function forceLogout(message = "⚠️ 您已被強制登出") {
   if (isManualLogout || isAutoLogout || isOffline || isSessionMismatchHandled) return;
   isSessionMismatchHandled = true;
-
   alert(message);
   window.location.href = "index.html";
 }
@@ -93,10 +85,8 @@ async function autoLogout() {
   if (isAutoLogout) return;
   isAutoLogout = true;
   console.warn("🚪 30 分鐘未操作，自動登出");
-
   const username = localStorage.getItem("loggedInUser");
   await clearSession(username);
-
   alert("📴 30 分鐘未操作，請重新登入！");
   window.location.href = "index.html";
 }
@@ -106,21 +96,18 @@ async function manualLogout() {
   if (isManualLogout) return;
   isManualLogout = true;
   console.log("🚪 手動登出中...");
-
   const username = localStorage.getItem("loggedInUser");
   if (!username) {
     console.warn("⚠️ 找不到使用者資訊，直接跳轉");
     window.location.href = "index.html";
     return;
   }
-
   try {
     await clearSession(username);
     console.log("✅ Firebase sessionToken 已清除");
   } catch (err) {
     console.error("❌ 登出時發生錯誤", err);
   }
-
   alert("👋 您已成功登出");
   window.location.href = "index.html";
 }
@@ -129,16 +116,21 @@ async function manualLogout() {
 async function offlineLogout() {
   if (isManualLogout || isAutoLogout || isOffline) return;
   isOffline = true;
-
   console.warn("📴 網路斷線，立即跳轉...");
   alert("📴 網路中斷，請重新登入！");
   window.location.href = "index.html";
 }
 
-// ✅ 單次 Heartbeat
+// ✅ 單次 Heartbeat，加入互動期限與容錯判斷
 async function sendHeartbeat() {
+  const now = Date.now();
+  if (now - lastActivityTime > 30 * 60 * 1000) {
+    console.log("⏸️ 超過 30 分鐘沒操作，不送 Heartbeat");
+    return;
+  }
+
   if (!navigator.onLine || isManualLogout) return;
-  lastHeartbeat = Date.now();
+  lastHeartbeat = now;
 
   const username = localStorage.getItem("loggedInUser");
   const sessionToken = localStorage.getItem("sessionToken");
@@ -148,18 +140,26 @@ async function sendHeartbeat() {
     const res = await fetch("https://us-central1-access-7a3c3.cloudfunctions.net/heartbeat", {
       method: "POST",
       headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ username, sessionToken })
+      body: JSON.stringify({ username, sessionToken }),
+      cache: "no-store"
     });
 
     if (!res.ok) {
-      console.warn("❌ Heartbeat 驗證失敗，登出");
-      await forceLogout();
+      failedHBCount++;
+      console.warn(`❌ Heartbeat 驗證失敗 (${failedHBCount}/${MAX_HB_FAILURES})`);
+      if (failedHBCount >= MAX_HB_FAILURES) {
+        await forceLogout("⚠️ 多次 Heartbeat 驗證失敗，請重新登入");
+      }
     } else {
+      failedHBCount = 0;
       console.log("💓 Heartbeat 傳送成功");
     }
   } catch (err) {
-    console.error("❌ 連線錯誤，無法送出 heartbeat：", err);
-    await offlineLogout();
+    failedHBCount++;
+    console.error(`❌ Heartbeat 傳輸錯誤 (${failedHBCount}/${MAX_HB_FAILURES})：`, err);
+    if (failedHBCount >= MAX_HB_FAILURES) {
+      await offlineLogout();
+    }
   }
 }
 
@@ -211,7 +211,7 @@ setInterval(() => {
   }
 }, CHECK_INTERVAL);
 
-// ✅ 啟動
+// ✅ 啟動條件判斷
 if (window.location.pathname.includes("pdf-select") || window.location.pathname.includes("pdf-viewer")) {
   startHeartbeatLoop();
   listenSessionTokenChanges();
@@ -219,4 +219,4 @@ if (window.location.pathname.includes("pdf-select") || window.location.pathname.
 
 document.getElementById("logout-btn").addEventListener("click", manualLogout);
 window.logout = manualLogout;
-// ✅ 202503200128
+// ✅ 202505231640
