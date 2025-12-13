@@ -117,13 +117,6 @@
       }
     });
 
-    // 禁止截圖行為提示
-    setInterval(() => {
-      try {
-        navigator.clipboard.writeText("⛔ 此內容受保護，禁止截圖");
-      } catch (e) {}
-    }, 1000);
-
     // 開發者工具偵測（避免初始誤判 + 防滾動誤判）
     (function () {
       let devtools = { open: false };
