@@ -40,6 +40,12 @@ function resetActivityTimer() {
   document.addEventListener(event, resetActivityTimer);
 });
 
+document.addEventListener("visibilitychange", () => {
+  if (!document.hidden) {
+    lastActivityTime = Date.now();
+  }
+});
+
 // ✅ 背景偵測
 // 切換至背景與前景時更新焦點狀態，並於回到前景時補送 heartbeat
 
@@ -206,7 +212,7 @@ setInterval(() => {
 // ✅ 1 分鐘檢查登出
 setInterval(() => {
   const now = Date.now();
-  if (now - lastFocusTime >= AUTO_LOGOUT_TIME || now - lastActivityTime >= AUTO_LOGOUT_TIME) {
+  if (now - lastActivityTime >= AUTO_LOGOUT_TIME) {
     autoLogout();
   }
 }, CHECK_INTERVAL);
@@ -219,4 +225,4 @@ if (window.location.pathname.includes("pdf-select") || window.location.pathname.
 
 document.getElementById("logout-btn").addEventListener("click", manualLogout);
 window.logout = manualLogout;
-// ✅ 202505231640
+// ✅ 202512131243
