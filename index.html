@@ -24,6 +24,23 @@
     .header h2 {
       margin: 0;
     }
+    /* 提醒訊息樣式 */
+    .reminder {
+      background-color: #f0f7ff;
+      border: 1px solid #cce5ff;
+      color: #004085;
+      padding: 12px;
+      margin: 20px auto 30px auto;
+      border-radius: 8px;
+      max-width: 450px;
+      font-size: 15px;
+      line-height: 1.5;
+    }
+    .reminder a {
+      color: #007bff;
+      font-weight: bold;
+      text-decoration: underline;
+    }
     input {
       padding: 10px;
       font-size: 16px;
@@ -53,19 +70,19 @@
       text-decoration: none;
     }
 
-    /* 📱 手機版響應式調整 */
     @media (max-width: 600px) {
       .header {
         flex-direction: column;
       }
-
       .header img {
         margin: 10px 0;
-        margin-right: 0; /* 移除原本橫向的間距 */
+        margin-right: 0;
       }
-
       .header h2 {
         font-size: 20px;
+      }
+      .reminder {
+        width: 90%;
       }
     }
   </style>
@@ -77,6 +94,10 @@
     <div>
       <h2>化工製造所 - 解答觀看登入系統</h2>
     </div>
+  </div>
+
+  <div class="reminder">
+    📢 各校 103-115 題目可以至 <a href="https://reurl.cc/r03DLZ" target="_blank">https://reurl.cc/r03DLZ</a> 下載
   </div>
 
   <form onsubmit="event.preventDefault(); login();">
