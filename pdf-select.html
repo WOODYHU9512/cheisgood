@@ -30,7 +30,24 @@
       font-size: 16px;
       z-index: 1000;
     }
-   footer {
+    /* 補充資料連結樣式 */
+    .resource-box {
+      margin: 0 auto 20px auto; 
+      padding: 12px; 
+      background-color: #fff9db; 
+      border: 1px solid #fab005; 
+      border-radius: 8px; 
+      max-width: 500px; 
+      font-size: 15px; 
+      color: #856404; 
+      line-height: 1.5;
+    }
+    .resource-box a {
+      color: #e67700; 
+      font-weight: bold; 
+      text-decoration: underline;
+    }
+    footer {
       margin-top: 40px;
       font-size: 13px;
       color: #555;
@@ -42,6 +59,10 @@
   <button id="logout-btn">🚪 登出</button>
 
   <h2>請選擇學校、科目與年份</h2>
+
+  <div class="resource-box">
+    💡 考古題相關觀念補充可以參考 <a href="https://reurl.cc/gre2DR" target="_blank">https://reurl.cc/gre2DR</a>
+  </div>
 
   <label for="schoolSelect">選擇學校：</label>
   <select id="schoolSelect">
@@ -192,25 +213,21 @@
     window.addEventListener("DOMContentLoaded", getPurchasedSchools);
   </script>
 
-  <!-- ====== 版本紀錄：v202404291210，加強DevTools防護 (Console偵測) ====== -->
   <script>
-(function () {
-  let devtoolsOpened = false;
-
-  setInterval(function () {
-    const start = new Date();
-    try { debugger; } catch (e) {}
-    const end = new Date();
-    if (end - start > 100) {
-      if (!devtoolsOpened) {
-        devtoolsOpened = true;
-        window.location.replace("index.html"); // ✅ 直接強制跳轉，不彈 alert
-      }
-    }
-  }, 300);
-})();
-</script>
-
-
+    (function () {
+      let devtoolsOpened = false;
+      setInterval(function () {
+        const start = new Date();
+        try { debugger; } catch (e) {}
+        const end = new Date();
+        if (end - start > 100) {
+          if (!devtoolsOpened) {
+            devtoolsOpened = true;
+            window.location.replace("index.html");
+          }
+        }
+      }, 300);
+    })();
+  </script>
 </body>
 </html>
