@@ -1,1 +1,184 @@
-GNLNL
+<!DOCTYPE html>
+<html lang="zh-TW">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>PDF 閱讀器 (安全渲染版)</title>
+  <script type="module" src="script.js"></script>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/pdf.js/2.16.105/pdf.min.js"></script>
+  
+  <style>
+    body {
+      margin: 0;
+      background-color: #e0e0e0;
+      font-family: sans-serif;
+      user-select: none;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      padding-top: 50px;
+      padding-bottom: 60px;
+    }
+
+    /* 保留你的按鈕與頁尾樣式 */
+    #logout-btn {
+      position: fixed; top: 10px; right: 10px; z-index: 10001;
+      background-color: red; color: white; padding: 10px 15px;
+      font-size: 16px; border: none; cursor: pointer;
+    }
+    #back-btn {
+      position: fixed; top: 10px; left: 10px; z-index: 10001;
+      background-color: #0077cc; color: white; padding: 10px 15px;
+      font-size: 16px; border: none; border-radius: 5px;
+      cursor: pointer; text-decoration: none;
+    }
+    footer {
+      position: fixed; bottom: 0; width: 100%;
+      background: #f8f8f8; text-align: center; font-size: 12px;
+      padding: 10px; z-index: 9999;
+    }
+
+    /* PDF 單頁容器與浮水印設定 */
+    .pdf-page-container {
+      position: relative; margin-bottom: 20px;
+      box-shadow: 0 4px 12px rgba(0,0,0,0.3); background-color: white;
+    }
+    .watermark-layer {
+      position: absolute; top: 0; left: 0; width: 100%; height: 100%;
+      pointer-events: none; display: flex; flex-wrap: wrap; overflow: hidden;
+      opacity: 0.12; z-index: 10;
+    }
+    .watermark-layer span {
+      font-size: 32px; color: rgba(128, 128, 128, 0.8);
+      transform: rotate(-30deg); margin: 30px; white-space: nowrap;
+    }
+    #loading-msg {
+      font-size: 20px; font-weight: bold; margin-top: 50px; color: #333;
+    }
+  </style>
+</head>
+<body>
+  <a href="pdf-select.html" id="back-btn">← 返回選單</a>
+  <button id="logout-btn" onclick="window.logout()">🚪 登出</button>
+
+  <div id="loading-msg">⏳ 正在安全載入教材中，請稍候...</div>
+  <div id="pdf-viewer"></div>
+
+  <footer>
+    <p>若有操作相關疑問，請聯絡 <a href="https://www.facebook.com/CHEisverygood/" target="_blank">Facebook 粉專</a> 或來信 <a href="mailto:cheerfactorysolution@gmail.com">cheerfactorysolution@gmail.com</a></p>
+    <p>著作權所有，侵害必究 © 化工製造所</p>
+  </footer>
+
+  <script>
+    const username = localStorage.getItem("loggedInUser");
+    const pdfId = localStorage.getItem("currentPDF");
+
+    if (!username) {
+      alert("❌ 未登入或登入逾時，返回首頁");
+      window.location.href = "index.html";
+    }
+    if (!pdfId) {
+      alert("❌ 未選擇 PDF，返回首頁");
+      window.location.href = "pdf-select.html";
+    }
+
+    // 將 Base64 轉為 Uint8Array
+    function base64ToUint8Array(base64) {
+      const pureBase64 = base64.replace(/^data:application\/pdf;base64,/, "");
+      const raw = atob(pureBase64);
+      const uint8Array = new Uint8Array(raw.length);
+      for (let i = 0; i < raw.length; i++) {
+        uint8Array[i] = raw.charCodeAt(i);
+      }
+      return uint8Array;
+    }
+
+    // 核心邏輯：動態去抓取對應的 txt 檔案
+    async function loadSecurePDF() {
+      try {
+        // 假設你的文字檔放在 pdf_data 資料夾底下
+        const response = await fetch(`pdf_data/${pdfId}.txt`);
+        if (!response.ok) throw new Error("找不到對應的教材檔案");
+        
+        const base64Data = await response.text();
+        document.getElementById('loading-msg').style.display = 'none'; // 隱藏載入提示
+
+        // 初始化 PDF.js
+        pdfjsLib.GlobalWorkerOptions.workerSrc = 'https://cdnjs.cloudflare.com/ajax/libs/pdf.js/2.16.105/pdf.worker.min.js';
+        const loadingTask = pdfjsLib.getDocument({ data: base64ToUint8Array(base64Data.trim()) });
+        
+        const pdf = await loadingTask.promise;
+        const viewer = document.getElementById('pdf-viewer');
+        
+        for(let pageNum = 1; pageNum <= pdf.numPages; pageNum++) {
+          const page = await pdf.getPage(pageNum);
+          const viewport = page.getViewport({scale: 1.5}); 
+          
+          const container = document.createElement('div');
+          container.className = 'pdf-page-container';
+          container.style.width = viewport.width + "px";
+          container.style.height = viewport.height + "px";
+
+          const canvas = document.createElement('canvas');
+          canvas.width = viewport.width;
+          canvas.height = viewport.height;
+          page.render({canvasContext: canvas.getContext('2d'), viewport: viewport});
+          
+          const watermarkDiv = document.createElement('div');
+          watermarkDiv.className = 'watermark-layer';
+          for(let i = 0; i < 40; i++) {
+             const span = document.createElement('span');
+             span.innerText = username;
+             watermarkDiv.appendChild(span);
+          }
+
+          container.appendChild(canvas);
+          container.appendChild(watermarkDiv);
+          viewer.appendChild(container);
+        }
+      } catch (error) {
+        console.error("載入失敗:", error);
+        document.getElementById('loading-msg').innerText = "❌ 檔案載入失敗，請確認教材是否存在或聯繫客服。";
+      }
+    }
+
+    // 啟動載入
+    loadSecurePDF();
+  </script>
+
+  <script>
+    // 保留你原本的防護機制 (擋右鍵、F12等)
+    window.addEventListener("contextmenu", e => e.preventDefault());
+
+    window.addEventListener("keydown", function (e) {
+      const combo = e.ctrlKey && e.shiftKey && ["I", "J", "C"].includes(e.key.toUpperCase());
+      const forbidden = ["F12", "U", "S"].includes(e.key.toUpperCase()) && e.ctrlKey;
+      if (combo || forbidden || e.key === "F12") {
+        e.preventDefault();
+        alert("⚠️ 此操作已被封鎖！");
+      }
+    });
+
+    (function () {
+      let devtools = { open: false };
+      const element = new Image();
+      Object.defineProperty(element, 'id', {
+        get: function () {
+          devtools.open = true;
+          throw new Error("DevTools detected");
+        }
+      });
+
+      function checkDevtools() {
+        devtools.open = false;
+        if (devtools.open) {
+          alert("🚨 偵測到開發者工具，頁面將離開！");
+          if (window.logout) window.logout();
+          location.href = "index.html";
+        }
+      }
+      setTimeout(() => { setInterval(checkDevtools, 1500); }, 4000);
+    })();
+  </script>
+</body>
+</html>
