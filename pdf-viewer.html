@@ -93,7 +93,7 @@
       return uint8Array;
     }
 
-    // 核心邏輯：動態去抓取對應的 txt 檔案
+    // 核心邏輯：動態去抓取對應的 txt 檔案 (已加入高解析度防模糊修復)
     async function loadSecurePDF() {
       try {
         // 假設你的文字檔放在 pdf_data 資料夾底下
@@ -110,19 +110,40 @@
         const pdf = await loadingTask.promise;
         const viewer = document.getElementById('pdf-viewer');
         
+        // 🌟 獲取當前設備的螢幕像素比 (手機或 Mac 通常是 2 或 3)
+        const outputScale = window.devicePixelRatio || 1;
+        
         for(let pageNum = 1; pageNum <= pdf.numPages; pageNum++) {
           const page = await pdf.getPage(pageNum);
-          const viewport = page.getViewport({scale: 1.5}); 
+          
+          // 🌟 將基礎放大倍率提升到 2.0，確保文字向量的細節夠多
+          const viewport = page.getViewport({scale: 2.0}); 
           
           const container = document.createElement('div');
           container.className = 'pdf-page-container';
-          container.style.width = viewport.width + "px";
-          container.style.height = viewport.height + "px";
+          
+          // 容器大小依然維持 CSS 視覺大小
+          container.style.width = Math.floor(viewport.width) + "px";
+          container.style.height = Math.floor(viewport.height) + "px";
 
           const canvas = document.createElement('canvas');
-          canvas.width = viewport.width;
-          canvas.height = viewport.height;
-          page.render({canvasContext: canvas.getContext('2d'), viewport: viewport});
+          const context = canvas.getContext('2d');
+          
+          // 🌟 將 Canvas 內部的實體像素放大，但 CSS 顯示尺寸維持正常
+          canvas.width = Math.floor(viewport.width * outputScale);
+          canvas.height = Math.floor(viewport.height * outputScale);
+          canvas.style.width = Math.floor(viewport.width) + "px";
+          canvas.style.height = Math.floor(viewport.height) + "px";
+
+          // 🌟 設置渲染變換矩陣，讓畫質對齊高解析度螢幕
+          const transform = outputScale !== 1 ? [outputScale, 0, 0, outputScale, 0, 0] : null;
+          const renderContext = {
+            canvasContext: context,
+            transform: transform,
+            viewport: viewport
+          };
+          
+          await page.render(renderContext).promise;
           
           const watermarkDiv = document.createElement('div');
           watermarkDiv.className = 'watermark-layer';
@@ -138,7 +159,7 @@
         }
       } catch (error) {
         console.error("載入失敗:", error);
-        document.getElementById('loading-msg').innerText = "❌ 檔案載入失敗，請確認教材是否存在或聯繫客服。";
+        document.getElementById('loading-msg').innerText = `❌ 找不到檔案！請確認 GitHub 的 pdf_data 資料夾內是否有這個檔案： ${pdfId}.txt`;
       }
     }
 
