@@ -3,7 +3,7 @@
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>PDF 閱讀器 (安全渲染版)</title>
+  <title>PDF 閱讀器 (智慧雙軌版)</title>
   <script type="module" src="script.js"></script>
   <script src="https://cdnjs.cloudflare.com/ajax/libs/pdf.js/2.16.105/pdf.min.js"></script>
   
@@ -20,7 +20,7 @@
       padding-bottom: 60px;
     }
 
-    /* 保留你的按鈕與頁尾樣式 */
+    /* 按鈕與頁尾樣式 */
     #logout-btn {
       position: fixed; top: 10px; right: 10px; z-index: 10001;
       background-color: red; color: white; padding: 10px 15px;
@@ -38,7 +38,7 @@
       padding: 10px; z-index: 9999;
     }
 
-    /* PDF 單頁容器與浮水印設定 */
+    /* === 新版 Canvas 的樣式 === */
     .pdf-page-container {
       position: relative; margin-bottom: 20px;
       box-shadow: 0 4px 12px rgba(0,0,0,0.3); background-color: white;
@@ -55,6 +55,28 @@
     #loading-msg {
       font-size: 20px; font-weight: bold; margin-top: 50px; color: #333;
     }
+
+    /* === 舊版 Google Drive iframe 的樣式 === */
+    #pdf-frame {
+      display: none; /* 預設隱藏，確認是大檔案才顯示 */
+      width: 100vw;
+      height: 100vh;
+      border: none;
+      position: fixed;
+      top: 0;
+      left: 0;
+      z-index: 1; /* 確保在背景，不遮擋按鈕 */
+    }
+    .global-watermark {
+      position: fixed;
+      color: rgba(128, 128, 128, 0.12);
+      font-size: 32px;
+      white-space: nowrap;
+      pointer-events: none;
+      z-index: 9999;
+      user-select: none;
+      transform: rotate(-30deg);
+    }
   </style>
 </head>
 <body>
@@ -62,7 +84,12 @@
   <button id="logout-btn" onclick="window.logout()">🚪 登出</button>
 
   <div id="loading-msg">⏳ 正在安全載入教材中，請稍候...</div>
+  
+  <!-- Canvas 容器 (新版) -->
   <div id="pdf-viewer"></div>
+  
+  <!-- iframe 容器 (舊版) -->
+  <iframe id="pdf-frame"></iframe>
 
   <footer>
     <p>若有操作相關疑問，請聯絡 <a href="https://www.facebook.com/CHEisverygood/" target="_blank">Facebook 粉專</a> 或來信 <a href="mailto:cheerfactorysolution@gmail.com">cheerfactorysolution@gmail.com</a></p>
@@ -82,7 +109,46 @@
       window.location.href = "pdf-select.html";
     }
 
-    // 將 Base64 轉為 Uint8Array
+    // 🌟 定義白名單：只有這三個超大檔案會退回 Google Drive 模式
+    const legacyGoogleDriveIds = [
+      "1A4BShmdvisNtKMyTN6VOV19dKu3rzplC", // 103年各校(無中興)
+      "1AaV8yvj0szM-z052IHbbLyjfuZV0DWEy", // 104年各校
+      "1pMiemZFo7XRcvcMpns-FGgG9CEgclCYl"  // 105年各校
+    ];
+
+    // ==========================================
+    // 模式分流判斷
+    // ==========================================
+    if (legacyGoogleDriveIds.includes(pdfId)) {
+      // 🚀 模式 A：舊版 Google Drive iframe (處理超大檔案)
+      document.getElementById('loading-msg').style.display = 'none';
+      
+      const iframe = document.getElementById("pdf-frame");
+      iframe.src = `https://drive.google.com/file/d/${pdfId}/preview`;
+      iframe.style.display = "block";
+
+      // 鋪上舊版的全螢幕浮水印
+      if (username) {
+        const step = 100;
+        const h = window.innerHeight;
+        for (let y = h; y > -h; y -= step) {
+          const wm = document.createElement("div");
+          wm.className = "global-watermark";
+          wm.innerText = username.repeat(20);
+          wm.style.left = `-50%`;
+          wm.style.top = `${y}px`;
+          wm.style.width = "300%";
+          document.body.appendChild(wm);
+        }
+      }
+    } else {
+      // 🚀 模式 B：新版安全 Canvas 渲染 (處理常規檔案)
+      loadSecurePDF();
+    }
+
+    // ==========================================
+    // 輔助函式：Base64 轉 Uint8Array
+    // ==========================================
     function base64ToUint8Array(base64) {
       const pureBase64 = base64.replace(/^data:application\/pdf;base64,/, "");
       const raw = atob(pureBase64);
@@ -93,49 +159,42 @@
       return uint8Array;
     }
 
-    // 核心邏輯：動態去抓取對應的 txt 檔案 (已加入高解析度防模糊修復)
+    // ==========================================
+    // 輔助函式：載入新版 PDF.js
+    // ==========================================
     async function loadSecurePDF() {
       try {
-        // 假設你的文字檔放在 pdf_data 資料夾底下
         const response = await fetch(`pdf_data/${pdfId}.txt`);
         if (!response.ok) throw new Error("找不到對應的教材檔案");
         
         const base64Data = await response.text();
-        document.getElementById('loading-msg').style.display = 'none'; // 隱藏載入提示
+        document.getElementById('loading-msg').style.display = 'none'; 
 
-        // 初始化 PDF.js
         pdfjsLib.GlobalWorkerOptions.workerSrc = 'https://cdnjs.cloudflare.com/ajax/libs/pdf.js/2.16.105/pdf.worker.min.js';
         const loadingTask = pdfjsLib.getDocument({ data: base64ToUint8Array(base64Data.trim()) });
         
         const pdf = await loadingTask.promise;
         const viewer = document.getElementById('pdf-viewer');
         
-        // 🌟 獲取當前設備的螢幕像素比 (手機或 Mac 通常是 2 或 3)
         const outputScale = window.devicePixelRatio || 1;
         
         for(let pageNum = 1; pageNum <= pdf.numPages; pageNum++) {
           const page = await pdf.getPage(pageNum);
-          
-          // 🌟 將基礎放大倍率提升到 2.0，確保文字向量的細節夠多
           const viewport = page.getViewport({scale: 2.0}); 
           
           const container = document.createElement('div');
           container.className = 'pdf-page-container';
-          
-          // 容器大小依然維持 CSS 視覺大小
           container.style.width = Math.floor(viewport.width) + "px";
           container.style.height = Math.floor(viewport.height) + "px";
 
           const canvas = document.createElement('canvas');
           const context = canvas.getContext('2d');
           
-          // 🌟 將 Canvas 內部的實體像素放大，但 CSS 顯示尺寸維持正常
           canvas.width = Math.floor(viewport.width * outputScale);
           canvas.height = Math.floor(viewport.height * outputScale);
           canvas.style.width = Math.floor(viewport.width) + "px";
           canvas.style.height = Math.floor(viewport.height) + "px";
 
-          // 🌟 設置渲染變換矩陣，讓畫質對齊高解析度螢幕
           const transform = outputScale !== 1 ? [outputScale, 0, 0, outputScale, 0, 0] : null;
           const renderContext = {
             canvasContext: context,
@@ -162,9 +221,6 @@
         document.getElementById('loading-msg').innerText = `❌ 找不到檔案！請確認 GitHub 的 pdf_data 資料夾內是否有這個檔案： ${pdfId}.txt`;
       }
     }
-
-    // 啟動載入
-    loadSecurePDF();
   </script>
 
   <script>
