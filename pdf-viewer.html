@@ -3,7 +3,7 @@
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>PDF 閱讀器 (智慧雙軌版)</title>
+  <title>PDF 閱讀器 (智慧雙軌優化版)</title>
   <script type="module" src="script.js"></script>
   <script src="https://cdnjs.cloudflare.com/ajax/libs/pdf.js/2.16.105/pdf.min.js"></script>
   
@@ -22,7 +22,7 @@
       align-items: center;
       padding-top: 50px;
       padding-bottom: 60px;
-      overflow-x: hidden; /* 防止浮水印撐爆手機寬度導致滑動異常 */
+      overflow-x: hidden;
     }
 
     /* 按鈕與頁尾樣式 */
@@ -43,7 +43,7 @@
       padding: 10px; z-index: 9999;
     }
 
-    /* === 新版 Canvas 的樣式 === */
+    /* === Canvas 容器 === */
     #pdf-viewer {
       width: 100%;
       max-width: 900px;
@@ -58,34 +58,30 @@
       margin-bottom: 20px;
       box-shadow: 0 4px 12px rgba(0,0,0,0.3);
       background-color: white;
-      width: 100%; /* 依手機螢幕寬度自適應 */
+      width: 100%;
       max-width: 100%;
       overflow: hidden;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      color: #888;
+      font-size: 14px;
     }
 
-    /* 關鍵：讓 canvas 依容器自適應縮放，不被固定 px 裁切 */
     .pdf-page-container canvas {
       display: block;
       width: 100% !important;
-      height: auto !important;
+      height: 100% !important;
     }
 
+    /* 浮水印改用 CSS 重複背景，不耗費大量 DOM */
     .watermark-layer {
       position: absolute;
       top: 0; left: 0; width: 100%; height: 100%;
       pointer-events: none;
-      display: flex;
-      flex-wrap: wrap;
-      overflow: hidden;
-      opacity: 0.12;
       z-index: 10;
-    }
-    .watermark-layer span {
-      font-size: 24px;
-      color: rgba(128, 128, 128, 0.8);
-      transform: rotate(-30deg);
-      margin: 20px;
-      white-space: nowrap;
+      background-repeat: repeat;
+      background-size: 260px 150px;
     }
 
     #loading-msg {
@@ -93,7 +89,7 @@
       text-align: center; padding: 0 15px;
     }
 
-    /* === 舊版 Google Drive iframe 的樣式 === */
+    /* === 舊版 Google Drive iframe 樣式 === */
     #pdf-frame {
       display: none;
       width: 100vw;
@@ -147,25 +143,18 @@
       window.location.href = "pdf-select.html";
     }
 
-    // 🌟 定義白名單：只有這三個超大檔案會退回 Google Drive 模式 (已更新為最新 ID)
     const legacyGoogleDriveIds = [
-      "1CsG8dmjri-JfVejK1cvBOxsfejZx53Qm", // 103年各校
-      "1Cq4JyD8t3RykoGvcXZrDSAYU99aE02IK", // 104年各校
-      "1Cw379O0GW4MGOt_CpxRPaEX-8JpEtNQq"  // 105年各校
+      "1CsG8dmjri-JfVejK1cvBOxsfejZx53Qm",
+      "1Cq4JyD8t3RykoGvcXZrDSAYU99aE02IK",
+      "1Cw379O0GW4MGOt_CpxRPaEX-8JpEtNQq"
     ];
 
-    // ==========================================
-    // 模式分流判斷
-    // ==========================================
     if (legacyGoogleDriveIds.includes(pdfId)) {
-      // 🚀 模式 A：舊版 Google Drive iframe (處理超大檔案)
       document.getElementById('loading-msg').style.display = 'none';
-      
       const iframe = document.getElementById("pdf-frame");
       iframe.src = `https://drive.google.com/file/d/${pdfId}/preview`;
       iframe.style.display = "block";
 
-      // 鋪上舊版的全螢幕浮水印
       if (username) {
         const step = 100;
         const h = window.innerHeight;
@@ -180,88 +169,147 @@
         }
       }
     } else {
-      // 🚀 模式 B：新版安全 Canvas 渲染 (處理常規檔案)
       loadSecurePDF();
     }
 
-    // ==========================================
-    // 輔助函式：Base64 轉 Uint8Array
-    // ==========================================
+    // 提高 Base64 轉換效能並減少記憶體垃圾
     function base64ToUint8Array(base64) {
-      const pureBase64 = base64.replace(/^data:application\/pdf;base64,/, "");
+      const pureBase64 = base64.replace(/^data:application\/pdf;base64,/, "").trim();
       const raw = atob(pureBase64);
-      const uint8Array = new Uint8Array(raw.length);
-      for (let i = 0; i < raw.length; i++) {
-        uint8Array[i] = raw.charCodeAt(i);
+      const rawLength = raw.length;
+      const array = new Uint8Array(new ArrayBuffer(rawLength));
+      for (let i = 0; i < rawLength; i++) {
+        array[i] = raw.charCodeAt(i);
       }
-      return uint8Array;
+      return array;
     }
 
-    // ==========================================
-    // 輔助函式：載入新版 PDF.js
-    // ==========================================
+    // 動態繪製單張輕量浮水印背景圖
+    function createWatermarkPattern(text) {
+      const c = document.createElement('canvas');
+      c.width = 260;
+      c.height = 150;
+      const ctx = c.getContext('2d');
+      ctx.translate(130, 75);
+      ctx.rotate(-25 * Math.PI / 180);
+      ctx.font = "16px sans-serif";
+      ctx.fillStyle = "rgba(128, 128, 128, 0.15)";
+      ctx.textAlign = "center";
+      ctx.textBaseline = "middle";
+      ctx.fillText(text, 0, 0);
+      return c.toDataURL();
+    }
+
     async function loadSecurePDF() {
       try {
         const response = await fetch(`pdf_data/${pdfId}.txt`);
         if (!response.ok) throw new Error("找不到對應的教材檔案");
         
-        const base64Data = await response.text();
-        document.getElementById('loading-msg').style.display = 'none'; 
+        let base64Data = await response.text();
+        const pdfData = base64ToUint8Array(base64Data);
+        base64Data = null; // 立即釋放巨大的字串變數
+
+        document.getElementById('loading-msg').style.display = 'none';
 
         pdfjsLib.GlobalWorkerOptions.workerSrc = 'https://cdnjs.cloudflare.com/ajax/libs/pdf.js/2.16.105/pdf.worker.min.js';
-        const loadingTask = pdfjsLib.getDocument({ data: base64ToUint8Array(base64Data.trim()) });
-        
+        const loadingTask = pdfjsLib.getDocument({ data: pdfData });
         const pdf = await loadingTask.promise;
         const viewer = document.getElementById('pdf-viewer');
-        
-        const outputScale = window.devicePixelRatio || 1;
-        
-        for(let pageNum = 1; pageNum <= pdf.numPages; pageNum++) {
-          const page = await pdf.getPage(pageNum);
-          const viewport = page.getViewport({ scale: 2.0 }); 
-          
+
+        // 手機螢幕 DPR 設限為最大 1.5 ~ 2，避免 iPhone (3x) 記憶體瞬間超標
+        const outputScale = Math.min(window.devicePixelRatio || 1, 1.75);
+        const watermarkDataUrl = createWatermarkPattern(username || "機密檔案");
+
+        // 讀取第 1 頁計算基礎比例建立佔位框
+        const firstPage = await pdf.getPage(1);
+        const firstViewport = firstPage.getViewport({ scale: 1.0 });
+        const defaultAspect = firstViewport.width / firstViewport.height;
+
+        // 虛擬滾動觀察器：進視野繪製，出視野卸載
+        const renderTasks = new Map();
+
+        const observer = new IntersectionObserver((entries) => {
+          entries.forEach(async (entry) => {
+            const container = entry.target;
+            const pageNum = parseInt(container.dataset.page);
+
+            if (entry.isIntersecting) {
+              // 進入視野且尚未渲染
+              if (!container.dataset.rendered) {
+                container.dataset.rendered = "true";
+                container.innerHTML = `<span style="position: absolute;">第 ${pageNum} 頁載入中...</span>`;
+
+                const page = await pdf.getPage(pageNum);
+                const viewport = page.getViewport({ scale: 1.35 });
+
+                const canvas = document.createElement('canvas');
+                const context = canvas.getContext('2d');
+                canvas.width = Math.floor(viewport.width * outputScale);
+                canvas.height = Math.floor(viewport.height * outputScale);
+
+                const transform = outputScale !== 1 ? [outputScale, 0, 0, outputScale, 0, 0] : null;
+                const renderContext = {
+                  canvasContext: context,
+                  transform: transform,
+                  viewport: viewport
+                };
+
+                const task = page.render(renderContext);
+                renderTasks.set(pageNum, task);
+
+                try {
+                  await task.promise;
+                  container.innerHTML = '';
+                  container.appendChild(canvas);
+
+                  const wmDiv = document.createElement('div');
+                  wmDiv.className = 'watermark-layer';
+                  wmDiv.style.backgroundImage = `url(${watermarkDataUrl})`;
+                  container.appendChild(wmDiv);
+                } catch (e) {
+                  // 取消渲染錯誤略過
+                } finally {
+                  renderTasks.delete(pageNum);
+                }
+              }
+            } else {
+              // 離屏回收機制：滑開超過 600px 銷毀 Canvas 釋放記憶體
+              if (container.dataset.rendered === "true") {
+                if (renderTasks.has(pageNum)) {
+                  renderTasks.get(pageNum).cancel();
+                  renderTasks.delete(pageNum);
+                }
+                container.innerHTML = `第 ${pageNum} 頁`;
+                delete container.dataset.rendered;
+              }
+            }
+          });
+        }, {
+          rootMargin: "500px 0px" // 預載周圍 500px，確保滾動滑順
+        });
+
+        // 建立佔位框
+        for (let pageNum = 1; pageNum <= pdf.numPages; pageNum++) {
           const container = document.createElement('div');
           container.className = 'pdf-page-container';
-          // 限制最大寬度為實際解析度寬度，但在手機上會受 CSS max-width: 100% 限制自適應
-          container.style.maxWidth = `${Math.floor(viewport.width)}px`;
+          container.dataset.page = pageNum;
+          container.style.aspectRatio = `${defaultAspect}`;
+          container.style.maxWidth = `${Math.floor(firstViewport.width * 1.35)}px`;
+          container.innerText = `第 ${pageNum} 頁`;
 
-          const canvas = document.createElement('canvas');
-          const context = canvas.getContext('2d');
-          
-          // 內部渲染尺寸（維持超高解析度）
-          canvas.width = Math.floor(viewport.width * outputScale);
-          canvas.height = Math.floor(viewport.height * outputScale);
-
-          const transform = outputScale !== 1 ? [outputScale, 0, 0, outputScale, 0, 0] : null;
-          const renderContext = {
-            canvasContext: context,
-            transform: transform,
-            viewport: viewport
-          };
-          
-          await page.render(renderContext).promise;
-          
-          const watermarkDiv = document.createElement('div');
-          watermarkDiv.className = 'watermark-layer';
-          for(let i = 0; i < 35; i++) {
-             const span = document.createElement('span');
-             span.innerText = username;
-             watermarkDiv.appendChild(span);
-          }
-
-          container.appendChild(canvas);
-          container.appendChild(watermarkDiv);
           viewer.appendChild(container);
+          observer.observe(container);
         }
+
       } catch (error) {
         console.error("載入失敗:", error);
-        document.getElementById('loading-msg').innerText = `❌ 找不到檔案！請確認 GitHub 的 pdf_data 資料夾內是否有這個檔案： ${pdfId}.txt`;
+        document.getElementById('loading-msg').innerText = `❌ 找不到檔案！請確認 pdf_data/${pdfId}.txt 是否存在。`;
       }
     }
   </script>
 
   <script>
-    // 防護機制 (擋右鍵、F12 等)
+    // 基礎防護機制
     window.addEventListener("contextmenu", e => e.preventDefault());
 
     window.addEventListener("keydown", function (e) {
